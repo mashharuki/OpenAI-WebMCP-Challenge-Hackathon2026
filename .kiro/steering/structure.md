@@ -8,12 +8,12 @@ The workspace separates browser interaction, payment-gated resource delivery, an
 
 ### WebMCP frontend
 **Location**: `apps/frontend/src/`  
-**Purpose**: React UI, shared todo state, WebMCP tool definitions, runtime schemas, and Worker/browser entry points.  
-**Example**: `useTodos.ts` owns state actions; `useWebMCPTools.ts` exposes those actions to agents.
+**Purpose**: React publisher UI, gate coordination, sponsor/payment clients, WebMCP tool definitions, runtime schemas, and Worker/browser entry points.
+**Example**: keep gate state in a focused coordinator and make the WebMCP tool a thin consumer of that same coordinator.
 
 ### Payment-gated resource service
 **Location**: `apps/server/src/`  
-**Purpose**: Hono route composition, x402 policy, AgentKit resource-server setup, and facilitator client creation.  
+**Purpose**: Hono premium-resource composition, sponsor-grant authorization, x402 policy, AgentKit resource-server setup, and facilitator client creation.
 **Example**: keep protected-route configuration in `config.ts`, not inline in HTTP handlers.
 
 ### EVM facilitator
@@ -33,7 +33,8 @@ Use ESM imports and let Biome organize them. Prefer relative imports for modules
 
 ## Code Organization Principles
 
-- Keep visible frontend controls and WebMCP tools on one state and validation path.
+- Keep visible frontend controls and WebMCP tools on one gate state and validation path.
+- Keep sponsor grants, x402 payment evidence, and premium-resource contracts explicit and independently testable.
 - Keep service route handlers concise; delegate payment, chain, and integration setup to focused modules.
 - Keep `apps/frontend`, `apps/server`, and `apps/facilitator` boundaries explicit. Changes spanning them should state their compatibility and configuration impact.
 

@@ -2,7 +2,7 @@
 
 ## Architecture
 
-The repository is a pnpm TypeScript workspace with a browser application and two Node HTTP services. The frontend owns interactive todo state and WebMCP registration; the resource server gates paid access with x402; the facilitator handles EVM payment verification and settlement.
+The repository is a pnpm TypeScript workspace with a browser application and two Node HTTP services. The frontend owns recipe presentation, the human-in-the-loop gate, injected-wallet interaction, and WebMCP registration; the resource server accepts sponsor grants or x402 evidence; the facilitator handles EVM payment verification and settlement.
 
 ## Core Technologies
 
@@ -38,9 +38,11 @@ pnpm --filter x402server run dev
 
 ## Key Technical Decisions
 
-- WebMCP tools call the same frontend state actions as visible controls.
+- WebMCP tools and visible controls call the same gate coordinator and premium-resource client.
 - Imperative WebMCP registrations are tied to React lifecycle cleanup via `AbortController`.
 - Payment policy, resource-server configuration, and facilitator settlement remain separate services to keep trust boundaries explicit.
+- Target `document.modelContext` for ChatGPT and feature-detect `navigator.modelContext` for Chrome compatibility while the draft API is in flux.
+- Use only Base Sepolia (`eip155:84532`), the x402 `exact` scheme, testnet USDC, and an injected EIP-1193 wallet. Reject other chain IDs and never bundle a payer private key in frontend code.
 
 ---
 _Document durable technology choices and standards, not all dependencies._

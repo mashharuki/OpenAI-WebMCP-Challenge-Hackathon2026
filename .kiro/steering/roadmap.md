@@ -35,12 +35,12 @@ The implementation reuses the existing React/Vite WebMCP frontend, Hono x402 res
 
 ## Specs (dependency order)
 
-- [ ] adgate-contracts -- Define premium-resource schemas, access grants, gate state machine, error taxonomy, and cross-app HTTP contracts. Dependencies: none
-- [ ] publisher-demo -- Replace the todo reference UI with a polished recipe publisher and deterministic premium analysis service, without monetization logic. Dependencies: adgate-contracts
-- [ ] sponsor-access -- Implement the sponsor-choice UI, timed viewing flow, and short-lived single-use sponsor access grant. Dependencies: adgate-contracts
-- [ ] x402-payment-access -- Adapt the protected resource and browser payer flow for Base Sepolia x402 with explicit human wallet confirmation. Dependencies: adgate-contracts
-- [ ] webmcp-gated-tool -- Register the premium WebMCP tool, suspend execution on the shared gate coordinator, resume through either access path, and handle abort/security behavior. Dependencies: publisher-demo, sponsor-access, x402-payment-access
-- [ ] submission-readiness -- Add end-to-end validation, deployment configuration, fallback behavior, hackathon provenance, English documentation, and the demo/submission checklist. Dependencies: webmcp-gated-tool
+- [x] adgate-contracts -- Define premium-resource schemas, access grants, gate state machine, error taxonomy, and cross-app HTTP contracts. Dependencies: none
+- [x] publisher-demo -- Replace the todo reference UI with a polished recipe publisher and deterministic premium analysis service, without monetization logic. Dependencies: adgate-contracts
+- [x] sponsor-access -- Implement the sponsor-choice UI, timed viewing flow, and short-lived single-use sponsor access grant. Dependencies: adgate-contracts
+- [x] x402-payment-access -- Adapt the protected resource and browser payer flow for Base Sepolia x402 with explicit human wallet confirmation. Dependencies: adgate-contracts, publisher-demo, sponsor-access
+- [x] webmcp-gated-tool -- Register the premium WebMCP tool, suspend execution on the shared gate coordinator, resume through either access path, and handle abort/security behavior. Dependencies: publisher-demo, sponsor-access, x402-payment-access
+- [x] submission-readiness -- Add end-to-end validation, deployment configuration, fallback behavior, hackathon provenance, English documentation, and the demo/submission checklist. Dependencies: webmcp-gated-tool
 
 ## Delivery Calendar (JST)
 

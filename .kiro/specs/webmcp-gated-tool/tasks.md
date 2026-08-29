@@ -34,10 +34,10 @@
   - _Boundary: GateCoordinator_
 
 - [ ] 2.3 支払い経路と sponsor fallback を同じ attempt へ接続する
-  - payment 選択から既存 payment coordinator を開始し、reviewing、wallet 待ち、settling、terminal state を購読する。
-  - gate 開始から wallet confirmation を自動実行せず、人の panel 操作後の terminal success だけを元の Promise へ返す。
-  - 支払い取消・失敗・不確定結果を共通エラーへ写し、late subscription を破棄する。
-  - 支払い unavailable でも sponsor 選択が維持され、開始時には wallet method が呼ばれず、成功時は同じ invocation が一度だけ完了する test を通す。
+  - payment 選択時、active な canonical `PremiumAnalysisRequest` と attempt 用 `AbortSignal` を既存 `PaymentCoordinatorPort.requestPaidAccess(request, signal)` へ一度だけ渡し、その Promise を待機する。
+  - 上流 `PaymentTerminalResult` の success は `PremiumAnalysisSuccess`、error は canonical `AdGateError`、cancelled は reason として網羅的に処理し、独自 result/error type または terminal callback を定義しない。
+  - gate 開始から `confirm` や wallet method を自動実行せず、payment snapshot は UI 表示だけに使う。元の WebMCP invocation は payment/sponsor/abort/cancel の最初の終端で一度だけ settle し、late terminal result を破棄する。
+  - 支払い unavailable でも sponsor 選択が維持され、開始時には wallet method が呼ばれず、success/error/cancelled と abort 競合のすべてで同じ invocation が exactly once に完了する test を通す。
   - _Requirements: 3.1, 3.2, 3.4, 3.5, 3.6, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
   - _Boundary: GateCoordinator_
 
@@ -90,7 +90,7 @@
   - deferred fake ports により、両 access path の tool Promise が人間の終端操作まで pending であることを検証する。
   - host abort、user cancel、unmount と成功の競合で、最初の終端だけが state/result に反映され、遅延結果は無視されることを検証する。
   - active 中の二つ目の tool invocation と可視 UI の重複 start を個別に発生させ、両方が拒否されても既存 attempt が変化しないことを検証する。
-  - sponsor/payment の成功が同じ structured result を返し、全 failure が JSON-safe かつ token、signature、stack、raw provider data を含まないことを確認する。
+  - `requestPaidAccess` が同じ request と signal で一回だけ呼ばれ、sponsor/payment の成功が同じ structured result を返し、payment error/cancelled を含む全 failure が JSON-safe かつ token、signature、stack、raw provider data を含まないことを確認する。
   - _Depends: 3.5_
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6_
   - _Boundary: WebMCPGateIntegration_

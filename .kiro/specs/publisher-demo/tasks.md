@@ -21,9 +21,10 @@
 - [ ] 2.2 Preview HTTP boundary を追加する
   - preview request を上流 server contract で strict validation し、analyzer outcome を success または normalized error response に写像する。
   - access evidence を生成・要求せず、invalid body、unsupported sample、unknown exception を設計どおりの status と safe envelope で返す。
-  - Hono in-memory request によって valid、unknown field、unsupported、sanitized internal failure を検証する。
-  - 完了時、`POST /api/recipe-analysis/preview` router が network listener なしで契約適合 response を返す。
-  - _Requirements: 3.5, 4.3, 4.5, 5.2, 5.3_
+  - router を server import 時に自己登録しない factory として公開し、development composition が明示的に mount または省略できる seam にする。
+  - Hono in-memory request によって valid、unknown field、unsupported、sanitized internal failure、および省略時の route absence を検証する。
+  - 完了時、`POST /api/recipe-analysis/preview` router が network listener なしで契約適合 response を返し、factory を組み込まない app には route が追加されない。
+  - _Requirements: 3.5, 3.6, 4.3, 4.5, 5.2, 5.3_
   - _Boundary: PreviewRoute_
 
 - [ ] 3. Publisher presentation と browser client を構築する
@@ -65,29 +66,30 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 6.1, 6.2, 6.3_
   - _Boundary: PublisherDemo, AppComposition_
 
-- [ ] 4.3 Preview router を既存 resource server に mount する
-  - preview router を既存 Hono app に一度だけ接続し、health、weather、x402 middleware/config の既存挙動を変更しない。
+- [ ] 4.3 Preview router を development composition へ接続する
+  - preview router factory を既存 Hono app の development composition に一度だけ明示接続し、health、weather、x402 middleware/config の既存挙動を変更しない。
   - preview が sponsor/payment header を要求せず、canonical protected route と異なる path であることを smoke test する。
-  - 完了時、起動済み resource server から preview endpoint が利用でき、既存 endpoint の regression check も成功する。
-  - _Requirements: 3.1, 3.5, 5.1, 5.2, 5.3_
-  - _Boundary: PreviewRoute, ServerComposition_
+  - production runtime の条件分岐を本 task へ取り込まず、後続 `x402-payment-access` が同じ seam から preview mount/除去 policy を所有できる状態を維持する。
+  - 完了時、development 用 in-memory composition から preview endpoint が利用でき、seam を省略した composition では同 path が存在せず、既存 endpoint の regression check も成功する。
+  - _Requirements: 3.1, 3.5, 3.6, 5.1, 5.2, 5.3_
+  - _Boundary: PreviewRouteFactory, DevelopmentServerComposition_
   - _Depends: 2.2_
 
 - [ ] 5. Publisher slice の contract と user journey を最終検証する
 - [ ] 5.1 Cross-app preview contract を検証する
   - 同じ test-only JSON fixture を frontend と server の app-local validator が独立に読み、sample request と response を同じ意味で受理することを確認する。
   - production code は fixture または相手 app の source を import せず、preview success の四結果領域と disclaimer が canonical schema に一致することを確認する。
-  - preview endpoint が grant、payment、wallet、WebMCP import を持たず、一時的な un-gated seam として隔離されていることを検証する。
+  - preview endpoint が grant、payment、wallet、WebMCP import や自己登録 side effect を持たず、省略可能な development-only seam として隔離されていることを検証する。
   - 完了時、片側の field drift で contract test が失敗し、整合した fixture では frontend/server の双方が成功する。
-  - _Requirements: 2.2, 3.1, 3.3, 3.5, 4.3, 5.2, 5.3_
+  - _Requirements: 2.2, 3.1, 3.3, 3.5, 3.6, 4.3, 5.2, 5.3_
   - _Boundary: AnalysisClient, PreviewRoute_
   - _Depends: 4.1, 4.3_
 
 - [ ] 5.2 Publisher UI、accessibility、build regression を検証する
-  - frontend unit/UI suite、server analyzer/route suite、frontend production build、repository quality check を実行する。
+  - frontend unit/UI suite、server analyzer/route suite、frontend build、repository quality check を実行する。
   - 320px 相当の responsive layout、keyboard CTA/retry、live status、owned local asset、raw error/secret 非公開を検証する。
   - publisher root が todo UI を表示せず、sample の閲覧から loading、result または retry recovery までを完了できることを確認する。
-  - 完了時、publisher demo の全 validation command が成功し、後続 gate が analyzer と UI seam を再利用できる。
+  - deployed endpoint や production preview availability を release verification として判定せず、完了時には publisher demo の boundary 内 validation command が成功し、後続 gate が analyzer、UI、preview integration seam を再利用できる。
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.3, 2.4, 2.5, 3.2, 3.4, 4.1, 4.2, 4.4, 4.5, 5.1, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4, 6.5_
   - _Boundary: PublisherDemo, DeterministicAnalyzer_
   - _Depends: 5.1_

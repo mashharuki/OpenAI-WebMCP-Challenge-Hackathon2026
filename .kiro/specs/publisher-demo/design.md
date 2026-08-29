@@ -4,7 +4,7 @@
 
 `publisher-demo` は既存の todo composition を、単一の公開レシピと直接実行できる premium analysis preview へ置き換える。frontend は静的で所有権が明確なレシピデータを唯一の表示入力として使い、同じデータから `RecipeAnalysisInput` を生成する。resource server は `adgate-contracts` の schema で要求を検証し、外部 AI や時刻へ依存しない純粋な analyzer から `RecipeAnalysisResult` を返す。
 
-本仕様の HTTP route は gate 統合前の検証専用 preview seam である。後続仕様は analyzer をそのまま canonical protected route から呼び、preview route を production で無効化する。これにより publisher の表現・分析ロジックと、sponsor/payment authorization の責務を混在させない。
+本仕様の HTTP route は gate 統合前の検証専用 development preview seam である。本仕様は preview router を独立して mount または省略できる factory/integration seam と、その seam 単体の test までを提供する。後続の `x402-payment-access` は analyzer をそのまま canonical protected route から呼び、production runtime では preview route を条件付きで mount しない、または composition から除去する policy を所有する。これにより publisher の表現・分析ロジックと、sponsor/payment authorization および production exposure の責務を混在させない。
 
 ### Goals
 
@@ -27,15 +27,16 @@
 - publisher shell、recipe article、analysis preview の loading/success/error 表示。
 - browser から preview route を呼ぶ typed client と要求重複防止。
 - 入力にだけ依存する deterministic analyzer と preview HTTP handler。
+- preview router を独立して組み込み・省略できる development integration seam と、その境界の test。
 - todo composition を publisher composition へ切り替える初期統合。
 
 ### Out of Boundary
 
 - `adgate-contracts` が所有する field 名、limit、error taxonomy、runtime schema の変更。
 - `sponsor-access` が所有する選択 UI、timer、grant ledger と sponsor route。
-- `x402-payment-access` が所有する `/api/recipe-analysis` の protection、payment challenge、proof と settlement。
+- `x402-payment-access` が所有する `/api/recipe-analysis` の protection、payment challenge、proof と settlement、および production runtime における preview route の条件付き mount または除去。
 - `webmcp-gated-tool` が所有する pending tool、gate coordinator、abort と WebMCP status。
-- preview route の production 無効化、strict origin allowlist、deployment は `submission-readiness` が最終確認する。
+- strict origin allowlist、deployment、release verification は `submission-readiness` が所有する。本仕様は production preview availability を検証しない。
 
 ### Allowed Dependencies
 
@@ -51,7 +52,7 @@
 - sample recipe の title、ingredients、instructions、dietary goals の変更。
 - preview または protected analysis route の path、method、status、response envelope の変更。
 - sponsor/payment 統合により access-granted 後の呼出方法または top-level frontend composition が変わる場合。
-- API base URL、CORS、Worker proxy、production preview availability の変更。
+- API base URL、CORS、Worker proxy、または downstream の production preview mount policy の変更。
 
 ## Architecture
 
@@ -120,8 +121,8 @@ apps/
     └── recipeAnalysis/
         ├── analyzeRecipe.ts               # pure deterministic analysis service
         ├── analyzeRecipe.test.ts          # repeatability and unsupported-input tests
-        ├── previewRoute.ts                # un-gated preview request/response adapter
-        └── previewRoute.test.ts            # contract and status integration tests
+        ├── previewRoute.ts                # independently mountable development-only adapter
+        └── previewRoute.test.ts           # contract, mount and omission integration tests
 test/fixtures/
 └── publisher-demo.json                      # sample preview request and response test oracle
 ```
@@ -131,7 +132,7 @@ test/fixtures/
 - `apps/frontend/src/App.tsx` — todo composition を除き `PublisherDemo` を root にする。
 - `apps/frontend/src/App.test.tsx` — starter 固有の todo assertions を root composition smoke test へ置換する。詳細 UI test は publisher directory に置く。
 - `apps/frontend/src/styles.css` — 既存 baseline を維持し、レシピ記事の responsive typography と背景 token を追加する。
-- `apps/server/src/index.ts` — preview router を `/api/recipe-analysis/preview` に mount するだけとし、既存 x402 middleware/config は変更しない。
+- `apps/server/src/index.ts` — development composition から preview router factory を `/api/recipe-analysis/preview` に接続する。factory を省略可能に保ち、production での条件付き mount/除去 policy は後続の `x402-payment-access` に委ねる。
 
 既存 `useTodos.ts`、`useWebMCPTools.ts`、todo schemas の削除は本仕様に含めない。未使用化した starter module の整理は後続 integration が必要性を確認して行う。
 
@@ -166,6 +167,7 @@ preview request は一回の UI action につき一つで、pending 中の再操
 | 2.1, 2.2, 2.3, 2.4, 2.5 | recipe detail と owned content | SampleRecipe, RecipeArticle | PublishedRecipe | Page render |
 | 3.1, 3.2, 3.3, 3.4 | 分析開始、重複防止、結果、repeatability | PublisherDemo, AnalysisClient, AnalysisPanel | AnalysisClientPort, AnalysisViewState | Analysis preview |
 | 3.5 | invalid request rejection | PreviewRoute | PreviewAnalysisRequest | Boundary validation |
+| 3.6 | development-only preview integration seam | PreviewRoute, ServerComposition | PreviewRouterFactory | Development composition |
 | 4.1, 4.2, 4.3, 4.4, 4.5 | deterministic で安全な分析 | DeterministicAnalyzer | AnalysisOutcome | Analysis preview |
 | 5.1, 5.2, 5.3, 5.4, 5.5 | safe error と retry | AnalysisClient, PublisherDemo, AnalysisPanel | AdGateError, AnalysisViewState | Analysis preview |
 | 6.1, 6.2, 6.3, 6.4, 6.5 | responsive と accessible states | RecipeArticle, AnalysisPanel, PublisherDemo | semantic HTML, live status | Page render, Analysis preview |
@@ -180,9 +182,9 @@ preview request は一回の UI action につき一つで、pending 中の再操
 | PublisherDemo | UI coordinator | page composition と一要求の lifecycle | 1.1–1.4, 3.1–3.4, 5.4–5.5, 6.1–6.5 | AnalysisClient P0 | Service, State |
 | AnalysisClient | Browser boundary | preview HTTP を typed outcome へ変換 | 3.1, 3.3–3.5, 5.1–5.3 | FrontendContracts P0, fetch P0 | Service, API |
 | DeterministicAnalyzer | Server domain | input のみから canonical result を生成 | 4.1–4.5 | ServerContracts P0 | Service |
-| PreviewRoute | Server HTTP | un-gated test seam の validation と status mapping | 3.5, 4.3, 4.5, 5.1–5.3 | ServerContracts P0, DeterministicAnalyzer P0 | API |
+| PreviewRoute | Server HTTP | independently mountable な development-only test seam の validation と status mapping | 3.5–3.6, 4.3, 4.5, 5.1–5.3 | ServerContracts P0, DeterministicAnalyzer P0 | API |
 | AppComposition | Frontend integration | publisher slice を browser entry へ接続 | 1.1–1.4, 6.1–6.3 | PublisherDemo P0 | Service |
-| ServerComposition | Server integration | preview router を既存 app へ接続 | 3.1, 3.5, 5.1–5.3 | PreviewRoute P0 | API |
+| ServerComposition | Server integration | development composition へ preview router を明示的に接続または省略できる seam | 3.1, 3.5–3.6, 5.1–5.3 | PreviewRoute P0 | API |
 
 ### Frontend Domain and UI
 
@@ -291,11 +293,21 @@ interface RecipeAnalyzer {
 - route は access header を検査せず、grant/payment evidence を生成しない。
 - correlation ID は request header の安全な値を伝播できるが、秘密値や raw exception を返さない。
 
+```typescript
+interface PreviewRouterFactory {
+  create(dependencies: { analyzer: RecipeAnalyzer }): Hono;
+}
+```
+
+- factory が返す router は `/api/recipe-analysis/preview` へ明示的に mount された場合だけ到達可能であり、server app の import 時に自己登録しない。
+- publisher-demo は development composition での明示 mount と、factory を省略した app で route が存在しないことを検証する。runtime environment に応じた条件分岐は実装しない。
+- `x402-payment-access` はこの seam を消費し、production composition における preview router の条件付き mount/除去を所有する。
+
 **Implementation Notes**
 
-- Integration: existing Hono app は router を preview path に mount する。x402 middleware/config の対象 route は変更しない。
+- Integration: existing Hono app の development composition は factory が返す router を preview path に明示 mount する。x402 middleware/config の対象 routeと production mount policy は変更しない。
 - Validation: route test は Hono の in-memory request を使い、listen port や外部 network を必要としない。
-- Risks: preview は final monetization を bypass できるため、後続 gate 統合後に production から必ず外す。`submission-readiness` は production build で preview endpoint が到達不能であることを確認する。
+- Risks: preview は final monetization を bypass できる。publisher-demo は自己登録しない router seam と omission test で accidental coupling を防ぎ、`x402-payment-access` が production での条件付き mount/除去を実装する。production endpoint の release verification は本仕様の完了条件に含めない。
 
 ## Data Models
 
@@ -339,6 +351,7 @@ preview route は method、path、status、correlation ID のみを既存 server
 ### Integration Tests
 
 - preview route が valid request を 200 canonical data、unknown field を 400、unsupported sample を 422、thrown error を sanitized 500 で返すことを検証する (3.5, 4.3, 4.5, 5.2–5.3)。
+- preview router factory を development composition に明示 mount した場合だけ route が到達可能で、factory を省略した in-memory app では同 path が存在しないことを検証する (3.6)。これは production policy または deployed endpoint の検証ではない。
 - frontend request fixture と server handler が request field を同じ意味で扱うことを検証する (2.2, 3.1, 4.3)。
 - existing `/health` と x402 `/weather` composition が route mount 後も応答可能であることを smoke test する。
 
@@ -355,4 +368,4 @@ preview route は method、path、status、correlation ID のみを既存 server
 - sample asset と content には外部 tracking、remote image、third-party script を含めない。
 - frontend bundle と preview request に access token、private key、wallet data を含めない。
 - error UI と response は raw exceptions、stack、request body、secret-like field を公開しない。
-- preview endpoint は統合用 authorization の代替ではなく、final production release の blocking removal item とする。
+- preview endpoint は統合用 authorization の代替ではない。production での mount/除去は `x402-payment-access` の blocking integration item であり、本仕様はそのための省略可能な seam だけを保証する。

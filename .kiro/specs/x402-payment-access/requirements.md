@@ -6,9 +6,9 @@ AdGate の即時アクセスを選ぶ利用者が、Base Sepolia 上の少額 te
 
 ## Boundary Context
 
-- **In scope**: Base Sepolia `exact` 支払い条件、プレミアムリソースの支払い保護、402 条件の表示、注入ウォレットの接続とネットワーク確認、明示承認、支払い付き再試行、決済結果、ブラウザ越しのヘッダー公開、依存サービス可用性の検証。
+- **In scope**: Base Sepolia `exact` 支払い条件、`POST /api/recipe-analysis` の canonical sponsor/payment composition、プレミアムリソースの支払い保護、402 条件の表示、注入ウォレットの接続とネットワーク確認、明示承認、支払い付き再試行、WebMCP 向け terminal bridge、決済結果、preview route の環境別 mounting、ブラウザ越しのヘッダー公開、依存サービス可用性の検証。
 - **Out of scope**: World Chain を含む他ネットワーク、mainnet、秘密鍵保管、custodial wallet、fiat 購入、無確認の自動支払い、スポンサー付与、プレミアム分析生成、WebMCP tool の pending lifecycle、production accounting。
-- **Adjacent expectations**: `adgate-contracts` が `recipe_analysis`、`PaymentAccessEvidence`、公開エラー、および HTTP envelope を定義する。スポンサー経路はウォレットまたは支払いサービスが利用できない場合にも選択可能であり、本機能はその経路を変更しない。
+- **Adjacent expectations**: `adgate-contracts` が `recipe_analysis`、`AccessEvidence`、公開エラー、および HTTP envelope を定義する。`sponsor-access` は `SponsorAuthorizer` を提供し、`publisher-demo` は両認可経路が共有する premium handler と開発専用 preview router を提供する。`webmcp-gated-tool` は本仕様の payment terminal bridge を消費する。`submission-readiness` は production で preview が到達不能であることを検証するだけで、mounting policy を実装しない。
 
 ## Requirements
 
@@ -83,3 +83,16 @@ AdGate の即時アクセスを選ぶ利用者が、Base Sepolia 上の少額 te
 3. When facilitator の対応能力を確認する, the AdGate payment flow shall Base Sepolia の `exact` 支払いを検証・決済できることだけを必須条件とする。
 4. If facilitator の health または対応能力の確認が失敗する, the AdGate payment flow shall 支払い経路を利用不能として示し、スポンサー経路の利用可否へ影響を与えない。
 5. The AdGate payment flow shall 実ネットワークへ依存しない自動検証で、402 提示、他ネットワーク拒否、利用者拒否、成功再試行、二重課金防止、および依存障害を再現できるようにする。
+
+### Requirement 7: Canonical route composition と統合 seam
+
+**Objective:** As a 統合実装者, I want 一つの保護 route と明確な terminal contract を使いたい, so that sponsor、payment、WebMCP、および preview の境界が曖昧にならない
+
+#### Acceptance Criteria
+
+1. The AdGate payment flow shall `POST /api/recipe-analysis` の server composition を所有し、sponsor と payment の両認可経路を同じ premium handler へ委譲する。
+2. When `Authorization` header が存在する, the AdGate payment flow shall `SponsorAuthorizer` を最初かつ唯一の認可分岐として実行し、header の形式不正、無効、期限切れ、再利用、または dependency failure を payment challenge へ fall through させず fail closed で返す。
+3. When `Authorization` header が存在しない, the AdGate payment flow shall `PaymentProtection` だけを実行し、有効な決済後にのみ同じ premium handler へ委譲する。
+4. The AdGate payment flow shall WebMCP gate が一つの `PremiumAnalysisRequest` と任意の `AbortSignal` で呼べる `requestPaidAccess` bridge を公開し、成功、公開 error、または取消のうち最初の terminal result だけで Promise を一度だけ完了する。
+5. If terminal result の後に wallet、network、facilitator、または abort callback が到着する, the AdGate payment flow shall その callback を無視し、premium handler の再実行、Promise の再完了、または新しい署名要求を行わない。
+6. The AdGate payment flow shall `/api/recipe-analysis/preview` の mounting policy を所有し、production では設定値にかかわらず route を mount せず、非 production では明示 opt-in の場合だけ publisher の preview router を mount する。

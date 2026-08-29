@@ -2,7 +2,7 @@
 
 ## Overview
 
-`webmcp-gated-tool` は publisher の `recipe_analysis` を `analyze_recipe` として公開し、WebMCP callback の Promise を人間の選択が終わるまで保持する frontend integration slice である。単一の `GateCoordinator` が WebMCP と可視 UI の両方から同じ `RecipeAnalysisInput` を受け、upstream `GateMachine` を進行させ、`SponsorGatePort` または `PaymentCoordinator` の結果から同じ `WebMCPToolResult` を返す。
+`webmcp-gated-tool` は publisher の `recipe_analysis` を `analyze_recipe` として公開し、WebMCP callback の Promise を人間の選択が終わるまで保持する frontend integration slice である。単一の `GateCoordinator` が WebMCP と可視 UI の両方から同じ `RecipeAnalysisInput` を受け、upstream `GateMachine` を進行させ、`SponsorGatePort` または `PaymentCoordinatorPort.requestPaidAccess` の終端結果から同じ `WebMCPToolResult` を返す。
 
 WebMCP adapter は `document.modelContext` を優先し、旧 Chrome 互換の `navigator.modelContext` を fallback として feature-detect する。登録 lifetime と呼出 lifetime は別の `AbortSignal` とし、現行 draft の `execute(input, { signal })` を coordinator の attempt signal へ結合する。tool は cross-origin へ公開せず、静的 description、strict JSON Schema、`untrustedContentHint: true` を使用する。
 
@@ -34,12 +34,12 @@ WebMCP adapter は `document.modelContext` を優先し、旧 Chrome 互換の `
 - `adgate-contracts`: `GateState`、`GateEvent`、`PremiumAnalysisRequest`、`WebMCPToolResult`、error taxonomy。
 - `publisher-demo`: `PublishedRecipe`、`PublisherDemo`、`AnalysisPanel`、`DeterministicAnalyzer`。
 - `sponsor-access`: `SponsorGatePort`、`SponsorModal`、grant issue/token/consume policy。
-- `x402-payment-access`: `PaymentCoordinator`、`PaymentPanel`、wallet consent、paid retry、settlement。
+- `x402-payment-access`: `PaymentCoordinatorPort`、`PaymentTerminalResult`、`PaymentPanel`、wallet consent、paid retry、settlement、および payment 内部の exactly-once completion latch。
 - `submission-readiness`: production preview removal、Origin Trial、公開 deployment、E2E release verification。
 
 ### Allowed Dependencies
 
-- `GateCoordinator` は frontend `contracts.ts` と `gateMachine.ts`、`SponsorGatePort`、`PaymentCoordinator` port、`ProtectedAnalysisClient` port のみに依存する。
+- `GateCoordinator` は frontend `contracts.ts` と `gateMachine.ts`、`SponsorGatePort`、上流の `PaymentCoordinatorPort`、`ProtectedAnalysisClient` port のみに依存する。支払い開始には正規の `requestPaidAccess(request, signal)` だけを使い、payment の terminal union を再定義しない。
 - `useWebMCPTools` は `GateCoordinatorPort` と frontend contract の schema/result normalizer のみに依存し、sponsor/payment 実装を直接 import しない。
 - `App.tsx` だけが publisher、gate experience、sponsor provider、payment panel、WebMCP hook を composition する。
 - dependency direction は `adgate contracts → upstream access ports → protected client → gate coordinator → WebMCP/UI adapters → App composition` とし、逆向き import と frontend/server runtime import を禁止する。
@@ -47,7 +47,7 @@ WebMCP adapter は `document.modelContext` を優先し、旧 Chrome 互換の `
 
 ### Revalidation Triggers
 
-- `GateState`、`GateEvent`、`PremiumAnalysisRequest`、`WebMCPToolResult`、`SponsorFlowResult`、`PaymentFlowState` の shape 変更。
+- `GateState`、`GateEvent`、`PremiumAnalysisRequest`、`WebMCPToolResult`、`SponsorFlowResult`、`PaymentCoordinatorPort`、`PaymentTerminalResult`、`PaymentFlowState` の shape 変更。
 - WebMCP の entry point、`registerTool` options、execute callback options、result serialization、tool name/schema 制約の変更。
 - sponsor token と request nonce の binding、protected endpoint/header、payment terminal result の変更。
 - `PublisherDemoProps.analysisClient` または top-level frontend composition ownership の変更。
@@ -72,7 +72,7 @@ graph LR
     UIAdapter --> GateCoordinator
     GateCoordinator --> GateMachine[Upstream gate machine]
     GateCoordinator --> SponsorPort[Upstream sponsor port]
-    GateCoordinator --> PaymentPort[Upstream payment coordinator]
+    GateCoordinator --> PaymentPort[Upstream PaymentCoordinatorPort]
     GateCoordinator --> ProtectedClient[Protected analysis client]
     ProtectedClient --> PremiumRoute[Premium route]
     GateCoordinator --> GateExperience[Gate choice and status]
@@ -159,30 +159,29 @@ sequenceDiagram
     participant Payment
     participant Premium
     Agent->>Gate: Pending analysis request
-    Gate->>Payment: Begin same premium request
+    Gate->>Payment: requestPaidAccess(same request, attempt signal)
     Payment->>Premium: Request challenge
     Premium-->>Payment: Payment requirement
     Payment-->>Human: Show terms
     Human->>Payment: Confirm wallet action
     Payment->>Premium: Paid retry
     Premium-->>Payment: Premium success
-    Payment-->>Gate: Terminal success
-    Gate-->>Agent: Canonical result
+    Payment-->>Gate: One PaymentTerminalResult
+    Gate-->>Agent: Settle original invocation once
 ```
 
 ### Cancellation and race handling
 
-registration signal は tool の登録 lifetime だけを所有する。各 execute callback の `options.signal` と provider-unmount signal は attempt-scoped controller へ結合する。最初の abort または終端結果が coordinator の completion latch を閉じ、その後の sponsor response、payment subscription、fetch resolution は attempt ID と latch の両方で破棄する。
+registration signal は tool の登録 lifetime だけを所有する。各 execute callback の `options.signal` と provider-unmount signal は attempt-scoped controller へ結合し、その signal を `requestPaidAccess` へ同一参照で渡す。payment coordinator は success/error/cancelled の最初の一件で自身の Promise を exactly once に settle する。さらに GateCoordinator の completion latch は sponsor 終端、`PaymentTerminalResult`、host abort、user cancel の最初の一件だけで元の WebMCP invocation を settle し、その後の sponsor response、payment terminal result、fetch resolution は attempt ID と latch の両方で破棄する。
 
 ## Requirements Traceability
 
 | Requirement | Summary | Components | Interfaces | Flows |
-|-------------|---------|------------|------------|-------|
 | 1.1–1.5 | 単一 tool、静的 metadata、strict input | WebMCPAdapter | WebMCPTool, RecipeAnalysisInput | Tool registration |
 | 2.1–2.6 | namespace selection、single registration、cleanup/status | ModelContextSelector, WebMCPAdapter, GateProvider | ModelContextPort, WebMCPToolsState | Registration lifecycle |
 | 3.1–3.2 | gate start と pending invocation | GateCoordinator, GateExperience | GateCoordinatorPort, GateSnapshot | 両 access flow |
 | 3.3 | sponsor completion と protected execution | GateCoordinator, ProtectedAnalysisClient | SponsorGatePort, ProtectedAnalysisClientPort | WebMCP sponsor path |
-| 3.4 | payment completion の同一 invocation 返却 | GateCoordinator | PaymentCoordinatorPort | WebMCP payment path |
+| 3.4 | 正規 payment bridge と同一 invocation の exactly-once 終端 | GateCoordinator | PaymentCoordinatorPort, PaymentTerminalResult | WebMCP payment path |
 | 3.5–3.6 | canonical result と upstream responsibility | GateCoordinator, WebMCPAdapter | WebMCPToolResult | 両 access flow |
 | 4.1–4.5 | single-flight、identity、late result isolation | GateCoordinator | GatedAnalysisAttempt, CompletionLatch | Cancellation and race handling |
 | 5.1–5.3 | human/host/unmount abort | GateCoordinator, GateProvider, WebMCPAdapter | AbortSignal | Cancellation and race handling |
@@ -216,14 +215,14 @@ registration signal は tool の登録 lifetime だけを所有する。各 exec
 - active attempt は最大一件。二件目は既存 attempt に触れず `INVALID_TRANSITION` を返す。
 - `PremiumAnalysisRequest` を開始時に一度作り、`nonce` は同じ `requestId` とする。これにより upstream sponsor binding を canonical body の `requestId` へ対応させ、契約 field を追加しない。
 - state 変更は upstream `transitionGate` の event だけで行い、独自 `GateState` を定義しない。
-- sponsor success は `ProtectedAnalysisClient`、payment success は upstream `PaymentCoordinator` の `PremiumAnalysisSuccess` を正規化する。
-- completion latch は成功、失敗、取消の最初の一件だけを Promise へ反映する。
+- sponsor success は `ProtectedAnalysisClient`、payment は upstream `requestPaidAccess` が返す `PaymentTerminalResult` を正規化する。success の `PremiumAnalysisSuccess`、error の canonical `AdGateError`、cancelled の reason 以外を受け取る独自 callback seam は作らない。
+- payment coordinator 自身の exactly-once terminal semantics を前提としつつ、GateCoordinator の completion latch も sponsor/payment/abort/cancel の最初の一件だけを元の WebMCP Promise へ反映する。
 
 **Dependencies**
 
 - Outbound: `transitionGate` — canonical state transition (P0)
 - Outbound: `SponsorGatePort` — sponsor human flow (P0)
-- Outbound: `PaymentCoordinatorPort` — payment human flow (P0)
+- Outbound: `PaymentCoordinatorPort.requestPaidAccess(request, signal)` — payment human flow の正規 bridge (P0)
 - Outbound: `ProtectedAnalysisClientPort` — sponsor-authorized analysis (P0)
 - Inbound: WebMCPAdapter / GatedAnalysisAdapter — invocation (P0)
 
@@ -256,16 +255,33 @@ interface GateCoordinatorPort {
   getSnapshot(): GateSnapshot;
   subscribe(listener: (snapshot: GateSnapshot) => void): () => void;
 }
+
+// Imported verbatim from x402-payment-access; this spec does not own these types.
+type PaymentTerminalResult =
+  | { type: "success"; result: PremiumAnalysisSuccess }
+  | { type: "error"; error: AdGateError }
+  | { type: "cancelled"; reason: "user" | "abort" | "unmounted" };
+
+interface PaymentCoordinatorPort {
+  requestPaidAccess(
+    request: PremiumAnalysisRequest,
+    signal?: AbortSignal,
+  ): Promise<PaymentTerminalResult>;
+  confirm(provider: Eip1193ProviderPort): Promise<void>;
+  cancel(reason: "user" | "abort" | "unmounted"): void;
+  getSnapshot(): PaymentFlowState;
+  subscribe(listener: (state: PaymentFlowState) => void): () => void;
+}
 ```
 
 - Preconditions: input は frontend `RecipeAnalysisInput` schema で parse 済み。
 - Postconditions: returned value は upstream `normalizeWebMCPResult` が生成した JSON-safe union。
-- Invariants: 一 attempt の request、nonce、source は immutable。Promise は一度だけ settle する。
+- Invariants: 一 attempt の request、nonce、source は immutable。`choosePayment()` は active request と attempt signal で `requestPaidAccess` を一度だけ呼び、`confirm` は呼ばない。payment terminal Promise と元の WebMCP invocation はそれぞれ一度だけ settle する。
 
 ##### Event Contract
 
 - Published: `GateSnapshot`。同期 snapshot 後の変化だけを subscriber へ通知する。
-- Subscribed: sponsor result、payment state、user choice、AbortSignal。
+- Subscribed: sponsor result、`PaymentTerminalResult`、payment snapshot、user choice、AbortSignal。payment snapshot は表示専用で、WebMCP invocation の終端判定には使用しない。
 - Ordering: attempt ID が一致する非終端 event のみを受理し、終端後の delivery は破棄する。
 
 ##### State Management
@@ -401,14 +417,14 @@ browser console へ token、recipe body、payment payload、raw error を出力�
 ### Unit Tests
 
 - `GateCoordinator`: valid start から各 canonical transition、二件目 reject、attempt identity/nonce=requestId、terminal reset を検証する (3.1–4.5)。
-- `GateCoordinator`: sponsor success の一回 protected call、payment success の直接 normalizer、各 upstream error mapping を検証する (3.3–3.6, 5.4–5.6)。
-- race harness: abort と成功の競合、unmount、late sponsor/payment/fetch resolution が completion/state を二重変更しないことを検証する (4.4–5.3)。
+- `GateCoordinator`: sponsor success の一回 protected call、`requestPaidAccess` の一回呼出し、`PaymentTerminalResult` の success/error/cancelled mapping を検証する (3.3–3.6, 5.1–5.6)。
+- race harness: abort と成功の競合、unmount、late sponsor/payment/fetch resolution が completion/state または元の WebMCP invocation を二重 settle しないことを検証する (4.4–5.3)。
 - `ProtectedAnalysisClient`: header/body identity、strict success/error parse、abort、token 非露出を検証する (3.3, 4.3, 5.2–5.5)。
 
 ### Integration Tests
 
 - fake sponsor port と protected client で tool Promise が sponsor 完了まで pending、その後 canonical success になることを検証する (3.1–3.5)。
-- fake payment coordinator で challenge/confirm 中は pending、terminal success が同じ invocation を完了することを検証する (3.1–3.5)。
+- fake `PaymentCoordinatorPort` で `requestPaidAccess` が challenge/confirm 中は pending、各 canonical terminal result が同じ invocation を exactly once に完了することを検証する (3.1–3.5, 4.5, 5.1–5.3)。
 - document と navigator の両方、navigator のみ、unsupported、registration rejection、abort cleanup を検証する (2.1–2.6)。
 - execute callback の signal abort が gate、sponsor/payment、fetch へ一回伝播し、tool が safe cancellation で終わることを検証する (5.1–5.3)。
 

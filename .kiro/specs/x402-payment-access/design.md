@@ -2,7 +2,7 @@
 
 ## Overview
 
-本機能は、`POST /api/recipe-analysis` の有料経路を Base Sepolia x402 `exact` に限定し、ブラウザの注入ウォレットによる明示確認から、同一プレミアム要求の支払い付き再試行までを提供する。リソースサービスの payment policy を唯一の設定源とし、frontend は 402 challenge を厳格に検証して表示するため、価格・asset・network を二重管理しない。
+本機能は、`POST /api/recipe-analysis` の canonical server composition を所有し、`Authorization` header がある要求は `SponsorAuthorizer`、ない要求は Base Sepolia x402 `exact` の `PaymentProtection` へ排他的に振り分ける。両経路は同じ premium handler だけへ委譲する。browser では注入ウォレットによる明示確認から同一プレミアム要求の支払い付き再試行までを提供し、WebMCP gate には exactly-once terminal bridge を公開する。リソースサービスの payment policy を唯一の設定源とし、frontend は 402 challenge を厳格に検証して表示するため、価格・asset・network を二重管理しない。
 
 設計は三つの trust boundary を維持する。resource server は challenge と保護を所有し、browser は wallet consent と支払い付き再試行を所有し、facilitator は verify/settle 能力だけを提供する。`adgate-contracts` の `PremiumAnalysisRequest`、`PremiumAnalysisSuccess`、`PaymentAccessEvidence`、`AdGateErrorEnvelope` を変更せず利用し、分析生成、スポンサー、WebMCP lifecycle は吸収しない。
 
@@ -25,7 +25,10 @@
 ### This Spec Owns
 
 - server の `recipe_analysis` x402 payment policy、payment middleware adapter、支払い用 CORS/no-store policy。
+- `POST /api/recipe-analysis` の最終 composition、スポンサー優先の排他的分岐、共有 premium handler への委譲、および fail-closed behavior。
+- publisher の preview router を非 production の明示 opt-in 時だけ mount し、production では常に非公開にする policy。
 - frontend の 402 challenge parser、EIP-1193 wallet adapter、支払い coordinator、確認・状態表示 UI。
+- WebMCP gate が消費する `PaymentCoordinatorPort.requestPaidAccess` と exactly-once success/error/cancel terminal contract。
 - facilitator が Base Sepolia `exact` を扱えるかを判定する readiness probe と、local facilitator の Base-only registration。
 - 支払い付き再試行、idempotency 維持、settlement receipt の `PaymentAccessEvidence` 正規化。
 
@@ -34,14 +37,15 @@
 - `adgate-contracts`: canonical request/result/evidence/error field と gate state/event。
 - `publisher-demo`: `RecipeAnalysisService` と premium handler の分析結果生成。
 - `sponsor-access`: sponsor UI、grant 発行・消費、および ledger。
-- `webmcp-gated-tool`: pending promise、tool registration、abort propagation、二経路の最終 orchestration。
-- `submission-readiness`: production deploy、Origin Trial、録画 fallback、提出検証。
+- `webmcp-gated-tool`: tool registration、二経路の browser orchestration、および本仕様の terminal result から WebMCP result への変換。
+- `submission-readiness`: production deploy、Origin Trial、録画 fallback、preview 非公開を含む提出検証。preview mounting の実装は所有しない。
 
 ### Allowed Dependencies
 
 - frontend と server は各 app の `adgate/contracts.ts` だけから canonical domain types/schema を import する。app 間 import はしない。
 - server payment protection は downstream handler を callback として受け取り、分析ロジックを import しない。
-- frontend payment coordinator は EIP-1193 provider port、payment client port、gate event callback にだけ依存し、WebMCP API を呼ばない。
+- server composition は `sponsor-access` の `SponsorAuthorizer` と `publisher-demo` の `RecipeAnalyzer` adapter を注入で受ける。スポンサー grant domain や分析ロジックを再実装しない。
+- frontend payment coordinator は EIP-1193 provider port と payment client port にだけ依存し、WebMCP API または canonical gate event を呼ばない。下流には typed terminal Promise だけを公開する。
 - x402 2.23 系と viem 2.55 系を既存 workspace version に合わせる。支払い payload の生成・header codec は x402 library を採用し、独自暗号実装を作らない。
 - hosted facilitator URL を既定 runtime input とし、self-hosted facilitator は同じ `/health`、`/supported`、`/verify`、`/settle` contract の optional substitute とする。
 
@@ -52,6 +56,7 @@
 - x402 challenge/payment/settlement codec または package major version の変更。
 - EIP-1193 provider method、wallet chain-switch behavior、facilitator supported response の変更。
 - publisher handler の callback signature、gate event payload、frontend API origin の変更。
+- `SponsorAuthorizer` の header/error contract、preview router export、runtime environment/preview opt-in key の変更。
 
 ## Architecture
 
@@ -69,9 +74,12 @@ graph LR
     PaymentPanel[Payment panel] --> PaymentCoordinator[Payment coordinator]
     PaymentCoordinator --> ChallengeClient[Challenge client]
     PaymentCoordinator --> WalletAdapter[Wallet adapter]
-    ChallengeClient --> PaymentProtection[Payment protection]
+    ChallengeClient --> RouteComposition[Recipe analysis route composition]
+    RouteComposition --> SponsorAuthorizer[Sponsor authorizer]
+    RouteComposition --> PaymentProtection[Payment protection]
     PaymentProtection --> PaymentPolicy[Payment policy]
-    PaymentProtection --> PremiumHandler[Publisher handler]
+    SponsorAuthorizer --> PremiumHandler[Shared publisher handler]
+    PaymentProtection --> PremiumHandler
     PaymentProtection --> FacilitatorClient[Facilitator client]
     FacilitatorClient --> HostedFacilitator[Hosted facilitator]
     LocalFacilitator[Local facilitator] --> BaseSepolia[Base Sepolia]
@@ -118,6 +126,8 @@ apps/
 │   ├── protection.ts                # x402 middleware と downstream handler の adapter
 │   ├── cors.ts                      # allowlist、preflight、exposed headers、no-store
 │   ├── readiness.ts                 # config と facilitator health/supported capability validation
+│   ├── recipeAnalysisRoute.ts        # sponsor-first canonical route と preview mounting policy
+│   ├── recipeAnalysisRoute.test.ts   # 排他的分岐、fail-closed、production preview exclusion
 │   ├── protection.test.ts           # 402、paid retry、idempotency、CORS test
 │   └── readiness.test.ts            # fail-closed startup/capability test
 └── facilitator/src/
@@ -131,7 +141,7 @@ apps/
 - `apps/server/src/config.ts` — `/weather` と multi-network policy を削除し、新しい payment policy の再 export だけに縮小する。
 - `apps/server/src/resourceServer.ts` — Base Sepolia `ExactEvmScheme` だけを登録し、World Chain registration を削除する。
 - `apps/server/src/facilitator.ts` — hosted facilitator URL を必須入力として作る。secret または response body を log しない。
-- `apps/server/src/index.ts` — payment CORS と protection middleware を composition root に登録する。premium handler 本体は別仕様の callback を受ける。
+- `apps/server/src/index.ts` — 本仕様の composition root を一度だけ登録する。`POST /api/recipe-analysis` は sponsor/payment の排他的分岐へ接続し、preview は production で未登録、非 production でも明示 opt-in 時だけ登録する。premium handler と preview router 本体は別仕様から注入する。
 - `apps/server/package.json` — Vitest test command と境界テストの依存を追加する。
 - `apps/facilitator/src/index.ts` — World Chain と `upto` registration を削除し、lifecycle log を機密情報なしへ縮小する。
 - `apps/facilitator/src/viem.ts` — World Chain client と unsafe `any` adapter を除去し、Base Sepolia 型だけを公開する。
@@ -140,6 +150,21 @@ apps/
 `PaymentPanel` は top-level page composition を所有しない。後続 integration が panel を配置する。`protection.ts` は publisher handler の実装を所有せず、test では contract-compliant stub を注入する。
 
 ## System Flows
+
+### Canonical protected route composition
+
+```mermaid
+flowchart TD
+    Request[POST /api/recipe-analysis] --> Header{Authorization header present}
+    Header -->|Yes| Sponsor[SponsorAuthorizer]
+    Header -->|No| Payment[PaymentProtection]
+    Sponsor -->|Valid SponsorAccessEvidence| Handler[Shared premium handler]
+    Sponsor -->|Any error| Closed[Safe error; no payment fallback]
+    Payment -->|Settled PaymentAccessEvidence| Handler
+    Payment -->|Any error or challenge| Closed
+```
+
+`Authorization` header は canonical protected route で sponsor 専用に予約する。値が存在すれば exact `Sponsor <opaque-token>` として `SponsorAuthorizer` が検証し、malformed/unknown/expired/reused/mismatch/dependency failure のどれでも payment branch へ fall through しない。header が存在しない場合だけ `PaymentProtection` を呼ぶ。両 branch は同じ parse 済み `PremiumAnalysisRequest` と、それぞれの canonical `AccessEvidence` subtype を同じ premium handler へ渡し、どの失敗でも handler を呼ばない。
 
 ### Human-confirmed x402 flow
 
@@ -203,6 +228,9 @@ payment readiness は sponsor availability と独立する。hosted facilitator 
 | 6.1, 6.2 | startup policy validation | PaymentPolicy, PaymentReadiness | validatePaymentRuntime | Fail-closed readiness |
 | 6.3, 6.4 | facilitator capability と independent fallback | PaymentReadiness | FacilitatorCapabilityPort | Fail-closed readiness |
 | 6.5 | offline integration validation | ServerPaymentTestHarness, BrowserPaymentTestHarness | mock ports | 両 flow |
+| 7.1, 7.2, 7.3 | sponsor-first 排他的 route と共有 handler | RecipeAnalysisRouteComposition, SponsorAuthorizer, PaymentProtection | PremiumAnalysisHandler | Canonical protected route composition |
+| 7.4, 7.5 | WebMCP 向け exactly-once terminal bridge | PaymentCoordinator | PaymentCoordinatorPort, PaymentTerminalResult | Human-confirmed flow |
+| 7.6 | production preview exclusion と dev opt-in | RecipeAnalysisRouteComposition | PreviewMountPolicy | Canonical protected route composition |
 
 ## Components and Interfaces
 
@@ -210,6 +238,7 @@ payment readiness は sponsor availability と独立する。hosted facilitator 
 |-----------|--------------|--------|--------------|------------------|-----------|
 | PaymentPolicy | Server config | 唯一の Base Sepolia payment offer | 1.1–1.5, 6.1–6.2 | environment P0, ServerContracts P0 | Service, State |
 | ServerPaymentRegistration | Server runtime | resource server の Base exact registration | 1.1–1.3, 6.2–6.3 | x402 server P0 | Service |
+| RecipeAnalysisRouteComposition | Server composition | sponsor-first 分岐、共有 handler、preview mounting policy | 7.1–7.3, 7.6 | SponsorAuthorizer P0, PaymentProtection P0, publisher handler P0 | Service, API |
 | PaymentAttemptRegistry | Server state | prototype の idempotency と同時実行排除 | 3.4–3.5 | ServerContracts P0 | Service, State |
 | PaymentProtection | Server boundary | 402、verification、settlement、authorized delegation | 1.1–1.3, 3.1–3.5, 5.5 | x402 server P0, registry P0, facilitator P0 | Service, API |
 | PaymentHttpPolicy | Server HTTP | CORS、exposed headers、no-store | 5.1–5.5 | Hono P0 | Service, API |
@@ -217,7 +246,7 @@ payment readiness は sponsor availability と独立する。hosted facilitator 
 | ChallengeClient | Browser boundary | 402 challenge の strict parse | 1.4–1.5, 3.1 | FrontendContracts P0 | Service, API |
 | WalletAdapter | Browser wallet | EIP-1193 consent と Base chain enforcement | 2.2–2.5 | injected provider P0, viem P0 | Service |
 | PaymentClient | Browser HTTP | request identity を維持する paid retry | 3.1–3.5 | ChallengeClient P0, x402 payer P0 | Service, API |
-| PaymentCoordinator | Browser state | payment-only lifecycle と duplicate suppression | 2.1–4.5 | WalletAdapter P0, PaymentClient P0 | Service, State |
+| PaymentCoordinator | Browser state | payment-only lifecycle、duplicate suppression、terminal bridge | 2.1–4.5, 7.4–7.5 | WalletAdapter P0, PaymentClient P0 | Service, Event, State |
 | PaymentPanel | Browser UI | 条件、確認、進行、error、receipt の表示 | 1.4, 2.1–2.4, 3.3, 4.1–4.5 | PaymentCoordinator P0 | State |
 | LocalFacilitatorCompatibility | Facilitator runtime | optional local service を Base exact へ限定 | 1.2–1.3, 5.5, 6.2–6.3 | x402 facilitator P0, viem P0 | Service, API |
 | ServerPaymentTestHarness | Server test | 実 chain なしで server 経路を再現 | 6.5 | mock facilitator P0 | Batch |
@@ -267,6 +296,40 @@ type PaymentRuntimeValidation =
 function validatePaymentRuntime(input: unknown): PaymentRuntimeValidation;
 ```
 
+#### RecipeAnalysisRouteComposition
+
+| Field | Detail |
+|-------|--------|
+| Intent | canonical protected route の認可分岐と production-safe mounting を一箇所で確定する |
+| Requirements | 7.1–7.3, 7.6 |
+
+```typescript
+type PremiumAnalysisHandler = (
+  request: PremiumAnalysisRequest,
+  evidence: AccessEvidence,
+) => Promise<PremiumAnalysisSuccess | AdGateErrorEnvelope>;
+
+interface PreviewMountPolicy {
+  readonly environment: "development" | "test" | "production";
+  readonly explicitlyEnabled: boolean;
+}
+
+interface RecipeAnalysisRouteComposition {
+  handleProtected(request: Request): Promise<Response>;
+  shouldMountPreview(policy: PreviewMountPolicy): boolean;
+}
+```
+
+composition は body/header を canonical schema で一度 parse し、`Authorization` header の**存在**で排他的に branch を選ぶ。header があれば `SponsorAuthorizer.authorize(headers, { resourceId: "recipe_analysis", nonce: request.requestId })` だけを呼ぶ。exact Sponsor scheme でない header を含む全 sponsor error は safe `AdGateErrorEnvelope` として返し、`PaymentProtection`、facilitator、premium handler を呼ばない。header がなければ `PaymentProtection` だけを呼び、challenge、verify、settle の失敗から sponsor branch へ fall through しない。成功した二 branch は同一 `PremiumAnalysisHandler` instance へ canonical request と `AccessEvidence` subtype を渡す。
+
+`shouldMountPreview` は `environment === "production"` なら `explicitlyEnabled` にかかわらず常に `false`、それ以外は `explicitlyEnabled === true` の場合だけ `true` を返す。publisher は preview router 本体を所有するが、この composition だけが server app への最終 mount を所有する。`submission-readiness` は公開環境での到達不能を probe するだけで、この判定や route registration を実装しない。
+
+##### API Contract
+
+| Method | Endpoint | Request | Response | Errors |
+|--------|----------|---------|----------|--------|
+| POST | `/api/recipe-analysis` | `PremiumAnalysisRequest` + optional sponsor `Authorization` or `PAYMENT-SIGNATURE`; matching `Idempotency-Key` | `402` challenge or `200 PremiumAnalysisSuccess`; payment branch は settlement headers | `400`, `401`, `402`, `409`, `422`, `503`, `500` `AdGateErrorEnvelope` |
+
 #### PaymentProtection
 
 | Field | Detail |
@@ -284,21 +347,20 @@ function validatePaymentRuntime(input: unknown): PaymentRuntimeValidation;
 **Contracts**: Service [x] / API [x] / Event [ ] / Batch [ ] / State [ ]
 
 ```typescript
-type PremiumHandler = (
+type PaymentAuthorizedHandler = (
   request: PremiumAnalysisRequest,
   evidence: PaymentAccessEvidence,
 ) => Promise<PremiumAnalysisSuccess | AdGateErrorEnvelope>;
 
 interface PaymentProtectionService {
-  handle(request: Request, next: PremiumHandler): Promise<Response>;
+  handle(
+    input: { request: Request; parsedRequest: PremiumAnalysisRequest },
+    next: PaymentAuthorizedHandler,
+  ): Promise<Response>;
 }
 ```
 
-##### API Contract
-
-| Method | Endpoint | Request | Response | Errors |
-|--------|----------|---------|----------|--------|
-| POST | `/api/recipe-analysis` | `PremiumAnalysisRequest` + optional `PAYMENT-SIGNATURE`; matching `Idempotency-Key` | `402` challenge or `200 PremiumAnalysisSuccess`; settlement headers | `400`, `401`, `402`, `409`, `422`, `503`, `500` `AdGateErrorEnvelope` |
+`PaymentProtection` は canonical route の header 不在 branch からだけ呼ばれる内部 HTTP adapter であり、route registration 自体は `RecipeAnalysisRouteComposition` が所有する。composition が一度検証した `parsedRequest` を request identity と handler input に使い、raw `Request` は x402 header codec/middleware 用にだけ渡すため body を二重 parse しない。
 
 #### PaymentAttemptRegistry
 
@@ -411,18 +473,28 @@ type PaymentFlowState =
   | { type: "settling"; attempt: PremiumPaymentAttempt }
   | { type: "succeeded"; result: PremiumAnalysisSuccess; evidence: PaymentAccessEvidence }
   | { type: "failed"; error: AdGateError; outcome: "not_paid" | "uncertain" }
-  | { type: "cancelled" };
+  | { type: "cancelled"; reason: "user" | "abort" | "unmounted" };
 
-interface PaymentCoordinator {
-  begin(request: PremiumAnalysisRequest, signal?: AbortSignal): Promise<void>;
-  confirm(provider: Eip1193ProviderPort, signal?: AbortSignal): Promise<void>;
-  cancel(): void;
+type PaymentTerminalResult =
+  | { type: "success"; result: PremiumAnalysisSuccess }
+  | { type: "error"; error: AdGateError }
+  | { type: "cancelled"; reason: "user" | "abort" | "unmounted" };
+
+interface PaymentCoordinatorPort {
+  requestPaidAccess(
+    request: PremiumAnalysisRequest,
+    signal?: AbortSignal,
+  ): Promise<PaymentTerminalResult>;
+  confirm(provider: Eip1193ProviderPort): Promise<void>;
+  cancel(reason: "user" | "abort" | "unmounted"): void;
   getSnapshot(): PaymentFlowState;
   subscribe(listener: (state: PaymentFlowState) => void): () => void;
 }
 ```
 
-coordinator は payment-only state を所有し、canonical `GateMachine` の state を再定義しない。後続 gate coordinator へは `payment_confirmed`、error、cancel の callback を返す adapter seam を提供する。
+`requestPaidAccess` は challenge 取得を開始し、人間が `confirm` または `cancel` する間も pending のまま、最初の success/error/cancel を `PaymentTerminalResult` として返す。coordinator は一 attempt ごとの completion latch を所有し、Promise を exactly once で settle する。terminal 後に届く wallet、fetch、facilitator、AbortSignal callback は attempt ID と latch で破棄し、handler の再実行、再署名、state 上書きを行わない。渡された signal が既に aborted、または途中で abort された場合は `cancelled: abort` で完了する。active attempt 中の二件目は最初の attempt に触れず `INVALID_TRANSITION` の error terminal を返す。
+
+coordinator は payment-only state を所有し、canonical `GateMachine` の state を再定義しない。`webmcp-gated-tool` の `GateCoordinator` はこの `PaymentCoordinatorPort` をそのまま消費し、terminal union を canonical gate event/WebMCP result へ変換する。
 
 #### PaymentPanel
 
@@ -461,6 +533,7 @@ readiness は process health と分離する。支払い unavailable は `DEPEND
 - `PaymentPolicy` は server-owned immutable value object。runtime 中に変更しない。
 - `PremiumPaymentAttempt` は一回の 402 と同一 request identity を束ねる browser aggregate。signature は永続化しない。
 - `PaymentFlowState` は browser memory 内だけに存在し、terminal state から自動再開しない。
+- `PaymentTerminalResult` は WebMCP gate との immutable bridge value。success/error/cancel の判別 union を一 attempt につき一度だけ返す。
 - `PaymentAccessEvidence` は `adgate-contracts` が所有する canonical value object。payment code は settlement 成功から値を組み立てるだけで schema を再定義しない。
 
 ### Data Contracts & Integration
@@ -480,6 +553,7 @@ readiness は process health と分離する。支払い unavailable は `DEPEND
 - insufficient funds/allowance と verify rejection は `INVALID_EVIDENCE` に正規化し、ユーザー向け message に対処を含める。
 - facilitator timeout/unavailable と settlement 不確定は `DEPENDENCY_UNAVAILABLE`、retryable true。自動再署名は禁止する。
 - idempotency payload mismatch は `IDEMPOTENCY_CONFLICT`、retryable false。
+- `Authorization` header がある要求の malformed/invalid/expired/reused sponsor evidence は sponsor error のまま返し、402 payment challenge へ変換しない。
 - unknown error は `INTERNAL_ERROR` に変換し、raw provider/facilitator response と stack を捨てる。
 
 ### Monitoring
@@ -495,7 +569,8 @@ readiness は process health と分離する。支払い unavailable は `DEPEND
 - PaymentPolicy: Base Sepolia exact の正常値、複数 accepts、World Chain/mainnet、invalid asset/payTo/amount の fail-closed を検証する (1.1–1.5, 6.1–6.2)。
 - ChallengeClient: 一件の server offer だけを受理し、欠落、複数、wrong resource/network/scheme を署名前に拒否する (1.4–1.5)。
 - WalletAdapter: provider absence、connect reject、chain switch、switch reject、switch 後の chain mismatch、署名 reject を mock provider で検証する (2.1–2.5)。
-- PaymentClient/Coordinator: canonical retry identity、in-flight coalescing、cancel、not-paid と uncertain outcome を検証する (3.1, 3.4–4.5)。
+- PaymentClient/Coordinator: canonical retry identity、in-flight coalescing、cancel、not-paid と uncertain outcome、`requestPaidAccess` の exactly-once terminal result と late callback suppression を検証する (3.1, 3.4–4.5, 7.4–7.5)。
+- RecipeAnalysisRouteComposition: sponsor header 有無の排他的分岐、invalid sponsor の no-fallback、両成功の shared handler identity、production preview exclusion と非 production opt-in を検証する (7.1–7.3, 7.6)。
 - PaymentPanel: server-derived details、確認前に provider call がないこと、段階/error/receipt、sponsor return action を検証する (1.4, 2.1–2.4, 3.3, 4.1–4.5)。
 
 ### Integration Tests
@@ -505,6 +580,7 @@ readiness は process health と分離する。支払い unavailable は `DEPEND
 - 同一 idempotency identity の同内容 retry は二重 settle せず、異内容 retry は 409 になることを検証する (3.4–3.5)。
 - allowed/disallowed origin の OPTIONS/POST、exposed x402 headers、全応答 no-store を検証する (5.1–5.5)。
 - readiness probe は Base exact のみを ready とし、失敗時も sponsor availability を変更しないことを検証する (6.1–6.4)。
+- canonical route は sponsor/payment failure で別 branch または premium handler を呼ばず、production preview request を 404 にすることを in-memory app で検証する (7.1–7.3, 7.6)。
 
 ### Security Considerations
 
@@ -512,6 +588,7 @@ readiness は process health と分離する。支払い unavailable は `DEPEND
 - signature、payment payload、provider error data を React state、URL、storage、log、public error に保持しない。
 - allowed origin は suffix/regex ではなく exact match とし、credentials policy を明示する。
 - server は frontend が送る price/network/asset を信用せず、自身の `PaymentPolicy` と x402 verification result だけを authorization に使う。
+- protected route は `Authorization` header を sponsor 専用として fail closed に扱い、認可失敗時の cross-mechanism fallback を禁止する。
 - World Chain/mainnet registration と multi-network fallback を server/local facilitator の双方から除去する。
 
 ### Performance & Scalability

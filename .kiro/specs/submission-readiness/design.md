@@ -122,6 +122,7 @@ graph LR
 │       └── screenshots/README.md          # required frames, filenames, capture metadata
 ├── scripts/release/
 │   ├── contracts.ts                      # typed check result and release report contracts
+│   ├── artifactSchema.ts                 # shared content, artifact, and attribution schemas
 │   ├── validateWorkspace.ts              # deterministic local command orchestration
 │   ├── smokePublic.ts                    # public HTTPS and security boundary probes
 │   ├── validateArtifacts.ts              # English links, duration, license, secret scan gates
@@ -226,8 +227,9 @@ sequenceDiagram
 | FacilitatorProbe | Payment operations | hosted facilitator の health/capability を確認 | 2.4 | facilitator P0 | Service |
 | BrowserE2EHarness | Browser test | sponsor golden path と failure fallback を再現 | 3.1–3.5 | Playwright P0, upstream UI P0 | Batch |
 | ManualCompatibilityMatrix | Release evidence | ChatGPT、Chrome、実 wallet の証跡を統一形式で記録 | 3.3–3.6 | public release P0 | State |
-| ArtifactValidator | Release tooling | docs、links、license、secret markers、duration を検証 | 2.6, 4.1–4.6, 5.1–5.7 | Git P0, artifact files P0 | Service, Batch |
-| SubmissionArtifactBuilder | Release tooling | typed content から repository/submission artifacts を決定的に生成 | 4.1–4.6, 5.1–5.7, 6.1–6.5 | ArtifactValidator P0 | Service, Batch |
+| ArtifactContracts | Release foundation | content、artifact、attribution、manifest の共有 schema | 4.1–4.6, 5.1–5.7 | Zod P0 | Service |
+| SubmissionArtifactBuilder | Release tooling | typed content から repository/submission artifacts を決定的に生成 | 4.1–4.6, 5.1–5.7, 6.1–6.5 | ArtifactContracts P0 | Service, Batch |
+| ArtifactValidator | Release tooling | 生成済み docs、links、license、secret markers、duration を検証 | 2.6, 4.1–4.6, 5.1–5.7 | ArtifactContracts P0, generated artifacts P0 | Service, Batch |
 | ManualEvidenceRecorder | Release tooling | human-supplied browser/wallet evidence を検証・redact | 3.3–3.6, 6.2–6.3 | ManualCompatibilityMatrix P0 | Service |
 | FinalReadinessEvaluator | Release tooling | 自動・手動 evidence を結合し human submission の可否だけを判定 | 5.3–6.5 | ReleaseReporter P0 | Service, Batch |
 
@@ -342,7 +344,7 @@ validator は version-controlled manifest から必須 Markdown/画像と placeh
 
 #### SubmissionArtifactBuilder, ManualEvidenceRecorder, and FinalReadinessEvaluator
 
-`SubmissionArtifactBuilder` は strict schema で検証した `docs/submission/content.json` を唯一の narrative source とし、README の管理 section、architecture/provenance/deployment、Devpost copy、demo shot list、screenshot manifest、checklist を決定的に render する。生成物の直接編集は drift check で失敗させ、同じ value proposition と用語 (`AdGate`, `analyze_recipe`, `recipe_analysis`, `sponsor`, `Base Sepolia x402`) を全素材で維持する。
+`ArtifactContracts` は builder と validator の双方が依存する最下層であり、I/O や生成済み file を import しない。`SubmissionArtifactBuilder` はこの strict schema で検証した `docs/submission/content.json` を唯一の narrative source とし、README の管理 section、architecture/provenance/deployment、Devpost copy、demo shot list、screenshot manifest、checklist を決定的に render する。`ArtifactValidator` は同じ schema と生成済み output を入力に drift、license、rights、secret、duration を検査する。依存方向は `ArtifactContracts -> SubmissionArtifactBuilder -> generated artifacts -> ArtifactValidator` とし、builder は validator を import しない。生成物の直接編集は drift check で失敗させ、同じ value proposition と用語 (`AdGate`, `analyze_recipe`, `recipe_analysis`, `sponsor`, `Base Sepolia x402`) を全素材で維持する。
 
 `ManualEvidenceRecorder` は人が別途実行した ChatGPT、Chrome、wallet check の JSON 入力を schema validation と redaction rule に通し、release SHA、status、safe notes、repository-relative evidence path だけを保存する。この component は browser 操作、wallet 操作、撮影、upload を開始しない。
 

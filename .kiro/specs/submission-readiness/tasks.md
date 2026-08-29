@@ -4,23 +4,26 @@
 - [ ] 1.1 Define the typed release report and artifact manifest contracts
   - Model required, optional, passed, failed, and skipped checks without importing product domain modules.
   - Bind every report and submission manifest to one commit SHA and reject missing or malformed release identities.
+  - Define I/O-free shared schemas for narrative content, generated artifacts, attribution, and screenshot/video manifests so builders and validators depend in one direction.
   - Keep command output, reports, and errors free of environment values, authorization headers, wallet data, and raw response bodies.
   - Done when contract tests serialize a complete report and reject invalid status, duration, URL, and approval values.
   - _Requirements: 1.2, 1.5, 6.2, 6.3, 6.5_
-  - _Boundary: ReleaseReporter_
+  - _Boundary: ReleaseReporter, ArtifactContracts_
 
-- [ ] 1.2 Build the deterministic workspace release command
-  - Add explicit read-only lint, typecheck, build, and test scripts for every workspace application, including production build/start support for the Node resource server.
-  - Run all required checks without a live wallet, mainnet, or external deployment and aggregate their outcomes into the release report.
-  - Return a nonzero status when any required check fails while retaining safe summaries for all checks that could run.
-  - Done when one root command executes the upstream contract, publisher, sponsor, payment, WebMCP, frontend, server, and facilitator validation and writes a secretless report.
+- [ ] 1.2 Build the extensible workspace release command foundation
+  - Discover and run each application's existing read-only lint, typecheck, build, and upstream test scripts without changing application-owned runtime or deployment configuration.
+  - Provide an ordered check registry that later browser and artifact tasks can extend without changing report semantics.
+  - Run the available upstream checks without a live wallet, mainnet, or external deployment and aggregate their outcomes into the release report.
+  - Represent a missing application check as an explicit incomplete prerequisite so the later complete-gate integration cannot silently skip it.
+  - Done when one root command executes every currently available upstream validation, reports missing checks without mutating app scripts, and writes a secretless report.
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
   - _Boundary: WorkspaceReleaseGate, ReleaseReporter_
 
-- [ ] 1.3 Add the frozen-candidate CI quality gate
+- [ ] 1.3 Add the baseline frozen-candidate CI workflow
   - Pin the documented Node and pnpm versions, install from the lockfile, and invoke the same release command used locally.
   - Preserve browser traces and safe test reports only on failure; do not upload environment files or raw payment data.
-  - Done when a pull request and manual workflow run produce the same pass/fail decision and identify the tested commit SHA.
+  - Leave an explicit integration seam for the browser and artifact checks that are added later in this plan.
+  - Done when a pull request and manual workflow run produce the same baseline pass/fail decision and identify the tested commit SHA.
   - _Requirements: 1.1, 1.3, 1.5, 6.1, 6.2, 6.3_
   - _Boundary: ReleaseWorkflow_
 
@@ -71,7 +74,7 @@
   - _Boundary: SponsorGoldenPathE2E_
   - _Depends: 3.1_
 
-- [ ] 3.3 (P) Verify payment consent and safe degraded behavior
+- [ ] 3.3 Verify payment consent and safe degraded behavior
   - Use the upstream payment test ports to assert server-derived Base Sepolia terms, no wallet call before human confirmation, and canonical receipt display after a successful test settlement.
   - Exercise missing provider, rejected confirmation, unavailable facilitator, and wrong network while preserving the sponsor action.
   - Do not use a browser private key or send a real transaction in automated tests.
@@ -80,7 +83,7 @@
   - _Boundary: PaymentFallbackE2E_
   - _Depends: 3.1_
 
-- [ ] 3.4 (P) Verify cancellation, expiry, duplication, and late-result isolation
+- [ ] 3.4 Verify cancellation, expiry, duplication, and late-result isolation
   - Cover user cancel, host abort, page teardown, duplicate tool/UI start, expired or reused sponsor access, and delayed completion races.
   - Assert a single safe terminal result, no stale page update, and no second premium execution.
   - Done when all failure cases terminate deterministically without exposing token, provider response, stack, or configuration data.
@@ -89,7 +92,7 @@
   - _Depends: 3.1_
 
 - [ ] 4. Public documentation and provenance
-- [ ] 4.1 (P) Build the deterministic English project-documentation generator
+- [ ] 4.1 Build the deterministic English project-documentation generator
   - Define a strict content manifest for the problem, solution, WebMCP role, access paths, setup, tests, deployment, security constraints, live links, and app-specific runbooks.
   - Render the root and app guides from the manifest, preserving public Origin Trial metadata, testnet-only constraints, and prototype-ledger limits as validated facts.
   - Fail the drift check when generated sections are stale or still contain starter title, todo copy, or unsupported product claims.
@@ -98,7 +101,7 @@
   - _Boundary: SubmissionArtifactBuilder_
   - _Depends: 2.1, 2.2_
 
-- [ ] 4.2 (P) Extend the artifact generator with architecture, deployment, and provenance outputs
+- [ ] 4.2 Extend the artifact generator with architecture, deployment, and provenance outputs
   - Encode browser, resource server, hosted facilitator, sponsor ledger, and protected analysis trust boundaries as structured source data without claiming production durability.
   - Encode the pre-existing Cloudflare WebMCP todo starter and x402/facilitator baseline separately from hackathon-period AdGate work.
   - Generate deploy order, Origin Trial enrollment, public smoke, preview exclusion, rollback triggers, and upstream blocker ownership from the same source.
@@ -110,14 +113,14 @@
 - [ ] 4.3 Add artifact, license, and secret validation
   - Verify required English sections and files, MIT license consistency in package metadata, environment example completeness, and absence of tracked runtime environment files.
   - Scan only known private-key, seed, token, and credential patterns; exclude public Origin Trial metadata from secret classification.
-  - Validate final URL placeholders, release SHA references, screenshot manifest entries, and video duration before sign-off.
-  - Done when intentionally seeded license, placeholder, tracked-env, secret-marker, and 180-second boundary fixtures each fail with an actionable message.
+  - Validate final URL placeholders, release SHA references, screenshot manifest entries, video duration, and original-work or reusable-license attribution for every public asset.
+  - Done when intentionally seeded license, attribution, placeholder, tracked-env, secret-marker, and 180-second boundary fixtures each fail with an actionable message.
   - _Requirements: 2.6, 4.1, 4.2, 4.4, 4.5, 4.6, 5.3, 5.4, 5.5, 5.7, 6.3_
   - _Boundary: ArtifactValidator_
   - _Depends: 4.1, 4.2_
 
 - [ ] 5. Submission evidence and final sign-off
-- [ ] 5.1 (P) Generate the English Devpost draft and judging evidence map
+- [ ] 5.1 Generate the English Devpost draft and judging evidence map
   - Extend the typed content manifest with title, tagline, problem, solution, WebMCP use, human-in-the-loop flow, technology, challenges, accomplishments, and next steps.
   - Render each of the four equal judging criteria with a machine-linked live behavior, repository artifact, screenshot, or video timestamp.
   - Represent live, repository, video, and release identity as validated finalization fields rather than free-form placeholders.
@@ -126,29 +129,47 @@
   - _Boundary: SubmissionArtifactBuilder_
   - _Depends: 4.1, 4.2_
 
-- [ ] 5.2 (P) Generate and validate the timed demo and screenshot manifests
+- [ ] 5.2 Generate and validate the timed demo and screenshot manifests
   - Model English narration segments and shots for value, WebMCP invocation, pending choice, sponsor success, Base Sepolia receipt, and shared result with explicit durations.
-  - Model screenshot filenames, captions, redaction rules, public URL, capture time, release SHA, and the same-release paid-path fallback.
+  - Model screenshot filenames, captions, redaction rules, public URL, capture time, release SHA, asset origin/license attribution, and the same-release paid-path fallback.
   - Render the demo script and screenshot instructions and reject aggregate duration at or above 180 seconds.
   - Done when boundary tests cover 179/180 seconds and every generated shot has a purpose, capture condition, evidence field, and fallback.
   - _Requirements: 5.2, 5.4, 5.5, 5.6, 5.7_
   - _Boundary: SubmissionArtifactBuilder_
   - _Depends: 3.2, 3.3_
 
-- [ ] 5.3 Implement the manual-evidence recorder and release-checklist evaluator
+- [ ] 5.3 Implement the manual-evidence recorder
   - Accept human-supplied ChatGPT, Chrome, and Base Sepolia wallet check records for one public release candidate without initiating those interactions.
   - Validate and redact evidence paths and pass/fail/blocked status so wallet secrets, signatures, tokens, full addresses, and browser profile data cannot enter reports.
-  - Evaluate feature freeze, internal 2026-09-04 03:00 JST deadline, official 05:00 JST deadline, and owner-based blocker revalidation as typed checklist rules.
-  - Done when fixtures prove every mandatory row requires one release SHA and a blocked mandatory item can never produce a ready verdict.
-  - _Requirements: 3.3, 3.4, 3.5, 3.6, 6.1, 6.2, 6.3, 6.4_
+  - Reject evidence with a different release SHA, unsafe absolute path, credential marker, or unredacted wallet address.
+  - Done when valid evidence is normalized to safe repository-relative records and unsafe fixtures are rejected without echoing their values.
+  - _Requirements: 3.3, 3.4, 3.5, 3.6, 6.2, 6.3_
   - _Boundary: ManualEvidenceRecorder_
   - _Depends: 2.3, 3.2, 3.3, 3.4, 4.3_
 
-- [ ] 5.4 Implement the final readiness evaluator without external side effects
+- [ ] 5.4 Implement typed checklist and rights-readiness evaluation
+  - Evaluate feature freeze, internal 2026-09-04 03:00 JST deadline, official 05:00 JST deadline, owner-based blocker revalidation, and release-identity continuity as typed rules.
+  - Consume the artifact validator's rights result and prevent an incomplete or incompatible attribution result from being promoted to ready.
+  - Keep upload, publication, and submission rows human-only and default them to pending approval.
+  - Done when fixtures prove a blocked mandatory row, missed deadline, SHA mismatch, or absent asset attribution can never produce a ready verdict.
+  - _Requirements: 5.5, 5.7, 6.1, 6.2, 6.3, 6.4, 6.5_
+  - _Boundary: FinalReadinessEvaluator_
+  - _Depends: 4.3, 5.1, 5.2, 5.3_
+
+- [ ] 5.5 Integrate the complete local release gate and CI workflow
+  - Register the browser E2E suites and generated-artifact validation with the foundation command after their prerequisites exist.
+  - Update CI to run the same complete local gate and retain only safe failure traces and reports.
+  - Keep public smoke and manual evidence as explicit post-deploy stages rather than nondeterministic CI prerequisites.
+  - Done when the aggregate local command and CI both fail on an injected E2E or artifact error and pass the full upstream, browser, and artifact suite on one commit.
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
+  - _Boundary: WorkspaceReleaseGate, ReleaseWorkflow_
+  - _Depends: 3.2, 3.3, 3.4, 4.3, 5.1, 5.2_
+
+- [ ] 5.6 Implement the final readiness evaluator without external side effects
   - Compose workspace, public smoke, artifact, URL visibility, and validated manual-evidence results for one release identity.
   - Require live app, public repository, MIT license, public video below three minutes, screenshot evidence, English copy, and matching commit before returning ready-for-human-submission.
   - Model YouTube upload, repository visibility change, and Devpost submission as human-only checklist inputs that no command can execute or approve.
   - Done when integration fixtures distinguish ready, failed, missing-evidence, SHA-mismatch, and `pending-human-approval` outcomes without network mutation.
   - _Requirements: 1.1, 1.5, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 5.3, 5.4, 5.5, 5.6, 5.7, 6.3, 6.4, 6.5_
   - _Boundary: FinalReadinessEvaluator_
-  - _Depends: 5.1, 5.2, 5.3_
+  - _Depends: 5.3, 5.4, 5.5_

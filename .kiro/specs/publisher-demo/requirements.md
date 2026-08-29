@@ -2,13 +2,13 @@
 
 ## Introduction
 
-現在の todo リファレンス体験を、単一のレシピとプレミアム分析の価値を短時間で理解できる publisher demo に置き換える。閲覧者はレシピの内容を確認し、`recipe_analysis` の共有契約に準拠した栄養・代替提案を直接実行して、同じ入力から再現可能な結果を得られる。本仕様では monetization を導入せず、後続の gate 統合前にも publisher と分析処理を独立して検証可能にする。
+現在の todo リファレンス体験を、単一のレシピとプレミアム分析の価値を短時間で理解できる publisher demo に置き換える。閲覧者はレシピの内容を確認し、`recipe_analysis` の共有契約に準拠した栄養・代替提案を直接実行して、同じ入力から再現可能な結果を得られる。本仕様では monetization を導入せず、後続の gate 統合前に限って publisher と分析処理を独立して検証できる development preview seam を提供する。
 
 ## Boundary Context
 
-- **In scope**: 単一レシピの publisher 体験、レシピ詳細、分析を開始する可視操作、決定的なプレミアム分析、結果・読込中・失敗状態、レスポンシブ表示とアクセシビリティ。
-- **Out of scope**: sponsor 閲覧、支払い、wallet、アクセス証跡、アクセス制御、WebMCP tool 登録、複数レシピ検索、CMS、および生成 AI。
-- **Adjacent expectations**: 分析の入出力と公開エラーは `adgate-contracts` の `recipe_analysis` 契約に従う。後続の gate と WebMCP 機能は、本仕様の分析結果を変更せず同じ分析処理へ到達できることを期待する。
+- **In scope**: 単一レシピの publisher 体験、レシピ詳細、分析を開始する可視操作、決定的なプレミアム分析、結果・読込中・失敗状態、レスポンシブ表示とアクセシビリティ、および独立して組み込み・省略できる development-only preview route seam。
+- **Out of scope**: sponsor 閲覧、支払い、wallet、アクセス証跡、アクセス制御、WebMCP tool 登録、複数レシピ検索、CMS、生成 AI、および production runtime で preview route を mount するかを決める policy と release verification。
+- **Adjacent expectations**: 分析の入出力と公開エラーは `adgate-contracts` の `recipe_analysis` 契約に従う。後続の gate と WebMCP 機能は、本仕様の分析結果を変更せず同じ分析処理へ到達できることを期待する。`x402-payment-access` は本仕様が公開する integration seam を利用し、production では un-gated preview route を条件付きで mount しない、または composition から除去する責務を持つ。
 
 ## Requirements
 
@@ -46,6 +46,7 @@
 3. When 分析が成功する, the Publisher Demo shall 要約、栄養上の所見、改善提案、および免責情報をそれぞれ識別可能に表示する。
 4. When 閲覧者が同じレシピを変更せずに再度分析する, the Publisher Demo shall 内容が同一の分析結果を表示する。
 5. If 分析要求へ未知または許容範囲外のレシピ値が渡される, the Premium Analysis Service shall 分析を実行せず `INVALID_INPUT` として応答する。
+6. The Publisher Demo shall un-gated preview handler を独立して組み込みまたは省略できる development-only integration seam として公開し、後続の `x402-payment-access` が analyzer を変更せず production の mount policy を所有できるようにする。
 
 ### Requirement 4: 決定的で信頼できる分析内容
 

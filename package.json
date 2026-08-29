@@ -8,7 +8,10 @@
     "format": "pnpm exec biome format --write .",
     "check": "pnpm exec biome check --write .",
     "jscpd": "jscpd ./apps ./packages",
-    "knip": "knip"
+    "knip": "knip",
+    "facilitator": "pnpm --filter facilitator",
+    "x402server": "pnpm --filter x402server",
+    "frontend": "pnpm --filter frontend"
   },
   "keywords": [],
   "author": "",

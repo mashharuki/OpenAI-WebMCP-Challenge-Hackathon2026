@@ -1,0 +1,22 @@
+{
+  "feature_name": "adgate-contracts",
+  "created_at": "2026-08-29T15:25:50Z",
+  "updated_at": "2026-08-29T15:48:00Z",
+  "language": "ja",
+  "phase": "tasks-generated",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": true
+}

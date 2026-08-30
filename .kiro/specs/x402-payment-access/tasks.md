@@ -87,8 +87,8 @@
   - _Boundary: RecipeAnalysisRouteComposition_
   - _Depends: 2.2, 2.3_
 
-- [ ] 3. Browser の支払い boundary を実装する
-- [ ] 3.1 (P) 402 challenge client を実装する
+- [x] 3. Browser の支払い boundary を実装する
+- [x] 3.1 (P) 402 challenge client を実装する
   - premium request の初回応答を strict に分類し、server が提示する単一 offer だけを画面用の安全な値へ正規化する。
   - 欠落、複数 offer、wrong resource/network/scheme/asset、invalid amount/address を署名前に拒否する。
   - 完了時、server-derived price/network/asset を取得でき、不正 challenge は安全な error になる。
@@ -96,7 +96,7 @@
   - _Boundary: ChallengeClient_
   - _Depends: 1.5_
 
-- [ ] 3.2 Paid retry identity を維持する payment client を実装する
+- [x] 3.2 Paid retry identity を維持する payment client を実装する
   - settlement headerをstrict parseし、analysis resultとnormalized receiptを一つのterminal successとして返す。
   - paid retry では元 request ID、idempotency key、canonical body を維持し、同一 attempt の concurrent retry を一つへまとめる。
   - 不正 challenge または uncertain settlement では新しい payment header を自動生成しない。
@@ -105,7 +105,7 @@
   - _Boundary: PaymentClient_
   - _Depends: 1.5, 3.1_
 
-- [ ] 3.3 (P) 注入ウォレット adapter と Base Sepolia enforcement を実装する
+- [x] 3.3 (P) 注入ウォレット adapter と Base Sepolia enforcement を実装する
   - provider の存在、account 接続、chain ID、必要な network switch、switch 後の再確認を typed port 越しに扱う。
   - connect、switch、signature は caller の明示確認後だけ開始し、他 chain のまま署名しない。
   - user reject、provider absence、insufficient funds/allowance、unknown provider error を秘密情報なしの公開 error へ正規化する。
@@ -114,7 +114,7 @@
   - _Boundary: WalletAdapter_
   - _Depends: 1.5_
 
-- [ ] 3.4 支払い coordinator と terminal semantics を実装する
+- [x] 3.4 支払い coordinator と terminal semantics を実装する
   - review、wallet 接続、署名待ち、settling、success、not-paid failure、uncertain failure、cancel を一試行の状態として進める。
   - duplicate confirm を coalesce し、決済前 cancel では retry/handler を実行しない。
   - uncertain settlement では新しい署名を自動生成せず、同じ identity の安全な retry 情報を保持する。

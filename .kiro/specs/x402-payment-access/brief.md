@@ -14,7 +14,7 @@ A human can explicitly connect an injected wallet, review a small Base Sepolia t
 
 ## Approach
 
-Retarget the existing x402 server configuration to the premium resource, delete the World Chain payment option, and add an EIP-1193/viem-compatible browser payer adapter. Base Sepolia (`eip155:84532`) is the only accepted network, using the x402 `exact` scheme and testnet USDC. Use the hosted testnet facilitator as the reliable deployment default, surface prerequisites before signing, and keep a clearly labeled recorded fallback for the video if testnet infrastructure is unavailable.
+Retarget the existing x402 server configuration to the premium resource, delete the World Chain payment option, and add an EIP-1193/viem-compatible browser payer adapter. Base Sepolia (`eip155:84532`) is the only accepted network, using the x402 `exact` scheme and 0.01 testnet USDC. Use a hosted testnet facilitator only after its health, contract version, and Base exact capability are verified. Otherwise disable public payment and use a clearly labeled same-release local recording while keeping sponsor access live.
 
 ## Scope
 

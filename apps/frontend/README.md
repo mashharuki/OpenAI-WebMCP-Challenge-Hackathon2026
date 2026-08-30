@@ -105,13 +105,12 @@ Use declarative tools for existing semantic forms. Use imperative tools for read
 
 ## Persistence
 
-The default uses `localStorage` so it runs without configuration. See [Persist todos with Cloudflare D1](./docs/d1.md) to make todos durable across browsers and devices.
+The current starter uses `localStorage` only as reference behavior. The approved AdGate design replaces the Todo experience rather than extending its persistence model.
 
 ## Project structure
 
 ```text
 .mcp.json              Coding-agent connection for WebMCP tools
-docs/d1.md             Optional D1 persistence guide
 src/App.tsx            Todo UI and declarative WebMCP form
 src/schemas.ts         Zod Mini contracts and generated JSON Schemas
 src/useTodos.ts        Shared localStorage-backed todo actions

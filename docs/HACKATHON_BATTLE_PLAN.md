@@ -61,19 +61,25 @@ GateCoordinator.requestAccess(resource, nonce) ----> React gate modal
 
 ### MVP
 
-1. One polished recipe page and one deterministic premium analysis.
+1. One polished `Open Table Journal` recipe page for `Roasted Chickpea Quinoa Bowl` and one deterministic premium analysis.
 2. One shared gate modal with sponsor and x402 choices.
 3. One WebMCP tool whose execution waits for and resumes after the human decision.
+
+The tool accepts only the canonical recipe ID plus optional dietary goals. Recipe title, ingredients, and instructions come from the publisher-owned canonical recipe rather than agent-supplied content.
 
 ### Deliberate product decisions
 
 - React/Vite remains; migrating to Next.js creates schedule risk without improving judging value.
 - Base Sepolia (`eip155:84532`) only, using x402 `exact` and testnet USDC. World Chain and mainnet support are removed from the MVP because multi-network branching adds failure modes without improving the judging story.
 - Injected wallet only; browser private keys are forbidden.
-- Cloudflare hosts the frontend with an Origin Trial token; a Node host such as Render runs the Hono resource server with strict x402 CORS. The hosted testnet facilitator is the reliable demo default.
+- Cloudflare hosts the frontend with an Origin Trial token; a single-instance Node host such as Render runs the Hono resource server with strict x402 CORS. A hosted testnet facilitator is the preferred candidate pending capability verification; if it is not verified, payment is disabled publicly and demonstrated with a same-release local recording.
 - The repository's self-hosted facilitator remains optional because exposing a gas-funded signer safely would require authentication, rate limits, rail allowlists, and operational hardening beyond the MVP.
 - Sponsor verification is explicitly a prototype capability, not claimed as fraud-proof ad measurement.
+- The sponsor path uses a server-issued, resource-bound 90-second session. The browser counts eight visible seconds and pauses while the page is hidden; the server independently enforces eight seconds of wall-clock time before issuing a single-use 60-second grant. This proves elapsed session time, not human attention.
+- Sponsor sessions, grants, and successful-result replay are process-local. The public resource server runs as one instance with autoscaling disabled; a restart invalidates active attempts and requires a new sponsor attempt.
+- Successful protected results may be replayed for five minutes only when the idempotency key, request digest, and access-evidence fingerprint all match. A reused key with different content is rejected.
 - No LLM is needed in the backend; deterministic output keeps the demo fast, repeatable, and inexpensive.
+- `Open Table Weekly` is a fictional self-sponsor rendered with repository-owned CSS/illustration, with no external tracking or link.
 
 ## 4. Timeline
 
@@ -121,6 +127,7 @@ Mention `document.modelContext`, schema validation, abort handling, Base Sepolia
 | Chrome deployment not WebMCP-enabled | Enroll the production origin and verify the Origin Trial token before freeze | Judge via ChatGPT browser and show flag-enabled Chrome backup |
 | Gate promise hangs | Abort propagation, timeout, single-active-request invariant | Cancel visibly and restart the golden path |
 | Sponsor grant replay | Resource/nonce binding, short TTL, one-time consumption | Fall back to in-memory demo grant with limitation disclosed |
+| Resource response lost after grant consumption | Five-minute same-identity success replay | Start a new sponsor attempt after replay expiry or server restart |
 | CORS/header mismatch | Explicitly expose x402 headers and run deployed-origin smoke tests | Same-origin proxy only if already validated before freeze |
 | Scope creep | One recipe, one tool, two access paths | Cut dashboard, analytics and SDK packaging first |
 | Existing-project eligibility ambiguity | Timestamped commits and README section separating prior reference work | Provide a concise before/after file list in Devpost text |
@@ -132,5 +139,7 @@ Mention `document.modelContext`, schema validation, abort handling, Base Sepolia
 - Paid path never exposes a private key and clearly says testnet.
 - Tool input rejects unknown/oversized values; external content is marked untrusted.
 - Cancellation, duplicate invocation, grant expiry, declined payment, server outage, and unsupported browser have visible outcomes.
+- A second invocation is rejected with a retryable `INVALID_TRANSITION`; the visible CTA is disabled and both page and tool explain that another analysis is awaiting approval.
+- The live server is a single non-autoscaling instance and is not redeployed during recording or judging.
 - Public repository includes source, setup, environment examples, license visibility, architecture, and hackathon-period provenance.
 - Public YouTube video is under three minutes, has English audio, and contains no unlicensed music/assets.

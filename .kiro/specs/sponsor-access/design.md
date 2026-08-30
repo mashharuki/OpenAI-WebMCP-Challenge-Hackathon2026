@@ -2,7 +2,7 @@
 
 ## Overview
 
-本機能は、`recipe_analysis` を要求した人へウォレット不要のスポンサー経路を提示し、可視時間の完了後に短期・一回限りのスポンサーアクセスを発行する。React 側はスポンサー表示と試行単位の進行を所有し、Hono 側は発行済み capability の状態と原子的な一回消費を所有する。
+本機能は、`recipe_analysis` を要求した人へウォレット不要のスポンサー経路を提示する。Hono側はresource/request/sponsorへbindingした90秒のsessionと開始時刻を発行し、React側は8 visible secondsを数え、serverが最低8秒のwall-clockを再検証した後だけ60秒・一回限りのスポンサーアクセスを発行する。
 
 既存 `adgate-contracts` の `GateState`、`SponsorAccessEvidence`、`AdGateError`、HTTP header を変更せず利用する。スポンサー完了は証跡を下流へ返す地点までを本仕様の責務とし、共有 pending promise、WebMCP 登録、プレミアム分析実行の composition は後続仕様へ残す。
 
@@ -23,7 +23,7 @@
 ### This Spec Owns
 
 - `SponsorFlowController` と `SponsorModal` が担う表示、可視 countdown、取消、成功 callback。
-- `/api/sponsor-grants` の発行処理と、opaque token の生成・ハッシュ化・TTL 管理。
+- `/api/sponsor-sessions` の開始処理、server-owned sponsor metadata、および `/api/sponsor-grants` の発行処理とopaque tokenの生成・ハッシュ化・TTL管理。
 - sponsor token の resource・nonce 検証と単一 process 内の原子的な一回消費。
 - スポンサー固有の unit/integration/UI tests。
 
@@ -103,7 +103,7 @@ apps/
 │   ├── sponsorFlow.test.ts          # clock, visibility, cancellation tests
 │   └── SponsorModal.test.tsx        # keyboard, focus, countdown UI tests
 └── server/src/adgate/sponsor/
-    ├── sponsorGrantLedger.ts        # process-local atomic state transitions
+    ├── sponsorGrantLedger.ts        # process-local session/grant atomic transitions
     ├── sponsorGrantService.ts       # issue, authorize, consume domain policy
     ├── sponsorRoutes.ts             # POST grant Hono sub-application
     ├── sponsorAuthorization.ts      # Authorization header adapter
@@ -129,12 +129,15 @@ sequenceDiagram
     participant Service
     participant Ledger
     Human->>Modal: Start sponsor view
-    Modal->>Flow: Start attempt
+    Modal->>Client: Start server session
+    Client->>Route: POST /api/sponsor-sessions
+    Route-->>Client: sponsor metadata, requiredMs=8000, session credential, expiry=90s
+    Client-->>Flow: Start attempt from server session
     Flow->>Flow: Count visible elapsed time
     Human->>Modal: Continue
-    Modal->>Client: Issue grant
-    Client->>Route: Grant request
-    Route->>Service: Validate completion
+    Modal->>Client: Issue grant with session credential
+    Client->>Route: POST /api/sponsor-grants
+    Route->>Service: Validate binding, single use, and server elapsed >= 8s
     Service->>Ledger: Create capability
     Ledger-->>Client: Token and evidence
     Client-->>Flow: Sponsor evidence
@@ -157,7 +160,7 @@ sequenceDiagram
     end
 ```
 
-可視時間は wall-clock tick 数ではなく、visible 区間の単調増加差分を加算する。server は client の elapsed time を権威とせず、発行要求に含まれる completion challenge を一度だけ受理する。これは hackathon demo の整合性であり、fraud proof ではない。
+可視時間はwall-clock tick数ではなくvisible区間の単調増加差分を加算し、hidden中は停止する。serverはclientのelapsed値を信用せず、自身が発行したsessionの開始時刻から8秒以上経過したことを検証する。ただしserverが証明するのは経過時間だけであり、人がcreativeを注視したことではない。本機能はviewability/fraud-proof広告計測を主張しない。
 
 ## Requirements Traceability
 
@@ -212,7 +215,7 @@ interface SponsorClock {
 }
 
 type SponsorViewState =
-  | { type: "ready"; attemptId: string; nonce: string; requiredMs: number }
+  | { type: "ready"; attemptId: string; nonce: string; session: SponsorSessionStartResponse }
   | { type: "viewing"; attemptId: string; nonce: string; visibleElapsedMs: number; visibleSince: number | null }
   | { type: "issuing"; attemptId: string; nonce: string }
   | { type: "completed"; attemptId: string; evidence: SponsorAccessEvidence; token: string }
@@ -251,11 +254,15 @@ interface SponsorGatePort {
 
 ```typescript
 interface SponsorGrantIssueRequest {
-  attemptId: string;
-  resourceId: "recipe_analysis";
-  nonce: string;
-  sponsorId: string;
-  completionId: string;
+  sessionCredential: string;
+}
+
+interface SponsorSessionStartResponse {
+  ok: true;
+  sessionCredential: string;
+  sponsor: { id: "open-table-weekly"; name: "Open Table Weekly"; creativeKey: "weekly-static-v1" };
+  requiredMs: 8000;
+  expiresAt: string;
 }
 
 interface SponsorGrantIssueResponse {
@@ -265,6 +272,7 @@ interface SponsorGrantIssueResponse {
 }
 
 interface SponsorGrantClient {
+  start(input: { attemptId: string; resourceId: "recipe_analysis"; nonce: string }, signal: AbortSignal): Promise<SponsorSessionStartResponse>;
   issue(input: SponsorGrantIssueRequest, signal: AbortSignal): Promise<SponsorFlowResult>;
 }
 ```
@@ -277,6 +285,7 @@ Client は `POST /api/sponsor-grants` の JSON と共通 error envelope を stri
 
 ```typescript
 interface SponsorGrantService {
+  startSession(input: { attemptId: string; resourceId: "recipe_analysis"; nonce: string }, now: string): Promise<Result<SponsorSessionStartResponse, AdGateError>>;
   issue(input: SponsorGrantIssueRequest): Promise<Result<SponsorGrantIssueResponse, AdGateError>>;
   consume(input: SponsorConsumeRequest): Promise<Result<SponsorAccessEvidence, AdGateError>>;
 }
@@ -290,7 +299,9 @@ interface SponsorConsumeRequest {
 type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
 ```
 
-- issue は `(attemptId, nonce, sponsorId, completionId)` の digest を idempotency key とし、同じ内容へ同じ未失効 grant を返す。
+- `startSession`はserver-owned `Open Table Weekly` metadataを返し、session credentialをresource/request/sponsorへbindingする。sessionは90秒で失効し一回だけgrant発行に利用できる。
+- `issue`はclient-supplied sponsor/completion IDを受け取らず、session credential、server clock、およびissue identityだけを検証する。初回成功時にsessionを原子的にconsumeする。
+- 同じcredential digestとissue identityによるgrant期限内のretryはprocess-local issuance-response cacheから同じtoken/evidenceを返す。raw tokenはこのcache以外へ保持せず、grant expiryで必ず削除する。
 - consume は record の比較と `available -> consumed` 遷移を同一同期 critical section で行う。
 - token 原文は issue response のみへ返し、ledger には SHA-256 digest を key として保存する。
 
@@ -306,14 +317,29 @@ type SponsorGrantRecord = {
   consumedAt?: string;
 };
 
+type SponsorSessionRecord = {
+  credentialDigest: string;
+  attemptId: string;
+  resourceId: "recipe_analysis";
+  nonce: string;
+  sponsorId: "open-table-weekly";
+  startedAt: string;
+  expiresAt: string;
+  status: "available" | "consumed";
+};
+
 interface SponsorGrantLedger {
+  createSession(input: SponsorSessionRecord): Result<SponsorSessionRecord, AdGateError>;
+  consumeSession(input: { credentialDigest: string; issueDigest: string; now: string }): Result<SponsorSessionRecord, AdGateError>;
+  findIssuedResponse(input: { credentialDigest: string; issueDigest: string; now: string }): SponsorGrantIssueResponse | undefined;
+  cacheIssuedResponse(input: { credentialDigest: string; issueDigest: string; response: SponsorGrantIssueResponse; expiresAt: string }): void;
   issue(input: SponsorGrantRecord): Result<SponsorGrantRecord, AdGateError>;
   findByIssueDigest(issueDigest: string): SponsorGrantRecord | undefined;
   consume(input: SponsorConsumeRequest, now: string): Result<SponsorAccessEvidence, AdGateError>;
 }
 ```
 
-`Map` operation を event-loop 内の同期区間で完了し、await を挟まない。expired record は認証時に拒否し、bounded cleanup で除去する。server restart 後の token は `INVALID_EVIDENCE` となる。
+`Map` operationをevent-loop内の同期区間で完了し、awaitを挟まない。session lookup、8秒経過確認、session consume、grant作成、issuance-response cache登録を一つの同期critical sectionで行う。expired record/cacheはbounded cleanupで除去し、server restart後のcredential/tokenは`INVALID_EVIDENCE`となる。
 
 ### Server Adapters
 
@@ -321,9 +347,10 @@ interface SponsorGrantLedger {
 
 | Method | Endpoint | Request | Response | Errors |
 |--------|----------|---------|----------|--------|
+| POST | `/api/sponsor-sessions` | attempt/resource/nonce | `201 SponsorSessionStartResponse` | `400`, `409`, `503`, `500` canonical envelope |
 | POST | `/api/sponsor-grants` | `SponsorGrantIssueRequest` | `201 SponsorGrantIssueResponse` | `400 INVALID_INPUT`, `409 IDEMPOTENCY_CONFLICT`, `503 DEPENDENCY_UNAVAILABLE`, `500 INTERNAL_ERROR` |
 
-route は unknown JSON を server schema で parse し、公開応答から token 以外の内部値、stack、raw exception を除外する。同一 logical issue の再送は `200` で同じ response を返し、新規発行は `201` とする。
+routeはunknown JSONをserver schemaでparseし、公開応答からcredential/token以外の内部値、stack、raw exceptionを除外する。同一logical issueのgrant期限内retryは`200`でcached responseを返し、新規発行は`201`とする。
 
 #### SponsorAuthorizer
 
@@ -349,8 +376,8 @@ interface SponsorAuthorizer {
 ### Data Contracts & Integration
 
 - HTTP は JSON。request/response object は strict schema で unknown key と上限超過を拒否する。
-- token は 256-bit 以上の CSPRNG entropy を URL-safe opaque string で表し、client memory と Authorization header 以外へ出さない。
-- `issuedAt` と `expiresAt` は UTC ISO 8601。TTL は server config の demo-short 値で、`now >= expiresAt` を期限切れとする。
+- session credentialとgrant tokenは256-bit以上のCSPRNG entropyを持つURL-safe opaque stringとし、client memory、session/grant request、Authorization header、および期限付きissuance-response cache以外へ出さない。storage、URL、log、error、snapshotへ含めない。
+- `issuedAt` と `expiresAt` は UTC ISO 8601。session TTLは90秒、grant TTLは60秒で、`now >= expiresAt`を期限切れとする。
 - downstream premium request は `Authorization: Sponsor <opaque-token>` と、body に含まれる同じ nonce を Authorizer へ渡す。
 
 ## Error Handling
@@ -393,8 +420,10 @@ interface SponsorAuthorizer {
 
 - sponsor path は wallet 秘密を要求せず、token は bearer capability として memory-only で扱う。
 - server が TTL、resource、nonce、single-use を権威的に検証し、client countdown はアクセス制御の唯一の根拠にしない。
-- sponsor content は bundled static content とし、third-party script、pixel、autoplay audio、personalization を禁止する。
+- sponsor contentは架空の`Open Table Weekly`としてbundled CSS/illustrationで描画し、third-party script、pixel、external link、autoplay audio、personalizationを禁止する。
 - 本設計を fraud-proof または production durable と表示しない。
+
+公開serverは単一instance・autoscalingなしとし、recording/judging中は再deployしない。restartでactive session/grantが失効した場合は新しいattemptを案内する。
 
 ## Performance & Scalability
 

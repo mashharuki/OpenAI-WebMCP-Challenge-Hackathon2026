@@ -19,7 +19,7 @@
 - [ ] 2.1 canonical state machine 上に single-flight attempt core を作る
   - 一試行ごとに request ID、idempotency key、`requestId` と同じ nonce、入力、呼出元を一度だけ生成して保持する。
   - upstream state transition、snapshot 購読、一回限りの completion latch、child abort の fan-out を一つの coordinator lifetime にまとめる。
-  - active 中の二件目を `INVALID_TRANSITION` で拒否し、最初の attempt identity、state、Promise が変化しないことを test で確認する。
+  - active中の二件目をretryableな`INVALID_TRANSITION`で拒否し、visible CTAをdisabledにしてbusy案内を表示し、最初のattempt identity/state/Promiseが変化しないことをtestする。
   - success、failure、cancel 後は一度だけ完了し、新しい attempt を開始できる状態になる。
   - _Depends: 1.2_
   - _Requirements: 3.1, 3.2, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 6.1_
@@ -35,7 +35,7 @@
 
 - [ ] 2.3 支払い経路と sponsor fallback を同じ attempt へ接続する
   - payment 選択時、active な canonical `PremiumAnalysisRequest` と attempt 用 `AbortSignal` を既存 `PaymentCoordinatorPort.requestPaidAccess(request, signal)` へ一度だけ渡し、その Promise を待機する。
-  - 上流 `PaymentTerminalResult` の success は `PremiumAnalysisSuccess`、error は canonical `AdGateError`、cancelled は reason として網羅的に処理し、独自 result/error type または terminal callback を定義しない。
+  - 上流`PaymentTerminalResult`のsuccessはanalysisとreceiptを受け、receiptはmemory-only UIへ渡し、Gateは`payment_succeeded`で原子的に成功へ遷移する。WebMCP resultにはanalysisと短いaccess referenceだけを返す。
   - gate 開始から `confirm` や wallet method を自動実行せず、payment snapshot は UI 表示だけに使う。元の WebMCP invocation は payment/sponsor/abort/cancel の最初の終端で一度だけ settle し、late terminal result を破棄する。
   - 支払い unavailable でも sponsor 選択が維持され、開始時には wallet method が呼ばれず、success/error/cancelled と abort 競合のすべてで同じ invocation が exactly once に完了する test を通す。
   - _Requirements: 3.1, 3.2, 3.4, 3.5, 3.6, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
@@ -44,7 +44,7 @@
 - [ ] 3. WebMCP と React publisher を共有 gate へ統合する
 - [ ] 3.1 `analyze_recipe` WebMCP adapter を登録・実行・解除できるようにする
   - starter tool 群を、静的 name/title/description、`additionalProperties: false` の schema、untrusted content annotation を持つ単一 tool へ置き換える。
-  - unknown input を runtime schema で検証し、不正時は coordinator を開始せず `INVALID_INPUT` を返す。
+  - 固定recipe IDと任意dietary goalsだけをruntime schemaで検証し、recipe本文・unknown ID・unknown fieldはcoordinatorを開始せず`INVALID_INPUT`を返す。
   - execute callback の signal を attempt へ渡し、canonical `WebMCPToolResult` の plain JSON value を返す。
   - 同じ page lifetime で一回だけ登録され、登録 controller の abort で解除され、登録・解除の拒否は raw DOMException を出さない unavailable status になる test を通す。
   - _Depends: 1.1, 2.3_

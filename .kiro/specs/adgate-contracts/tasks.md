@@ -9,6 +9,7 @@
 
 - [ ] 2. Canonical runtime contracts を実装する
 - [ ] 2.1 (P) Browser 境界の strict contract と host result 正規化を実装する
+  - `RecipeAnalysisInput`を固定recipe ID `roasted-chickpea-quinoa-bowl`と任意dietary goalsだけに限定し、recipe本文と未知IDを拒否する。
   - 固定 resource ID、上限付き分析入力・出力、二種の access evidence、公開 error envelope を unknown-key 拒否の runtime schema として提供する。
   - JSON-unsafe な値と秘密情報を境界から排除し、未知の例外を安全な error code と message へ正規化する。
   - 成功と失敗を WebMCP host が受け取れる JSON-safe な判別可能結果へ変換する。
@@ -63,6 +64,7 @@
   - _Depends: 2.3_
 
 - [ ] 3.4 (P) Server contract の evidence、冪等性、error 適合性をテストする
+  - 同じidempotency key/request digest/evidence fingerprintの成功結果を五分replayし、異なるdigestを409、期限後を新attempt案内にするfixtureを追加する。
   - 共通 fixture の server 対象 case が browser と同じ成功・失敗判定になることを検証する。
   - expiry equality、single-use 識別、同一 idempotency key の一致・payload 競合、wrong network/resource を境界値で検証する。
   - 未加工例外、stack、secret marker が公開 error envelope へ現れず、HTTP 利用側が安定 code を得ることを検証する。
@@ -79,4 +81,3 @@
   - _Requirements: 6.2, 6.4, 6.5_
   - _Boundary: FrontendContracts, ServerContracts, GateMachine, ConformanceFixtures_
   - _Depends: 3.2, 3.3, 3.4_
-

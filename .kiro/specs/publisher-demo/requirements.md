@@ -18,7 +18,7 @@
 
 #### Acceptance Criteria
 
-1. When 閲覧者が最初にページを開く, the Publisher Demo shall publisher 名、レシピの主題、および premium analysis が提供する価値を最初の画面範囲で識別可能に表示する。
+1. When 閲覧者が最初にページを開く, the Publisher Demo shall `Open Table Journal`、`Roasted Chickpea Quinoa Bowl`、およびpremium analysisが提供する価値を最初の画面範囲で識別可能に表示する。
 2. The Publisher Demo shall todo、task 管理、または旧 reference application の利用を示す文言や操作を主要体験に表示しない。
 3. The Publisher Demo shall sponsor、支払い、wallet、またはアクセス選択を分析開始前後のいずれにも要求しない。
 4. When 閲覧者がページを再読み込みする, the Publisher Demo shall 同じサンプルレシピと基本表示内容を再現する。
@@ -30,7 +30,7 @@
 #### Acceptance Criteria
 
 1. The Publisher Demo shall レシピ名、短い紹介、人数または分量、所要時間、材料、および順序付きの調理手順を表示する。
-2. The Publisher Demo shall 分析要求へ渡されるレシピ名、材料、および手順と、閲覧者に表示する内容を意味的に一致させる。
+2. The Publisher Demo shall `recipeId: roasted-chickpea-quinoa-bowl`から参照されるcanonical recipeの名前、材料、および手順と、閲覧者に表示する内容を同じowned sourceから生成する。
 3. When レシピに食事上の特徴または注意事項がある, the Publisher Demo shall それをレシピ詳細内で識別可能に表示する。
 4. If レシピの画像を表示できない, the Publisher Demo shall レシピ本文と分析操作を失わずに代替説明を提示する。
 5. The Publisher Demo shall 使用する文章、画像、およびブランド要素をオリジナルまたは再利用許諾を確認できる素材に限定する。
@@ -41,7 +41,7 @@
 
 #### Acceptance Criteria
 
-1. When 閲覧者が分析操作を開始する, the Publisher Demo shall 表示中レシピから `recipe_analysis` の有効な構造化入力を作成して分析を要求する。
+1. When 閲覧者が分析操作を開始する, the Publisher Demo shall 固定recipe IDと任意のdietary goalsだけを含む`recipe_analysis`入力を作成し、レシピ本文を外部入力として送らない。
 2. While 分析要求が進行中である, the Publisher Demo shall 進行中であることを明示し、同じ要求を重複して開始できないようにする。
 3. When 分析が成功する, the Publisher Demo shall 要約、栄養上の所見、改善提案、および免責情報をそれぞれ識別可能に表示する。
 4. When 閲覧者が同じレシピを変更せずに再度分析する, the Publisher Demo shall 内容が同一の分析結果を表示する。

@@ -19,7 +19,7 @@ AdGate のブラウザ、プレミアムリソースサービス、支払い fac
 #### Acceptance Criteria
 
 1. The AdGate contract shall プレミアムリソースを固定識別子 `recipe_analysis` によって一意に識別する。
-2. When 分析要求が契約境界へ渡される, the AdGate contract shall レシピ名、材料、手順、および任意の食事上の目的を含む構造化入力として表現できるようにする。
+2. When 分析要求が契約境界へ渡される, the AdGate contract shall canonical recipe ID `roasted-chickpea-quinoa-bowl` と任意の食事上の目的だけを含む構造化入力として表現し、レシピ名、材料、および手順を外部入力として受け取らない。
 3. When 分析結果が契約境界から返される, the AdGate contract shall 要約、栄養上の所見、改善提案、および免責情報を含む構造化出力として表現できるようにする。
 4. If 入力に未知フィールド、許容されない値、または規定上限を超える文字列・配列が含まれる, the AdGate contract shall その入力を拒否可能なものとして定義する。
 5. The AdGate contract shall 全ての境界値を JSON で損失なく表現できるものに限定する。
@@ -30,7 +30,7 @@ AdGate のブラウザ、プレミアムリソースサービス、支払い fac
 
 #### Acceptance Criteria
 
-1. The AdGate contract shall 未開始、選択待ち、スポンサー閲覧中、支払い承認待ち、アクセス付与済み、実行中、成功、失敗、および取消済みを区別する。
+1. The AdGate contract shall 未開始、選択待ち、スポンサー閲覧中、支払い承認待ち、スポンサーアクセス付与済み、スポンサー実行中、成功、失敗、および取消済みを区別し、支払い経路ではブラウザが観測できない中間状態を要求しない。
 2. When 有効なイベントが現在状態へ適用される, the AdGate contract shall 次状態を一意に決定できる遷移として定義する。
 3. If 現在状態では許可されないイベントが適用される, the AdGate contract shall 状態を変更せず、無効遷移として識別できるようにする。
 4. When 成功、失敗、または取消済みへ到達する, the AdGate contract shall そのゲート試行を終端状態として扱う。
@@ -59,6 +59,8 @@ AdGate のブラウザ、プレミアムリソースサービス、支払い fac
 3. When 一回限りのスポンサー付与が正常に消費される, the AdGate contract shall 同じ付与 ID による後続利用を再利用として識別できるようにする。
 4. When 同じ冪等性キーと同じ要求内容が再送される, the AdGate contract shall 同じ論理操作として関連付けられるようにする。
 5. If 同じ冪等性キーが異なる要求内容に使用される, the AdGate contract shall 競合として識別できるようにする。
+6. When 同じ冪等性キー、要求digest、およびaccess evidence fingerprintによる正常完了済み要求が五分以内に再送される, the AdGate contract shall access evidenceを再消費せず同じ成功結果を返せるようにする。
+7. If 正常結果の五分保持期間が終了した、またはprocessが再起動した, the AdGate contract shall 新しいattemptを要求する安全な期限切れとして扱う。
 
 ### Requirement 5: 安全で機械可読なエラー契約
 

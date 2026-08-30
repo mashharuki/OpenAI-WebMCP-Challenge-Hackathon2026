@@ -83,6 +83,7 @@ AdGate の即時アクセスを選ぶ利用者が、Base Sepolia 上の少額 te
 3. When facilitator の対応能力を確認する, the AdGate payment flow shall Base Sepolia の `exact` 支払いを検証・決済できることだけを必須条件とする。
 4. If facilitator の health または対応能力の確認が失敗する, the AdGate payment flow shall 支払い経路を利用不能として示し、スポンサー経路の利用可否へ影響を与えない。
 5. The AdGate payment flow shall 実ネットワークへ依存しない自動検証で、402 提示、他ネットワーク拒否、利用者拒否、成功再試行、二重課金防止、および依存障害を再現できるようにする。
+6. If hosted facilitatorのhealth・supported contract・Base Sepolia exact対応を公開環境で検証できない, the AdGate payment flow shall sponsor live pathを妨げず、paid pathをsame-releaseのlocal recordingとして明示できるようにする。
 
 ### Requirement 7: Canonical route composition と統合 seam
 
@@ -96,3 +97,4 @@ AdGate の即時アクセスを選ぶ利用者が、Base Sepolia 上の少額 te
 4. The AdGate payment flow shall WebMCP gate が一つの `PremiumAnalysisRequest` と任意の `AbortSignal` で呼べる `requestPaidAccess` bridge を公開し、成功、公開 error、または取消のうち最初の terminal result だけで Promise を一度だけ完了する。
 5. If terminal result の後に wallet、network、facilitator、または abort callback が到着する, the AdGate payment flow shall その callback を無視し、premium handler の再実行、Promise の再完了、または新しい署名要求を行わない。
 6. The AdGate payment flow shall `/api/recipe-analysis/preview` の mounting policy を所有し、production では設定値にかかわらず route を mount せず、非 production では明示 opt-in の場合だけ publisher の preview router を mount する。
+7. When paid retryが成功する, the AdGate payment flow shall settlement headerをstrict parseしてnormalized receiptをmemory-only UIへ返し、WebMCP結果には分析と短いaccess referenceだけを含める。

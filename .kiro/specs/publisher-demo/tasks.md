@@ -2,10 +2,12 @@
 
 - [ ] 1. Publisher が共有する sample recipe foundation を固定する
 - [ ] 1.1 Owned recipe content と分析入力を一つの source として提供する
+  - `Open Table Journal`の`Roasted Chickpea Quinoa Bowl`を固定recipe ID、owned copy、CSS/illustrationとして定義する。
+  - tool/HTTP入力はrecipe IDと任意dietary goalsだけにし、title、ingredients、instructionsはcanonical sourceから解決する。
   - publisher の brand、紹介、人数、所要時間、tag、代替説明付き hero asset、材料、順序付き手順を immutable な sample として定義する。
-  - 画面表示する title、ingredients、instructions、dietary goals から上流の厳格な `recipe_analysis` 入力を直接得られるようにし、別コピーによる drift を作らない。
+  - 画面表示するtitle、ingredients、instructionsはcanonical recipeから描画し、上流の厳格な`recipe_analysis`入力にはrecipe IDと任意dietary goalsだけを渡す。
   - sample が shared input contract に適合し、reload や呼出時刻に関係なく同じ値になることを focused test で確認する。
-  - 完了時、単一の sesame noodle bowl sample と owned asset が表示・分析の双方から利用できる。
+  - 完了時、単一のRoasted Chickpea Quinoa Bowl sampleとowned assetが表示・分析の双方から利用できる。
   - _Requirements: 1.4, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1_
   - _Boundary: SampleRecipe_
 

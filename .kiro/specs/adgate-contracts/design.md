@@ -127,8 +127,8 @@ stateDiagram-v2
     awaiting_choice --> viewing_sponsor: choose_sponsor
     awaiting_choice --> awaiting_payment: choose_payment
     viewing_sponsor --> access_granted: sponsor_granted
-    awaiting_payment --> access_granted: payment_confirmed
     access_granted --> executing: execute
+    awaiting_payment --> succeeded: payment_succeeded
     executing --> succeeded: resolve
     executing --> failed: reject
     awaiting_choice --> cancelled: cancel
@@ -138,7 +138,7 @@ stateDiagram-v2
     executing --> cancelled: cancel
 ```
 
-`failed`、`succeeded`、`cancelled` は終端状態である。任意の未終端状態は、その状態で明示的に許可された event のみを受け付ける。新しい試行は常に `idle` から新しい `attemptId` で開始し、終端状態を再利用しない。
+`failed`、`succeeded`、`cancelled` は終端状態である。スポンサー経路だけがgrant取得後の`access_granted`と`executing`を観測する。x402のpaid retryは決済・settlement・resource実行を一つのHTTP応答として観測するため、`payment_succeeded`で`awaiting_payment`から`succeeded`へ原子的に遷移し、架空の中間eventを発行しない。新しい試行は常に`idle`から新しい`attemptId`で開始する。
 
 ### Boundary Validation
 
@@ -213,9 +213,7 @@ type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
 interface RecipeAnalysisInput {
-  recipeTitle: string;          // trimmed, 1..120
-  ingredients: string[];        // 1..50, each trimmed 1..200
-  instructions: string[];       // 1..30, each trimmed 1..500
+  recipeId: "roasted-chickpea-quinoa-bowl";
   dietaryGoals?: string[];      // 0..10, each trimmed 1..80
 }
 
@@ -267,7 +265,7 @@ type GateState =
   | { type: "awaiting_payment"; attemptId: string; paymentRequestId: string }
   | { type: "access_granted"; attemptId: string; evidence: AccessEvidence }
   | { type: "executing"; attemptId: string; evidence: AccessEvidence }
-  | { type: "succeeded"; attemptId: string; result: RecipeAnalysisResult }
+  | { type: "succeeded"; attemptId: string; result: RecipeAnalysisResult; access: { kind: AccessEvidence["kind"]; referenceId: string } }
   | { type: "failed"; attemptId: string; error: AdGateError }
   | { type: "cancelled"; attemptId: string; reason: "user" | "abort" | "unmounted" };
 
@@ -342,6 +340,16 @@ interface PremiumAnalysisSuccess {
   access: { kind: AccessEvidence["kind"]; referenceId: string };
   data: RecipeAnalysisResult;
 }
+
+interface PaymentReceipt {
+  resourceId: "recipe_analysis";
+  paymentRequestId: string;
+  transactionHash: `0x${string}`;
+  network: "eip155:84532";
+  asset: `0x${string}`;
+  amount: string;
+  confirmedAt: string;
+}
 ```
 
 ##### API Contract
@@ -349,9 +357,25 @@ interface PremiumAnalysisSuccess {
 | Method | Endpoint | Request | Response | Errors |
 |--------|----------|---------|----------|--------|
 | POST | `/api/recipe-analysis` | `PremiumAnalysisRequest`; sponsor token または x402 header は後続仕様が付与 | `200 PremiumAnalysisSuccess` | `400`, `401`, `402`, `409`, `410`, `422`, `503`, `500` の `AdGateErrorEnvelope` |
+| POST | `/api/sponsor-sessions` | resource/request identity | `201 SponsorSessionStartResponse` | canonical error envelope。route 実装は sponsor-access 所有 |
 | POST | `/api/sponsor-grants` | `SponsorGrantIssueRequest` | `201 SponsorGrantIssueResponse` | 同じ error envelope。route 実装は sponsor-access 所有 |
 
-HTTP header 名は `Idempotency-Key`、`Authorization: Sponsor <opaque-token>`、x402 標準の `PAYMENT-SIGNATURE` とする。body 内の `idempotencyKey` は header 値と一致しなければ `IDEMPOTENCY_CONFLICT` とする。x402 challenge/settlement payload 自体は x402 package が所有し、本契約は成功後の正規化 evidence のみを定義する。
+HTTP header 名は `Idempotency-Key`、`Authorization: Sponsor <opaque-token>`、採用x402 packageの標準支払いheaderとする。body 内の `idempotencyKey` は header 値と一致しなければ `IDEMPOTENCY_CONFLICT` とする。x402 challenge/settlement payload自体はx402 packageが所有する。payment clientはsettlement成功headerをstrict parseして`PaymentReceipt`へ正規化するが、WebMCP結果にはreceiptを含めず、短いaccess referenceだけを返す。
+
+Protected route共通のbounded Attempt Registryはidempotency keyをoperation rootとし、`requestDigest + evidenceFingerprint`が同じ場合だけin-flightをcoalesceして成功結果を五分保持する。既存keyに対するdigestまたはfingerprint不一致は409とする。registryはidentityのin-flight slotを同期的にclaimしてから、authorize/consume/verify/settle/premium handler全体を一つのoperationとして実行する。同一identityの並行・事後retryはevidenceを再消費しない。五分経過またはprocess restart後は新しいattemptを案内し、失敗はcacheしない。
+
+```typescript
+type GateEvent =
+  | { type: "start"; attemptId: string; input: RecipeAnalysisInput }
+  | { type: "choose_sponsor"; attemptId: string; sponsorId: string }
+  | { type: "choose_payment"; attemptId: string; paymentRequestId: string }
+  | { type: "sponsor_granted"; attemptId: string; evidence: SponsorAccessEvidence }
+  | { type: "execute"; attemptId: string }
+  | { type: "resolve"; attemptId: string; result: RecipeAnalysisResult }
+  | { type: "payment_succeeded"; attemptId: string; result: RecipeAnalysisResult; access: { kind: "x402_payment"; referenceId: string } }
+  | { type: "reject"; attemptId: string; error: AdGateError }
+  | { type: "cancel"; attemptId: string; reason: "user" | "abort" | "unmounted" };
+```
 
 ### Test Contract
 

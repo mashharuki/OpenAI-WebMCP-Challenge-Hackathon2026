@@ -2,8 +2,8 @@
 
 - [ ] 1. スポンサーアクセス境界を準備する
 - [ ] 1.1 (P) server のスポンサー発行境界を定義する
-  - 上流 AdGate 契約を再利用し、発行要求、成功応答、エラー応答を strict validation する。
-  - resource、attempt、nonce、sponsor、completion の識別値へ明示上限を設け、未知 field を拒否する。
+  - 上流 AdGate 契約を再利用し、session開始、grant発行、成功応答、エラー応答をstrict validationする。
+  - server-owned sponsor metadata、8秒の必要時間、90秒session、60秒grantを固定し、client-supplied sponsor/completion IDを受け取らない。
   - server validator の valid/invalid payload と上限境界 test を追加する。
   - 完了時、発行 route が未知 JSON を安全な型へ変換できる server contract と test 結果が得られる。
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 6.1, 6.3_
@@ -23,6 +23,7 @@
   - attempt ID と nonce を保持し、別試行の event、cancel 後の tick、遅延 response を無視する。
   - success、cancel、abort、unmount のうち最初の終端結果だけを通知する。
   - fake clock test で hidden 区間、時計変動、時間境界、再試行分離が決定的に通る。
+  - server-issued sessionを開始し、browserの8 visible secondsとserverの8 wall-clock secondsの両方を満たした場合だけissueする。
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.2, 3.3, 3.4, 6.2, 6.4_
   - _Boundary: SponsorFlowController_
   - _Depends: 1.2_
@@ -46,10 +47,11 @@
 
 - [ ] 3. 一回限り grant domain を実装する
 - [ ] 3.1 (P) process-local grant ledger を実装する
-  - opaque token の digest、issue digest、上流証跡、状態だけを保持し、token 原文を保存しない。
+  - session/grant credentialのdigest、binding、開始・期限、上流証跡、状態だけを保持し、credential原文を保存しない。
   - available から consumed への比較と更新を await のない同期区間で行う。
   - expiry equality、resource/nonce mismatch、unknown、replay、競合 consume を上流 error code へ区別する。
   - test で競合する二消費の最大一件だけが成功し、再起動相当の新 ledger では旧 token が無効になる。
+  - session create/expiry/atomic consumeと、同一issue identityへgrant期限内だけ同じtoken/evidenceを返すbounded issuance-response cacheを実装する。
   - _Requirements: 4.2, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.3_
   - _Boundary: SponsorGrantLedger_
   - _Depends: 1.1_
@@ -64,7 +66,8 @@
 
 - [ ] 4. server adapter と grant domain を統合する
 - [ ] 4.1 (P) sponsor grant 発行 route を提供する
-  - strict parse 済み要求だけを service へ渡し、新規発行を 201、同一再送を 200 で返す。
+  - `/api/sponsor-sessions`は固定creative metadataとsingle-use sessionを201で返し、`/api/sponsor-grants`はstrict parse済みsession credentialだけをserviceへ渡す。
+  - grant発行前にsession binding、90秒期限、未消費、server経過8秒を検証する。
   - invalid、conflict、dependency、internal failure を共通 error envelope と固定 status へ変換する。
   - response と構造化 log から token 以外の秘密値、stack、raw exception を除外する。
   - standalone Hono test app で成功、再送、invalid、safe failure の HTTP behavior が通る。
@@ -83,7 +86,7 @@
 
 - [ ] 5. スポンサー経路を境界横断で検証する
 - [ ] 5.1 browser から一回消費までの統合 test を完成する
-  - visible countdown 完了、grant issue、Authorization 変換、consume success を一つの deterministic flow で検証する。
+  - session開始、hidden中に止まる8秒visible countdown、server elapsed検証、grant issue、Authorization変換、consume successを一つのdeterministic flowで検証する。
   - cancel、abort、hidden countdown、expiry、replay、resource/nonce mismatch を end-to-end boundary case として検証する。
   - sponsor content や token が storage、URL、公開 error、log に残らないことを確認する。
   - 完了時、wallet なしのスポンサー経路が共通 evidence を一度返し、再利用が明示的に拒否される test suite が通る。

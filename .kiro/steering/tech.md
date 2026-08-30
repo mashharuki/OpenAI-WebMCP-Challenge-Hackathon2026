@@ -43,6 +43,9 @@ pnpm --filter x402server run dev
 - Payment policy, resource-server configuration, and facilitator settlement remain separate services to keep trust boundaries explicit.
 - Target `document.modelContext` for ChatGPT and feature-detect `navigator.modelContext` for Chrome compatibility while the draft API is in flux.
 - Use only Base Sepolia (`eip155:84532`), the x402 `exact` scheme, testnet USDC, and an injected EIP-1193 wallet. Reject other chain IDs and never bundle a payer private key in frontend code.
+- Use 0.01 testnet USDC for the demo payment. Keep `payTo`, canonical asset address, facilitator URL, public API URL, allowed origin, and Origin Trial token in validated environment/deployment configuration.
+- Keep sponsor sessions (90 seconds), sponsor grants (60 seconds), and five-minute successful-result replay in bounded process-local registries. The public Node deployment is exactly one instance with autoscaling disabled; durable or multi-instance guarantees are out of scope.
+- Apply strict CORS to all sponsor and protected-analysis API routes. Allow `Authorization`, `Content-Type`, `Idempotency-Key`, and the x402 request header; expose the required x402 response headers and use `Cache-Control: no-store`.
 
 ---
 _Document durable technology choices and standards, not all dependencies._

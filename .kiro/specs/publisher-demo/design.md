@@ -105,7 +105,7 @@ graph LR
 apps/
 ├── frontend/
 │   ├── public/
-│   │   └── sesame-noodle-bowl.svg       # owned recipe hero artwork
+│   │   └── roasted-chickpea-quinoa-bowl.svg # owned recipe hero artwork
 │   └── src/
 │       ├── publisher/
 │       │   ├── sampleRecipe.ts           # displayed metadata and canonical analysis input
@@ -192,18 +192,18 @@ preview request は一回の UI action につき一つで、pending 中の再操
 
 ```typescript
 interface PublishedRecipe {
-  slug: "sesame-noodle-bowl";
+  slug: "roasted-chickpea-quinoa-bowl";
   title: string;
   dek: string;
   servings: number;
   totalMinutes: number;
   tags: readonly string[];
   image: { src: string; alt: string };
-  analysisInput: RecipeAnalysisInput;
+  analysisInput: { recipeId: "roasted-chickpea-quinoa-bowl"; dietaryGoals?: string[] };
 }
 ```
 
-- `analysisInput.recipeTitle`、ingredients、instructions、dietaryGoals は画面本文の canonical source とする。
+- `Open Table Journal`、`Roasted Chickpea Quinoa Bowl`のtitle、ingredients、instructions、owned CSS/illustrationをmodule-level canonical sourceとし、analysis inputはrecipe IDと任意のdietary goalsだけを参照する。
 - 値は module-level immutable constant であり、localStorage、時刻、network から生成しない。
 
 #### PublisherDemo
@@ -281,7 +281,7 @@ interface RecipeAnalyzer {
 
 - Preconditions: server contract schema で検証済みの input を受け取る。
 - Postconditions: success は `RecipeAnalysisResult` schema に適合し、同じ input は deep-equal な data を返す。
-- Invariants: I/O、Date、random、environment、external model を参照しない。sample title と canonical ingredients/instructions の組に対する owned result を返す。
+- Invariants: I/O、Date、random、environment、external model を参照しない。固定recipe IDからcanonical ingredients/instructionsを解決し、栄養要約、代替食材、アレルゲン注意、および医療助言ではない免責を含むowned resultを返す。
 - supported sample と一致しない有効 input は、安全な `INVALID_INPUT` outcome として扱う。
 
 #### PreviewRoute

@@ -8,7 +8,7 @@ AdGate の `recipe_analysis` を、WebMCP エージェントとページ上の�
 
 - **In scope**: 単一 WebMCP ツール、利用可能なホスト名前空間の検出、重複しない登録と解除、入力検証、共有ゲートへの要求、スポンサー・支払い経路からの再開、単一 active 試行、取消・中断・unmount、可視ステータス、JSON-safe なエージェント向け結果と安全な外部内容の扱い。
 - **Out of scope**: スポンサー閲覧・grant の実装、wallet 署名・x402 決済、分析内容の生成、共通契約の再定義、server MCP、複数 premium tool、自律的な支払い承認、headless 実行、および cross-origin tool 公開。
-- **Adjacent expectations**: `publisher-demo` は表示中レシピと決定的分析を提供し、`sponsor-access` は人間確認済みの grant を返す。`x402-payment-access` は `PaymentCoordinatorPort.requestPaidAccess(request, signal)` を通じ、canonical `PremiumAnalysisSuccess` または `AdGateError` を含む `PaymentTerminalResult` を success/error/cancelled のいずれか一つとして返す。`adgate-contracts` の `GateState`、`GateEvent`、`RecipeAnalysisInput`、`WebMCPToolResult`、`AdGateError` を本機能が変更せず利用する。
+- **Adjacent expectations**: `publisher-demo` は表示中レシピと決定的分析を提供し、`sponsor-access` は人間確認済みの grant を返す。`x402-payment-access` は `PaymentCoordinatorPort.requestPaidAccess(request, signal)` を通じ、success時にcanonical analysisとnormalized receiptを含む`PaymentTerminalResult`を返す。receiptはページ専用でWebMCP結果へ含めない。`adgate-contracts` の契約を本機能が変更せず利用する。
 
 ## Requirements
 
@@ -20,7 +20,7 @@ AdGate の `recipe_analysis` を、WebMCP エージェントとページ上の�
 
 1. When 対応 WebMCP ホストで publisher ページが利用可能になる, the WebMCP Gated Tool shall `analyze_recipe` という単一の premium analysis tool を登録する。
 2. The WebMCP Gated Tool shall ツールの目的、人間によるアクセス選択が必要であること、および返却内容を静的で簡潔な説明として公開する。
-3. The WebMCP Gated Tool shall レシピ名、材料、手順、および任意の食事上の目的だけを受理し、未知フィールドを許可しない入力契約を公開する。
+3. The WebMCP Gated Tool shall `recipeId: roasted-chickpea-quinoa-bowl`と任意の食事上の目的だけを受理し、レシピ本文および未知フィールドを許可しない入力契約を公開する。
 4. If ツール入力が共有 `RecipeAnalysisInput` 契約に適合しない, the WebMCP Gated Tool shall ゲートを開始せず `INVALID_INPUT` の安全な結果を返す。
 5. The WebMCP Gated Tool shall 外部レシピ内容、分析結果、エラー詳細、または実行時データをツール名・説明へ埋め込まない。
 
@@ -57,7 +57,7 @@ AdGate の `recipe_analysis` を、WebMCP エージェントとページ上の�
 #### Acceptance Criteria
 
 1. While 一つのゲート試行が未完了である, the WebMCP Gated Tool shall 二つ目のツール呼び出しを開始せず `INVALID_TRANSITION` の安全な結果を返す。
-2. While 一つのゲート試行が未完了である, the WebMCP Gated Tool shall 可視 UI からの重複開始操作も同じ active 試行を上書きしないようにする。
+2. While 一つのゲート試行が未完了である, the WebMCP Gated Tool shall 可視UIの開始操作をdisabledにし、「別の分析が承認待ち」と表示して同じactive試行を上書きしないようにする。
 3. When 元の要求がアクセス取得後に実行される, the WebMCP Gated Tool shall その試行で作成した request ID、idempotency key、nonce、および分析入力の対応を維持する。
 4. If 終了済みまたは別試行に属する遅延成功・失敗イベントが届く, the WebMCP Gated Tool shall 現在の試行を変更せず、そのイベントを元の呼び出しへ返さない。
 5. When active 試行が成功、失敗、または取消の終端状態になる, the WebMCP Gated Tool shall sponsor 経路、`requestPaidAccess`、host abort、または user cancel のうち最初の終端だけで元の WebMCP 呼び出しを一度だけ完了し、遅延した terminal result を無視してから新しい試行を開始可能にする。
@@ -81,7 +81,7 @@ AdGate の `recipe_analysis` を、WebMCP エージェントとページ上の�
 
 #### Acceptance Criteria
 
-1. While ツール試行が選択待ち、スポンサー閲覧中、支払い承認待ち、アクセス付与済み、または実行中である, the WebMCP Gated Tool shall 現在段階をページ上で色だけに依存せず表示する。
+1. While ツール試行が選択待ち、スポンサー閲覧中、支払い承認待ち、またはスポンサー実行中である, the WebMCP Gated Tool shall 実際に観測できる現在段階をページ上で色だけに依存せず表示し、paid pathに架空の中間段階を表示しない。
 2. When ツール試行が成功する, the WebMCP Gated Tool shall `WebMCPToolResult` の成功形として `recipe_analysis` の構造化結果を返す。
 3. When ツール試行が失敗または取消になる, the WebMCP Gated Tool shall `WebMCPToolResult` の失敗形として共通 `AdGateError` だけを返す。
 4. The WebMCP Gated Tool shall ツールの全終端結果を JSON で損失なく表現可能にする。

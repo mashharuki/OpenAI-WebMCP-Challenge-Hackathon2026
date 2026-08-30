@@ -44,4 +44,4 @@ Use a dedicated React gate coordinator and sponsor modal. After the countdown co
 
 ## Constraints
 
-No dark patterns, autoplay audio, external tracking, or claim of fraud resistance. Escape/cancel must reject the pending request cleanly. Grant TTL should be demo-short and clocks testable. The implementation must not reuse isolate-local AgentKit free-trial counters as sponsor authorization.
+No dark patterns, autoplay audio, external tracking, or claim of fraud resistance. Escape/cancel must reject the pending request cleanly. Use a 90-second server-issued session, eight visible/browser seconds plus eight server wall-clock seconds, and a 60-second grant TTL with testable clocks. The implementation must not reuse isolate-local AgentKit free-trial counters as sponsor authorization.

@@ -2,6 +2,7 @@
 
 - [ ] 1. Base Sepolia 支払い基盤を単一方針へ整理する
 - [ ] 1.1 Server-authoritative な支払い設定と起動時検証を実装する
+  - 価格を0.01 testnet USDCへ固定し、canonical asset/decimalsからbase-unit量を検証する。payToとfacilitator URLはenvironmentから取得する。
   - `recipe_analysis`、Base Sepolia、exact、testnet USDC、受取先、支払額を一つの immutable 方針として構築する。
   - 欠落設定、不正 address/amount、複数 offer、他 network/scheme を fail-closed の安全な error にする。
   - 完了時、正常設定は一件の offer だけを返し、World Chain または mainnet を含む設定では支払い経路が ready にならない。
@@ -38,12 +39,14 @@
 
 - [ ] 2. Server の支払い保護境界を実装する
 - [ ] 2.1 Prototype の bounded idempotency registry を実装する
+  - sponsor/payment共通でidempotency key、request digest、evidence fingerprintを照合し、成功結果だけ五分cacheする。
+  - route認可より先にidentityのin-flight slotをclaimし、そのoperation内でauthorize/consume/verify/settle/handlerを一度だけ実行する。同一identityはpromise/cacheを共有し、既存keyに対するdigestまたはfingerprint不一致は409にする。
   - idempotency key と canonical request digest を結び付け、同じ操作の in-flight promise を共有する。
   - 同じ key の異なる payload を競合として拒否し、成功結果を bounded TTL 内で再利用する。
   - signature と payment payload は registry に保存せず、期限後の状態を確実に破棄する。
   - 完了時、同内容の同時・事後 retry は operation を一度だけ実行し、異内容 retry は安定した競合 error になる。
   - _Requirements: 3.4, 3.5_
-  - _Boundary: PaymentAttemptRegistry_
+  - _Boundary: ProtectedAttemptRegistry_
   - _Depends: 1.4_
 
 - [ ] 2.2 x402 保護 adapter を実装する
@@ -56,6 +59,7 @@
   - _Depends: 1.1, 1.4, 2.1_
 
 - [ ] 2.3 (P) CORS、支払い header 公開、no-store policy を実装する
+  - sponsor session/grant/protected analysis全routeへ共通適用し、`Authorization`をrequest allowlistへ含める。
   - allowlist origin の OPTIONS/POST、必要 request header、支払い response header の公開を設定する。
   - 402、200、4xx、5xx の全応答へ no-store と origin variation を適用する。
   - 未許可 origin を payment middleware より前で拒否し、challenge、evidence、premium result を返さない。
@@ -93,6 +97,7 @@
   - _Depends: 1.5_
 
 - [ ] 3.2 Paid retry identity を維持する payment client を実装する
+  - settlement headerをstrict parseし、analysis resultとnormalized receiptを一つのterminal successとして返す。
   - paid retry では元 request ID、idempotency key、canonical body を維持し、同一 attempt の concurrent retry を一つへまとめる。
   - 不正 challenge または uncertain settlement では新しい payment header を自動生成しない。
   - 完了時、同じ attempt の同時再試行が一要求になり、body または identity の変更を test が検出する。

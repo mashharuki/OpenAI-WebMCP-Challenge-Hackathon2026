@@ -29,7 +29,7 @@ AdGate を利用する人と審査員が、ウォレットを用意せず、ペ�
 
 #### Acceptance Criteria
 
-1. When 人がスポンサー表示を明示的に開始する, the Sponsor Access feature shall 残り閲覧時間を秒単位で知覚可能に表示する。
+1. When 人がスポンサー表示を明示的に開始する, the Sponsor Access feature shall server-issued sessionを取得し、`Open Table Weekly`のowned creativeと8秒の残り閲覧時間を知覚可能に表示する。
 2. While スポンサーモーダルまたはページが人から見えない状態にある, the Sponsor Access feature shall 完了へ向けた閲覧時間を進めない。
 3. While 必要な可視閲覧時間が完了していない, the Sponsor Access feature shall アクセス取得操作を利用不可にする。
 4. When 必要な可視閲覧時間が完了する, the Sponsor Access feature shall 完了状態とアクセス継続操作を明示する。
@@ -52,10 +52,10 @@ AdGate を利用する人と審査員が、ウォレットを用意せず、ペ�
 
 #### Acceptance Criteria
 
-1. When 完了済みスポンサー試行が正しい対象リソースと要求 nonce を伴って提示される, the Sponsor Access feature shall 対象リソース、要求 nonce、発行時刻、有効期限、一意の付与 ID に結び付く不透明なアクセスを発行する。
-2. The Sponsor Access feature shall 発行したアクセスを短い固定有効期間に限定し、人が再利用可能な認証秘密またはウォレット秘密情報を応答に含めない。
-3. If 発行要求が未完了、不正、対象外リソース、または重複した要求 nonce を含む, the Sponsor Access feature shall アクセスを発行せず、安全な機械可読エラーを返す。
-4. When 同じ完了済み試行の発行要求が同じ内容で再送される, the Sponsor Access feature shall 複数の有効なアクセスを作らず、同じ論理的な発行結果として扱う。
+1. When スポンサー経路が開始される, the Sponsor Access feature shall serverが対象resource、request ID、sponsor IDへbindingしたsingle-use sessionを発行し、sponsor metadata、8秒の必要時間、および90秒のsession期限を返す。
+2. When server-issued sessionの開始から8秒以上経過し、browserでも8 visible secondsが完了した, the Sponsor Access feature shall 対象resource、request nonce、発行時刻、60秒の有効期限、一意のgrant IDに結び付く不透明なアクセスを発行する。
+3. If 発行要求が未知・未完了・期限切れsession、binding mismatch、または重複したrequest nonceを含む, the Sponsor Access feature shall アクセスを発行せず、安全な機械可読エラーを返す。消費済みsessionでも同じissue identityの短期retryだけはcached responseを返せる。
+4. When 同じsession credentialとissue identityの発行要求がgrant期限内に再送される, the Sponsor Access feature shall 複数の有効なアクセスを作らず、process-local issuance-response cacheから同じtoken/evidenceを返す。
 5. If スポンサーアクセス発行機能が利用できない, the Sponsor Access feature shall 支払いを成功したものとして扱わず、スポンサー経路が現在利用できないことと再試行可否を示す。
 
 ### Requirement 5: 一回限りの検証と消費
@@ -70,6 +70,7 @@ AdGate を利用する人と審査員が、ウォレットを用意せず、ペ�
 4. If スポンサーアクセスの対象リソースまたは要求 nonce が要求と一致しない, the Sponsor Access feature shall そのアクセスを不正証跡として拒否する。
 5. When 同じスポンサーアクセスに対する競合消費が発生する, the Sponsor Access feature shall 最大一つの要求だけを成功させる。
 6. The Sponsor Access feature shall プロセス再起動や複数インスタンスを越える耐久性または不正防止を保証すると表示しない。
+7. When 同一の冪等性identityでプレミアム処理が既に成功している, the protected resource shall grantを再消費せず五分間同じ成功結果を返せるようにする。
 
 ### Requirement 6: 継続結果と安全な失敗
 

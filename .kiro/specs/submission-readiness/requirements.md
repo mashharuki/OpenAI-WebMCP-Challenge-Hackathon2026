@@ -6,7 +6,7 @@ AdGate の実装を、審査員が公開 URL から短時間で理解・操作�
 
 ## Boundary Context
 
-- **In scope**: cross-app release checks、公開 frontend/resource server/facilitator の診断、Origin Trial 確認、スポンサーと Base Sepolia 支払いの golden/failure path 検証、既存 fallback 表示の検証、英語の architecture/provenance/setup 文書、Devpost 原稿、スクリーンショット、3分未満の動画台本・shot list、提出 checklist。
+- **In scope**: 最小cross-app release command、公開frontend/resource server診断、Origin Trial確認、fake WebMCP hostによるスポンサーgolden path、既存fallback表示の検証、手書き英語architecture/provenance/setup文書、Devpost原稿、スクリーンショット、3分未満の動画台本・shot list、提出checklist。
 - **Out of scope**: 上流の契約・分析・スポンサー・支払い・WebMCP orchestration の再設計、新しい商品機能、mainnet、production accounting、外部 marketing、Devpost または YouTube への自動投稿。
 - **Adjacent expectations**: 上流5仕様が提供する canonical contract、単一 protected route、sponsor fallback、Base Sepolia x402、WebMCP host status をそのまま検証する。release blocker が見つかった場合は所有元へ戻し、本仕様内で同義機能を複製しない。
 
@@ -31,9 +31,9 @@ AdGate の実装を、審査員が公開 URL から短時間で理解・操作�
 #### Acceptance Criteria
 
 1. When 公開環境の smoke check が実行される, the Submission Readiness feature shall frontend と resource server が HTTPS で到達可能であることを検証する。
-2. When 許可された frontend origin から protected resource を確認する, the Submission Readiness feature shall preflight、必要な request header、公開 response header、`no-store`、および単一 Base Sepolia 支払い条件を検証する。
+2. When 許可されたfrontend originからprotected resourceを確認する, the Submission Readiness feature shall preflight、必要なrequest header、公開response header、および`no-store`を検証する。payment readinessがreadyなら単一Base Sepolia exact条件を必須とし、unavailableなら安全なpayment-disabled状態と成功するsponsor pathを必須とする。
 3. When 公開 frontend を確認する, the Submission Readiness feature shall 配備 origin に対応する有効な Origin Trial 設定が応答または文書内に存在することを検証する。
-4. When hosted facilitator を確認する, the Submission Readiness feature shall health と Base Sepolia `exact` 対応能力を検証し、結果を支払い経路の readiness として報告する。
+4. When hosted facilitator を確認する, the Submission Readiness feature shall health と Base Sepolia `exact` 対応能力をbest-effortで検証し、失敗時はsponsor live releaseを阻害せずpaid pathをsame-release local recordingへ降格する。
 5. If production の preview analysis endpoint が到達可能である, the Submission Readiness feature shall monetization bypass を release blocker として報告する。
 6. If 公開応答に秘密値、stack trace、支払い payload、sponsor token、または許可されていない origin 向けの保護情報が含まれる, the Submission Readiness feature shall release を不合格にする。
 
@@ -45,7 +45,7 @@ AdGate の実装を、審査員が公開 URL から短時間で理解・操作�
 
 1. When `analyze_recipe` が対応 WebMCP host から呼び出される, the Submission Readiness feature shall 同じ呼出しがページ上の選択を待ち、スポンサー完了後に一度だけ canonical analysis を返す経路を検証する。
 2. When 可視 UI から同じ分析が開始される, the Submission Readiness feature shall WebMCP 経路と同じ gate と結果契約を使用することを検証する。
-3. When 支払い経路が確認される, the Submission Readiness feature shall Base Sepolia、testnet USDC、明示 wallet 承認、settlement receipt、および同一要求の一回実行を検証する。
+3. When 支払い経路が確認される, the Submission Readiness feature shall 手動でBase Sepolia、0.01 testnet USDC、明示wallet承認、settlement receipt、および同一要求の一回実行を検証し、公開環境で未検証なら録画/local-onlyと明示する。
 4. If WebMCP、wallet、payment infrastructure、または facilitator が利用できない, the Submission Readiness feature shall publisher の閲覧を維持し、利用可能な sponsor 経路または具体的な復旧案内が表示されることを検証する。
 5. When 取消、host abort、重複実行、期限切れ sponsor grant、または不正 network が発生する, the Submission Readiness feature shall 成功を誤表示せず安全な終端結果になることを検証する。
 6. When 自動化できない実ブラウザまたは実 wallet の確認が必要である, the Submission Readiness feature shall 対象環境、手順、期待結果、証跡を記録する手動検証表を提供する。
@@ -74,7 +74,7 @@ AdGate の実装を、審査員が公開 URL から短時間で理解・操作�
 3. The Submission Readiness feature shall live app、公開 source repository、license、および公開 YouTube 動画の最終 URL を確認する提出 checklist を提供する。
 4. The Submission Readiness feature shall 音声付きで3分未満となる英語動画台本と shot list を提供し、WebMCP invocation、ページ上の人間選択、スポンサー成功、Base Sepolia 支払いの証跡を含める。
 5. The Submission Readiness feature shall publisher、gate choice、sponsor 経路、payment receipt、および WebMCP result を識別できる英語スクリーンショット一式の取得条件を定義する。
-6. If 動画内の live payment または外部依存が失敗する, the Submission Readiness feature shall 同じ commit と public URL で取得した成功済み backup clip または画像へ切り替える手順を提供する。
+6. If 動画内のlive paymentまたは外部依存が失敗する, the Submission Readiness feature shall live fallbackなら同じcommitとpublic URL、local fallbackなら同じrelease SHAと`recorded local prototype`ラベルを持つ成功済みclipへ切り替える手順を提供する。
 7. The Submission Readiness feature shall 素材の英語版または英語翻訳を必須とし、第三者の権利を確認できない素材を使用しない。
 
 ### Requirement 6: 提出統制と締切保護
@@ -88,3 +88,4 @@ AdGate の実装を、審査員が公開 URL から短時間で理解・操作�
 3. When 最終候補を選定する, the Submission Readiness feature shall live deployment、recording、README、Devpost 原稿、および repository commit が同じ release identity を参照するよう求める。
 4. The Submission Readiness feature shall 2026年9月4日03:00 JST を内部提出期限、同日05:00 JST を公式締切としてチェック可能にする。
 5. The Submission Readiness feature shall 利用者の明示操作なしに Devpost、YouTube、repository、または第三者サービスへ提出・公開・更新しない。
+6. The Submission Readiness feature shall documentation generator、manual evidence recorder、typed artifact manifest、または自動final readiness evaluatorを必須実装に含めず、version-controlledな手書き資料とchecklistを使用する。

@@ -212,10 +212,10 @@ registration signal は tool の登録 lifetime だけを所有する。各 exec
 
 **Responsibilities & Constraints**
 
-- active attempt は最大一件。二件目は既存 attempt に触れず `INVALID_TRANSITION` を返す。
+- active attemptは最大一件。二件目は既存attemptに触れずretryableな`INVALID_TRANSITION`と安全なbusy messageを返し、visible CTAはdisabledにする。
 - `PremiumAnalysisRequest` を開始時に一度作り、`nonce` は同じ `requestId` とする。これにより upstream sponsor binding を canonical body の `requestId` へ対応させ、契約 field を追加しない。
 - state 変更は upstream `transitionGate` の event だけで行い、独自 `GateState` を定義しない。
-- sponsor success は `ProtectedAnalysisClient`、payment は upstream `requestPaidAccess` が返す `PaymentTerminalResult` を正規化する。success の `PremiumAnalysisSuccess`、error の canonical `AdGateError`、cancelled の reason 以外を受け取る独自 callback seam は作らない。
+- sponsor successは`ProtectedAnalysisClient`、paymentはupstream `requestPaidAccess`が返す`PaymentTerminalResult`を正規化する。payment successのreceiptはmemory-only page stateへ渡し、WebMCP結果には含めない。
 - payment coordinator 自身の exactly-once terminal semantics を前提としつつ、GateCoordinator の completion latch も sponsor/payment/abort/cancel の最初の一件だけを元の WebMCP Promise へ反映する。
 
 **Dependencies**
@@ -258,7 +258,7 @@ interface GateCoordinatorPort {
 
 // Imported verbatim from x402-payment-access; this spec does not own these types.
 type PaymentTerminalResult =
-  | { type: "success"; result: PremiumAnalysisSuccess }
+  | { type: "success"; result: PremiumAnalysisSuccess; receipt: PaymentReceipt }
   | { type: "error"; error: AdGateError }
   | { type: "cancelled"; reason: "user" | "abort" | "unmounted" };
 
@@ -282,7 +282,7 @@ interface PaymentCoordinatorPort {
 
 - Published: `GateSnapshot`。同期 snapshot 後の変化だけを subscriber へ通知する。
 - Subscribed: sponsor result、`PaymentTerminalResult`、payment snapshot、user choice、AbortSignal。payment snapshot は表示専用で、WebMCP invocation の終端判定には使用しない。
-- Ordering: attempt ID が一致する非終端 event のみを受理し、終端後の delivery は破棄する。
+- Ordering: attempt IDが一致するeventのみを受理する。payment successは`payment_succeeded`で`awaiting_payment`から`succeeded`へ原子的に遷移し、終端後のdeliveryは破棄する。
 
 ##### State Management
 
@@ -392,7 +392,7 @@ adapter は visible UI source で `requestAnalysis` を呼び、success の `dat
 
 ### Data Contracts & Integration
 
-- tool input は unknown から upstream Zod schema へ parse し、unknown key と上限超過を拒否する。
+- tool inputはunknownからupstream Zod schemaへparseし、固定recipe IDと任意dietary goalsだけを受理する。recipe title/ingredients/instructionsとunknown keyは拒否する。
 - host result は upstream `WebMCPToolResult` の plain JSON value とし、WebMCP runtime の serialization に委譲する。MCP `content` wrapper を独自に付加しない。
 - external recipe/result は `untrustedContentHint: true` と構造化 field により data として扱う。description は compile-time constant のみ。
 - sponsor token、payment signature/provider data、Abort reason の raw value は public result に含めない。

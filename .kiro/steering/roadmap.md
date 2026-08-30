@@ -15,6 +15,7 @@ The implementation reuses the existing React/Vite WebMCP frontend, Hono x402 res
 ## Scope
 
 - **In**: One polished recipe publisher demo; one premium analysis tool; sponsor-view and Base Sepolia x402 unlock paths; visible human confirmation; dual `document`/`navigator` namespace detection; automated tests; deployable services; English submission assets.
+- **Fixed demo content**: `Open Table Journal`, `Roasted Chickpea Quinoa Bowl`, and the fictional self-sponsor `Open Table Weekly`; all copy and visuals are repository-owned and contain no external tracking.
 - **Out**: Real ad-network integration, ad impression fraud prevention, production wallet custody, mainnet funds, publisher dashboard, multi-tenant billing, multiple premium tools, and generalized npm package publication.
 
 ## Constraints
@@ -23,9 +24,12 @@ The implementation reuses the existing React/Vite WebMCP frontend, Hono x402 res
 - Use testnet only. Never ship or expose a private key in browser code.
 - Treat WebMCP as a changing draft: target `document.modelContext` first for ChatGPT, feature-detect `navigator.modelContext` for Chrome compatibility, normalize tool results to the host contract, and enroll the deployed origin in the Chrome Origin Trial.
 - Base Sepolia (`eip155:84532`) is the only supported blockchain network for the MVP. Use the x402 `exact` scheme with testnet USDC and an injected EIP-1193 wallet; remove World Chain and all multi-network branching from the paid path. The sponsor path must remain fully judge-testable without a wallet.
-- Deploy the frontend on Cloudflare and the Node Hono resource server on Render (or an equivalent Node host) with a strict origin allowlist and exposed x402 headers. Use the hosted Base Sepolia facilitator as the reliable submission path; keep the self-hosted facilitator optional for local demonstration.
+- Deploy the frontend on Cloudflare and the Node Hono resource server as one non-autoscaling instance on Render (or equivalent) with a strict origin allowlist and exposed x402 headers. Treat a hosted Base Sepolia facilitator as the preferred candidate pending capability verification; if unverified, disable public payment and use a same-release local recording while preserving the sponsor live path.
 - Do not rely on the current isolate-local AgentKit free-trial storage for access control. Sponsor grants use their own narrow prototype ledger; production durability is explicitly out of scope.
 - Tool cancellation, duplicate execution, expired grants, CORS, and unavailable payment infrastructure must fail safely and visibly.
+- The sponsor live path uses an eight-visible-second browser timer plus a server-issued resource-bound session (90-second session TTL, 60-second grant TTL). It is elapsed-time verification, not fraud-proof attention measurement.
+- Process-local session/grant/result registries require one public server instance, no autoscaling, and no deploy during recording or judging. Same-identity successful results replay for five minutes.
+- The tool accepts a canonical recipe ID and optional dietary goals only. Recipe content is resolved from the publisher-owned canonical source.
 - Freeze features by September 3 at 12:00 JST; reserve the remaining time for deployment, recording, upload, and Devpost submission.
 
 ## Boundary Strategy
@@ -33,7 +37,9 @@ The implementation reuses the existing React/Vite WebMCP frontend, Hono x402 res
 - **Why this split**: Contracts stabilize the seams first; the publisher UI, sponsor unlock, and payment unlock can then be developed independently; WebMCP orchestration integrates only proven paths; submission readiness owns cross-app release work without expanding product scope.
 - **Shared seams to watch**: Access-grant shape and expiry, premium resource request/response schemas, gate state transitions, API base URL/CORS, abort propagation, and ownership of top-level frontend composition.
 
-## Specs (dependency order)
+## Specs approved for implementation (dependency order)
+
+The checked boxes below mean the design documents are approved. They do **not** mean implementation is complete; implementation progress is tracked only in each spec's `tasks.md`.
 
 - [x] adgate-contracts -- Define premium-resource schemas, access grants, gate state machine, error taxonomy, and cross-app HTTP contracts. Dependencies: none
 - [x] publisher-demo -- Replace the todo reference UI with a polished recipe publisher and deterministic premium analysis service, without monetization logic. Dependencies: adgate-contracts

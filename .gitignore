@@ -3,3 +3,7 @@ node_modules
 apps/frontend/playwright-report/
 apps/frontend/test-results/
 .pnpm-store
+**/.env
+**/.env.*
+!**/.env.example
+**/.wrangler/

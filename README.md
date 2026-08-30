@@ -200,7 +200,7 @@ capturing or publishing submission media.
 
 ## Submission materials
 
-- [Devpost draft](./docs/devpost-submission.md)
+- [Devpost draft](./devpost-submission.md)
 - [Judging evidence map](./docs/judging-evidence.md)
 - [Video script and shot list](./docs/demo-video.md)
 - [Screenshot checklist](./docs/screenshots.md)

@@ -35,7 +35,7 @@ describe("SponsorModal", () => {
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(screen.getByText(/free access path/i)).toBeVisible();
     expect(screen.getByText(/8 seconds/i)).toBeVisible();
-    expect(screen.getByText("Open Table Weekly")).toBeVisible();
+    expect(screen.queryByText("Open Table Weekly")).not.toBeInTheDocument();
     const start = screen.getByRole("button", { name: "Start sponsor view" });
     expect(start).toHaveFocus();
     fireEvent.click(start);
@@ -68,6 +68,8 @@ describe("SponsorModal", () => {
         onCancel={onCancel}
       />,
     );
+
+    expect(screen.getByText("Open Table Weekly")).toBeVisible();
 
     const continueButton = screen.getByRole("button", {
       name: "Continue to recipe analysis",

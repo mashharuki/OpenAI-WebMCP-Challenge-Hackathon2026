@@ -118,21 +118,31 @@ export function SponsorModal({
         </header>
 
         <div className="space-y-5 p-6">
-          <section
-            aria-labelledby="sponsor-creative-title"
-            className="rounded-xl border border-[#d2a142] bg-[#fff6df] p-5"
-          >
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#87651f]">
-              A message from
+          {state.type === "ready" ? (
+            <p className="rounded-xl border border-[#d7ded8] bg-[#edf0ed] p-5 text-sm leading-6 text-[#53645a]">
+              The sponsor message appears only after you choose Start sponsor
+              view.
             </p>
-            <h3 id="sponsor-creative-title" className="mt-1 text-xl font-bold">
-              Open Table Weekly
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-[#5d5138]">
-              Plan a calmer week of seasonal meals with one concise kitchen note
-              delivered every Sunday.
-            </p>
-          </section>
+          ) : (
+            <section
+              aria-labelledby="sponsor-creative-title"
+              className="rounded-xl border border-[#d2a142] bg-[#fff6df] p-5"
+            >
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#87651f]">
+                A message from
+              </p>
+              <h3
+                id="sponsor-creative-title"
+                className="mt-1 text-xl font-bold"
+              >
+                Open Table Weekly
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-[#5d5138]">
+                Plan a calmer week of seasonal meals with one concise kitchen
+                note delivered every Sunday.
+              </p>
+            </section>
+          )}
 
           <p
             role="status"

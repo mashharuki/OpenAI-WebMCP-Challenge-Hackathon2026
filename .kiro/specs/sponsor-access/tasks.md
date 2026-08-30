@@ -17,7 +17,7 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.5, 6.1, 6.3_
   - _Boundary: SponsorGrantClient_
 
-- [ ] 2. スポンサー閲覧体験を実装する
+- [x] 2. スポンサー閲覧体験を実装する
 - [x] 2.1 (P) 試行単位の可視時間と終端状態を実装する
   - 単調時計と visibility を注入可能にし、visible 区間だけを required duration へ加算する。
   - attempt ID と nonce を保持し、別試行の event、cancel 後の tick、遅延 response を無視する。
@@ -37,7 +37,7 @@
   - _Boundary: SponsorModal_
   - _Depends: 1.2_
 
-- [ ] 2.3 sponsor provider と発行 client を接続する
+- [x] 2.3 sponsor provider と発行 client を接続する
   - 一件だけの active attempt を modal host へ公開し、二件目を既存 attempt を壊さず拒否する。
   - countdown 完了後のみ発行 endpoint を呼び、成功証跡または安全な失敗を元 attempt へ一度返す。
   - AbortSignal と provider unmount で HTTP と UI を終了し、token は memory 外へ保存しない。

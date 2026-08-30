@@ -54,7 +54,7 @@ describe("public documentation", () => {
       ),
     );
 
-    const devpost = await read("devpost-submission.md");
+    const devpost = await read("docs/devpost-submission.md");
     for (const heading of [
       "Problem",
       "Solution",

@@ -38,7 +38,7 @@
   - _Boundary: BrowserPaymentTestHarness_
 
 - [ ] 2. Server の支払い保護境界を実装する
-- [ ] 2.1 Prototype の bounded idempotency registry を実装する
+- [x] 2.1 Prototype の bounded idempotency registry を実装する
   - sponsor/payment共通でidempotency key、request digest、evidence fingerprintを照合し、成功結果だけ五分cacheする。
   - route認可より先にidentityのin-flight slotをclaimし、そのoperation内でauthorize/consume/verify/settle/handlerを一度だけ実行する。同一identityはpromise/cacheを共有し、既存keyに対するdigestまたはfingerprint不一致は409にする。
   - idempotency key と canonical request digest を結び付け、同じ操作の in-flight promise を共有する。

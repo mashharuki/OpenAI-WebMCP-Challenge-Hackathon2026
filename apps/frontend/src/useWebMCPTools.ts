@@ -28,7 +28,7 @@ const createAnalyzeRecipeTool = (
   name: "analyze_recipe",
   title: "Analyze this recipe",
   description:
-    "Request premium analysis for the published recipe. A human access choice is required before the pending request can complete.",
+    "Request premium analysis for the published recipe. A human access choice is required before completion. Returns a summary, nutritional insights, practical suggestions, and a general-information disclaimer.",
   inputSchema,
   annotations: {
     readOnlyHint: false,

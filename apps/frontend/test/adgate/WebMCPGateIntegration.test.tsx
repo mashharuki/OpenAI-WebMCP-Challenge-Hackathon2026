@@ -102,6 +102,7 @@ const createCoordinator = ({
   payment: PaymentCoordinatorPort;
 }) =>
   createGateCoordinator({
+    sponsorId: "test-sponsor",
     sponsorGate: { requestSponsorAccess: sponsor },
     protectedClient: { executeWithSponsor: protectedAnalysis },
     paymentCoordinator: payment,

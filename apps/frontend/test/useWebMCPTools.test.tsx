@@ -62,6 +62,9 @@ describe("useWebMCPTools", () => {
       },
     });
     expect(tool.description).toMatch(/human access choice/i);
+    expect(tool.description).toMatch(/nutritional insights/i);
+    expect(tool.description).toMatch(/suggestions/i);
+    expect(tool.description).toMatch(/disclaimer/i);
     expect(tool.description.length).toBeLessThanOrEqual(500);
     expect(registration).not.toHaveProperty("exposedTo");
     expect(registration?.signal?.aborted).toBe(false);

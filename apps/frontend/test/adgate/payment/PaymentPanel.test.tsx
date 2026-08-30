@@ -6,10 +6,19 @@ import {
 import type { PaymentRequired } from "@x402/core/types";
 import { describe, expect, it, vi } from "vitest";
 import type { PremiumAnalysisRequest } from "../../../src/adgate/contracts.js";
-import { createChallengeClient } from "../../../src/adgate/payment/challenge.js";
-import { PaymentPanel } from "../../../src/adgate/payment/PaymentPanel.js";
+import {
+  createChallengeClient,
+  type PaymentRequirement,
+} from "../../../src/adgate/payment/challenge.js";
+import {
+  ActivePaymentPanel,
+  PaymentPanel,
+} from "../../../src/adgate/payment/PaymentPanel.js";
 import { createPaymentClient } from "../../../src/adgate/payment/paymentClient.js";
-import { createPaymentCoordinator } from "../../../src/adgate/payment/paymentCoordinator.js";
+import {
+  createPaymentCoordinator,
+  type PaymentFlowState,
+} from "../../../src/adgate/payment/paymentCoordinator.js";
 import { createWalletAdapter } from "../../../src/adgate/payment/walletAdapter.js";
 import { createMockEip1193Provider } from "../../payment/mockEip1193Provider.js";
 
@@ -111,6 +120,45 @@ const createHarness = ({
 };
 
 describe("PaymentPanel", () => {
+  it("observes a gate-owned attempt without starting or cancelling it", () => {
+    const requestPaidAccess = vi.fn(() => new Promise<never>(() => undefined));
+    const cancel = vi.fn();
+    const paymentState: PaymentFlowState = {
+      type: "reviewing" as const,
+      attempt: {
+        request,
+        canonicalBody: JSON.stringify(request),
+        challenge: {
+          requestId: request.requestId,
+          requirements: [
+            {
+              ...challenge.accepts[0],
+              scheme: "exact",
+              resource: "recipe_analysis",
+              asset: asset as `0x${string}`,
+              payTo: payTo as `0x${string}`,
+              extra: { name: "USDC", version: "2" },
+            } satisfies PaymentRequirement,
+          ],
+        },
+      },
+    };
+    const coordinator = {
+      requestPaidAccess,
+      confirm: vi.fn(async () => undefined),
+      cancel,
+      getSnapshot: () => paymentState,
+      subscribe: () => () => undefined,
+    };
+
+    const view = render(<ActivePaymentPanel coordinator={coordinator} />);
+
+    expect(screen.getByText("0.01 USDC")).toBeVisible();
+    expect(requestPaidAccess).not.toHaveBeenCalled();
+    view.unmount();
+    expect(cancel).not.toHaveBeenCalled();
+  });
+
   it("shows server terms before touching the wallet and confirms one payment", async () => {
     const { coordinator, httpCalls, provider } = createHarness();
     render(

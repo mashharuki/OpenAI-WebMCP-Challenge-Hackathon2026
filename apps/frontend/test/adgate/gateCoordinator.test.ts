@@ -6,7 +6,7 @@ import type {
   RecipeAnalysisInput,
 } from "../../src/adgate/contracts";
 import {
-  createGateCoordinator,
+  createGateCoordinator as createProductionGateCoordinator,
   type GateAttemptIdentity,
 } from "../../src/adgate/gateCoordinator";
 import type {
@@ -17,6 +17,17 @@ import type { ProtectedAnalysisClientPort } from "../../src/adgate/protectedAnal
 import type { SponsorGatePort } from "../../src/sponsor/SponsorGateProvider";
 
 const input = { recipeId: "roasted-chickpea-quinoa-bowl" } as const;
+
+const createGateCoordinator = (
+  options: Omit<
+    Parameters<typeof createProductionGateCoordinator>[0],
+    "sponsorId"
+  >,
+) =>
+  createProductionGateCoordinator({
+    sponsorId: "test-sponsor",
+    ...options,
+  });
 
 const identities: GateAttemptIdentity[] = [
   {
@@ -549,4 +560,76 @@ describe("GateCoordinator", () => {
     expect(executeWithSponsor).not.toHaveBeenCalled();
     expect(coordinator.getSnapshot().state.type).toBe("cancelled");
   });
+
+  it("routes sponsor cancellation through the shared cancellation path once", async () => {
+    const paymentCancel = vi.fn();
+    const coordinator = createGateCoordinator({
+      sponsorGate: {
+        requestSponsorAccess: vi.fn(async () => ({
+          ok: false as const,
+          error: {
+            code: "CANCELLED" as const,
+            message: "Sponsor access was cancelled.",
+            retryable: false,
+          },
+        })),
+      },
+      paymentCoordinator: {
+        requestPaidAccess: neverPaymentAccess,
+        confirm: vi.fn(async () => undefined),
+        cancel: paymentCancel,
+        getSnapshot: () => ({ type: "idle" }),
+        subscribe: () => () => undefined,
+      },
+      protectedClient: { executeWithSponsor: neverProtectedAnalysis },
+      paymentAvailable: true,
+      createAttemptIdentity: () => identities[0],
+    });
+    const invocation = coordinator.requestAnalysis(input, { source: "webmcp" });
+
+    await coordinator.chooseSponsor();
+
+    await expect(invocation).resolves.toMatchObject({
+      ok: false,
+      error: { code: "CANCELLED" },
+    });
+    expect(paymentCancel).toHaveBeenCalledExactlyOnceWith("user");
+  });
+
+  it.each([
+    { kind: "x402_payment" as const, referenceId: "grant-1" },
+    { kind: "sponsor_grant" as const, referenceId: "different-grant" },
+  ])(
+    "rejects protected sponsor access that does not match its grant: $kind",
+    async (access) => {
+      const coordinator = createGateCoordinator({
+        sponsorGate: { requestSponsorAccess: vi.fn(async () => sponsorGrant) },
+        paymentCoordinator: {
+          requestPaidAccess: neverPaymentAccess,
+          confirm: vi.fn(async () => undefined),
+          cancel: vi.fn(),
+          getSnapshot: () => ({ type: "idle" }),
+          subscribe: () => () => undefined,
+        },
+        protectedClient: {
+          executeWithSponsor: vi.fn(async () => ({
+            ...sponsorSuccess,
+            access,
+          })),
+        },
+        paymentAvailable: true,
+        createAttemptIdentity: () => identities[0],
+      });
+      const invocation = coordinator.requestAnalysis(input, {
+        source: "webmcp",
+      });
+
+      await coordinator.chooseSponsor();
+
+      await expect(invocation).resolves.toMatchObject({
+        ok: false,
+        error: { code: "INVALID_EVIDENCE" },
+      });
+    },
+  );
 });

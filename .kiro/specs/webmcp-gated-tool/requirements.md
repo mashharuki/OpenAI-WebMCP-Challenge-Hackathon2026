@@ -35,7 +35,7 @@ AdGate の `recipe_analysis` を、WebMCP エージェントとページ上の�
 3. If 対応 WebMCP 名前空間が存在しない, the WebMCP Gated Tool shall ページの通常閲覧を維持し、ツールが利用できないことを可視に示す。
 4. While 同じページ lifecycle が継続している, the WebMCP Gated Tool shall 同じツールを重複登録しない。
 5. When 登録を所有するページ lifecycle が終了する, the WebMCP Gated Tool shall 登録を解除し、未完了のツール試行を中断する。
-6. If ツール登録または解除が失敗する, the WebMCP Gated Tool shall ページを停止させず、安全な unavailable 状態を可視に示す。
+6. If ツール登録が失敗する, the WebMCP Gated Tool shall ページを停止させず、安全な unavailable 状態を可視に示す。When 登録 lifecycle が終了する, the tool shall 登録時の `AbortSignal` を中断して解除し、解除専用の結果チャネルが存在するとは仮定しない。
 
 ### Requirement 3: 共有ゲートによる人間参加の待機と再開
 

@@ -46,7 +46,7 @@
   - starter tool 群を、静的 name/title/description、`additionalProperties: false` の schema、untrusted content annotation を持つ単一 tool へ置き換える。
   - 固定recipe IDと任意dietary goalsだけをruntime schemaで検証し、recipe本文・unknown ID・unknown fieldはcoordinatorを開始せず`INVALID_INPUT`を返す。
   - execute callback の signal を attempt へ渡し、canonical `WebMCPToolResult` の plain JSON value を返す。
-  - 同じ page lifetime で一回だけ登録され、登録 controller の abort で解除され、登録・解除の拒否は raw DOMException を出さない unavailable status になる test を通す。
+  - 同じ page lifetime で一回だけ登録され、登録 controller の abort で解除され、登録拒否は raw DOMException を出さない unavailable status になる test を通す。解除は現行 WebMCP の registration signal による同期的な lifecycle 操作として扱い、独立した失敗結果を仮定しない。
   - _Depends: 1.1, 2.3_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 5.2, 5.3, 5.4, 5.5, 6.2, 6.3, 6.4, 6.5_
   - _Boundary: WebMCPAdapter_

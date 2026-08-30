@@ -1,35 +1,29 @@
-# WebMCP React Starter
+# Open Table Journal WebMCP Demo
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/agents/tree/main/examples/webmcp-react)
 
-A React todo app that exposes the same actions to people and browser-based AI agents with [WebMCP](https://github.com/webmachinelearning/webmcp), deployed as a Cloudflare Worker.
+A React publisher demo that exposes gated premium recipe analysis to people and browser-based AI agents with [WebMCP](https://github.com/webmachinelearning/webmcp), deployed as a Cloudflare Worker.
 
 > [!IMPORTANT]
 > WebMCP is experimental. The Chrome testing setup below is temporary and may change as browser support evolves.
 
 ## What it demonstrates
 
-- Four imperative tools to list, rename, complete or reopen, and delete todos
-- One declarative tool generated from the visible add-todo form
-- Shared React actions for UI controls and agent tools
-- Runtime validation and JSON Schemas generated from Zod Mini
+- One imperative `analyze_recipe` tool and the matching visible analysis action
+- A shared human-in-the-loop gate with sponsor and Base Sepolia x402 paths
+- Runtime validation and JSON Schema generated from Zod
 - Lifecycle-managed tool registration with cleanup on unmount
-- A useful unsupported-browser state
-- Browser-local persistence with `localStorage`
+- Safe unsupported-browser and registration-failure states
 
 This differs from [`examples/webmcp`](../webmcp/), which bridges remote `McpAgent` tools into WebMCP with `registerWebMcp()`. This example focuses on page-local React state and the browser's imperative and declarative WebMCP APIs.
 
 ## WebMCP tools
 
-| Tool                 | API         | Purpose                                      |
-| -------------------- | ----------- | -------------------------------------------- |
-| `list_todos`         | Imperative  | List all, active, or completed todos and IDs |
-| `add_todo`           | Declarative | Create an active todo through the HTML form  |
-| `rename_todo`        | Imperative  | Replace a todo's text                        |
-| `set_todo_completed` | Imperative  | Complete or reopen a todo                    |
-| `delete_todo`        | Imperative  | Permanently remove a todo                    |
+| Tool             | API        | Purpose                                               |
+| ---------------- | ---------- | ----------------------------------------------------- |
+| `analyze_recipe` | Imperative | Request gated premium analysis for the published dish |
 
-Every tool invocation updates the same state as the human-facing controls. Tool output includes todo IDs for reliable follow-up calls.
+Agent and visible-UI invocations enter the same gate and return the same structured recipe-analysis contract.
 
 ## Run locally
 
@@ -49,6 +43,11 @@ pnpm run types   # Regenerate Worker binding types
 pnpm run deploy  # Build and deploy to Cloudflare
 ```
 
+The Vite development server proxies `/api` to the local resource server. For a
+split production deployment, copy `.env.example` and set `VITE_API_BASE_URL` to
+the public HTTP(S) origin of `apps/server`. Leave it unset only when production
+routes `/api` to that server on the frontend's origin.
+
 The directory is self-contained so create-cloudflare-cli can copy it as a standalone starter. Its package metadata and `.mcp.json` should remain usable outside this monorepo.
 
 ## Connect a coding agent
@@ -60,34 +59,15 @@ The checked-in [`.mcp.json`](./.mcp.json) configures [`chrome-devtools-mcp`](htt
 3. Open your MCP-compatible coding agent from this directory and enable the project-level **chrome-devtools** server. Restart an already-running agent so it discovers `.mcp.json`.
 4. Start the app, open <http://localhost:5173> in that Chrome instance, and ask your agent:
 
-   > Add a todo to buy groceries on http://localhost:5173
+   > Analyze the published recipe on http://localhost:5173
 
 Chrome may ask you to approve the debugging connection, and your coding agent may separately require approval before executing a tool. The MCP configuration exposes only navigation plus WebMCP discovery and execution as direct tools.
 
 WebMCP is governed by the `tools` Permissions Policy. A cross-origin iframe embedding this app must include `allow="tools"`.
 
-## Key patterns
+## Key pattern
 
-A semantic form declares the add tool:
-
-```tsx
-<form
-  toolname="add_todo"
-  tooldescription="Add one active todo to the current list."
-  toolautosubmit=""
-  onSubmit={submitTodo}
->
-  <input
-    name="text"
-    required
-    maxLength={200}
-    toolparamdescription="The todo text, between 1 and 200 characters."
-  />
-  <button type="submit">Add todo</button>
-</form>
-```
-
-Imperative tools register for the component lifecycle:
+The imperative tool registers for the component lifecycle:
 
 ```tsx
 useEffect(() => {
@@ -101,19 +81,16 @@ useEffect(() => {
 }, [tool]);
 ```
 
-Use declarative tools for existing semantic forms. Use imperative tools for reads, complex inputs, or actions that do not naturally map to one form submission. Keep runtime validation in either path; a browser-visible schema is not a validation boundary.
-
-## Persistence
-
-The current starter uses `localStorage` only as reference behavior. The approved AdGate design replaces the Todo experience rather than extending its persistence model.
+The execute callback validates input and delegates to the same gate coordinator used by the visible UI. The registration signal and each invocation signal have separate lifetimes.
 
 ## Project structure
 
 ```text
 .mcp.json              Coding-agent connection for WebMCP tools
-src/App.tsx            Todo UI and declarative WebMCP form
-src/schemas.ts         Zod Mini contracts and generated JSON Schemas
-src/useTodos.ts        Shared localStorage-backed todo actions
+src/App.tsx            Publisher composition root and runtime API wiring
+src/adgate/            Shared gate, payment UI, and protected API adapters
+src/publisher/         Recipe article and visible analysis experience
+src/sponsor/           Sponsor access provider and API client
 src/useWebMCPTools.ts  Imperative WebMCP definitions and registration
 src/webmcp.d.ts        Experimental WebMCP type additions
 src/server.ts          Worker fallback for unmatched asset requests

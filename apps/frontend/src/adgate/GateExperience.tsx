@@ -1,7 +1,6 @@
-import { useMemo, useRef, useState } from "react";
-import type { PremiumAnalysisRequest } from "./contracts";
+import { useRef, useState } from "react";
 import { useGate } from "./GateProvider";
-import { PaymentPanel } from "./payment/PaymentPanel";
+import { ActivePaymentPanel } from "./payment/PaymentPanel";
 import type { PaymentCoordinatorPort } from "./payment/paymentCoordinator";
 import type { Eip1193ProviderPort } from "./payment/walletAdapter";
 
@@ -9,13 +8,6 @@ export interface GateExperienceProps {
   readonly paymentCoordinator: PaymentCoordinatorPort;
   readonly walletProvider?: Eip1193ProviderPort;
 }
-
-const panelRequest: PremiumAnalysisRequest = {
-  requestId: "gate-owned-payment",
-  idempotencyKey: "gate-owned-payment",
-  resourceId: "recipe_analysis",
-  input: { recipeId: "roasted-chickpea-quinoa-bowl" },
-};
 
 const phaseMessage = (
   state: ReturnType<typeof useGate>["snapshot"]["state"],
@@ -56,19 +48,6 @@ export function GateExperience({
   if (lockedAttempt.current && lockedAttempt.current !== attemptId) {
     lockedAttempt.current = undefined;
   }
-
-  const panelCoordinator = useMemo<PaymentCoordinatorPort>(
-    () => ({
-      requestPaidAccess: () => new Promise(() => undefined),
-      confirm: (provider) => paymentCoordinator.confirm(provider),
-      cancel: (reason) => {
-        if (reason !== "unmounted") paymentCoordinator.cancel(reason);
-      },
-      getSnapshot: paymentCoordinator.getSnapshot,
-      subscribe: paymentCoordinator.subscribe,
-    }),
-    [paymentCoordinator],
-  );
 
   if (snapshot.state.type === "idle") return null;
 
@@ -140,10 +119,9 @@ export function GateExperience({
 
       {snapshot.state.type === "awaiting_payment" ? (
         <div className="mt-4">
-          <PaymentPanel
-            coordinator={panelCoordinator}
+          <ActivePaymentPanel
+            coordinator={paymentCoordinator}
             provider={walletProvider}
-            request={panelRequest}
           />
         </div>
       ) : null}

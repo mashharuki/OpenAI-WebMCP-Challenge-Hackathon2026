@@ -9,6 +9,8 @@ import { createPaymentCoordinator } from "./adgate/payment/paymentCoordinator";
 import { createWalletAdapter } from "./adgate/payment/walletAdapter";
 import { createProtectedAnalysisClient } from "./adgate/protectedAnalysisClient";
 import { PublisherDemo } from "./publisher/PublisherDemo";
+import { resolveApiBaseUrl } from "./runtimeConfig";
+import { SPONSOR_ID } from "./sponsor/contracts";
 import {
   SponsorGateProvider,
   useSponsorGate,
@@ -17,6 +19,10 @@ import { createSponsorGrantClient } from "./sponsor/sponsorGrantClient";
 import { useWebMCPTools } from "./useWebMCPTools";
 
 const BASE_SEPOLIA_USDC = "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as const;
+const API_BASE_URL = resolveApiBaseUrl(
+  import.meta.env.VITE_API_BASE_URL,
+  globalThis.location.origin,
+);
 
 const isGateActive = (
   type: ReturnType<typeof useGate>["snapshot"]["state"]["type"],
@@ -49,7 +55,7 @@ function GatedPublisherApp() {
   const sponsorGate = useSponsorGate();
   const walletProvider = window.ethereum;
   const dependencies = useMemo(() => {
-    const baseUrl = globalThis.location.origin;
+    const baseUrl = API_BASE_URL;
     const endpoint = new URL("/api/recipe-analysis", baseUrl).toString();
     const challengeClient = createChallengeClient({
       acceptedAsset: BASE_SEPOLIA_USDC,
@@ -60,6 +66,7 @@ function GatedPublisherApp() {
       walletAdapter: createWalletAdapter(),
     });
     const coordinator = createGateCoordinator({
+      sponsorId: SPONSOR_ID,
       sponsorGate,
       paymentCoordinator,
       protectedClient: createProtectedAnalysisClient({ baseUrl }),
@@ -171,7 +178,7 @@ function PublisherPage({
 
 export default function App() {
   const sponsorClient = useMemo(
-    () => createSponsorGrantClient({ baseUrl: globalThis.location.origin }),
+    () => createSponsorGrantClient({ baseUrl: API_BASE_URL }),
     [],
   );
   return (

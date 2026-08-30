@@ -21,6 +21,12 @@ export type PaymentPanelProps = {
   readonly onReturnToSponsor?: () => void;
 };
 
+export type ActivePaymentPanelProps = Omit<PaymentPanelProps, "request">;
+
+type PaymentPanelViewProps = ActivePaymentPanelProps & {
+  readonly request?: PremiumAnalysisRequest;
+};
+
 const shortenHex = (value: string): string =>
   `${value.slice(0, 6)}…${value.slice(-4)}`;
 
@@ -114,12 +120,12 @@ function PaymentTerms({ requirement }: { requirement: PaymentRequirement }) {
   );
 }
 
-export function PaymentPanel({
+function PaymentPanelView({
   coordinator,
   provider,
   request,
   onReturnToSponsor,
-}: PaymentPanelProps) {
+}: PaymentPanelViewProps) {
   const state = useSyncExternalStore(
     coordinator.subscribe,
     coordinator.getSnapshot,
@@ -131,10 +137,11 @@ export function PaymentPanel({
   const requirement = lastRequirement.current;
 
   const startAttempt = useCallback(() => {
-    void coordinator.requestPaidAccess(request);
+    if (request) void coordinator.requestPaidAccess(request);
   }, [coordinator, request]);
 
   useEffect(() => {
+    if (!request) return;
     const controller = new AbortController();
     void coordinator.requestPaidAccess(request, controller.signal);
     return () => {
@@ -230,7 +237,7 @@ export function PaymentPanel({
           </div>
         )}
 
-        {state.type === "failed" && (
+        {state.type === "failed" && request && (
           <div className="space-y-3">
             <p role="alert" className="text-sm text-kumo-danger">
               {state.error.message}
@@ -248,7 +255,7 @@ export function PaymentPanel({
           </div>
         )}
 
-        {state.type === "cancelled" && (
+        {state.type === "cancelled" && request && (
           <RecoveryActions
             onRetry={startAttempt}
             onReturnToSponsor={onReturnToSponsor}
@@ -289,4 +296,12 @@ export function PaymentPanel({
       </div>
     </Surface>
   );
+}
+
+export function PaymentPanel(props: PaymentPanelProps) {
+  return <PaymentPanelView {...props} />;
+}
+
+export function ActivePaymentPanel(props: ActivePaymentPanelProps) {
+  return <PaymentPanelView {...props} />;
 }

@@ -226,6 +226,8 @@ registration signal は tool の登録 lifetime だけを所有する。各 exec
 - Outbound: `ProtectedAnalysisClientPort` — sponsor-authorized analysis (P0)
 - Inbound: WebMCPAdapter / GatedAnalysisAdapter — invocation (P0)
 
+`sponsorId` は composition root が `GateCoordinator` の生成時に注入し、coordinator は sponsor の具体契約を import しない。API base URL も composition root が `VITE_API_BASE_URL`（未指定時は same-origin）から一度だけ解決し、sponsor、challenge、payment、protected analysis の各 client へ同じ値を渡す。
+
 **Contracts**: Service [x] / API [ ] / Event [x] / Batch [ ] / State [x]
 
 ```typescript
@@ -281,7 +283,7 @@ interface PaymentCoordinatorPort {
 ##### Event Contract
 
 - Published: `GateSnapshot`。同期 snapshot 後の変化だけを subscriber へ通知する。
-- Subscribed: sponsor result、`PaymentTerminalResult`、payment snapshot、user choice、AbortSignal。payment snapshot は表示専用で、WebMCP invocation の終端判定には使用しない。
+- Subscribed: sponsor result、`PaymentTerminalResult`、user choice、AbortSignal。payment snapshot は x402 所有の `ActivePaymentPanel` が表示専用に購読し、GateCoordinator と WebMCP invocation の終端判定には使用しない。
 - Ordering: attempt IDが一致するeventのみを受理する。payment successは`payment_succeeded`で`awaiting_payment`から`succeeded`へ原子的に遷移し、終端後のdeliveryは破棄する。
 
 ##### State Management
@@ -380,7 +382,7 @@ adapter は visible UI source で `requestAnalysis` を呼び、success の `dat
 
 #### GateExperience
 
-`awaiting_choice` で sponsor/payment の明示 button を表示し、upstream `SponsorModal` と `PaymentPanel` を必要な state だけで配置する。status は `aria-live="polite"` を使用し、choice dialog の focus management は sponsor/payment upstream component に委譲する。payment unavailable では payment button を無効化して理由を表示するが sponsor button は維持する。
+`awaiting_choice` で sponsor/payment の明示 button を表示し、upstream `SponsorModal` と x402 所有の表示専用 `ActivePaymentPanel` を必要な state だけで配置する。通常の `PaymentPanel` は自ら attempt を開始・cleanup し、`ActivePaymentPanel` は GateCoordinator が開始した同じ coordinator を購読するだけで、架空 request や counterfeit port を作らない。status は `aria-live="polite"` を使用し、choice dialog の focus management は sponsor/payment upstream component に委譲する。payment unavailable では payment button を無効化して理由を表示するが sponsor button は維持する。
 
 ## Data Models
 

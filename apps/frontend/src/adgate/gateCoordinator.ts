@@ -1,4 +1,3 @@
-import { SPONSOR_ID } from "../sponsor/contracts";
 import type { SponsorGatePort } from "../sponsor/SponsorGateProvider";
 import {
   type AdGateError,
@@ -47,6 +46,7 @@ export interface GateCoordinatorPort {
 }
 
 interface GateCoordinatorOptions {
+  readonly sponsorId: string;
   readonly sponsorGate: SponsorGatePort;
   readonly paymentCoordinator: PaymentCoordinatorPort;
   readonly protectedClient: ProtectedAnalysisClientPort;
@@ -102,6 +102,7 @@ const dependencyUnavailable = (): AdGateErrorEnvelope => ({
 });
 
 export const createGateCoordinator = ({
+  sponsorId,
   sponsorGate,
   paymentCoordinator,
   protectedClient,
@@ -231,7 +232,7 @@ export const createGateCoordinator = ({
         !transition({
           type: "choose_sponsor",
           attemptId: candidate.identity.attemptId,
-          sponsorId: SPONSOR_ID,
+          sponsorId,
         })
       ) {
         return;
@@ -247,12 +248,7 @@ export const createGateCoordinator = ({
         if (!isCurrent(candidate)) return;
         if (!sponsorResult.ok) {
           if (sponsorResult.error.code === "CANCELLED") {
-            transition({
-              type: "cancel",
-              attemptId: candidate.identity.attemptId,
-              reason: "user",
-            });
-            settle(candidate, normalizeWebMCPResult(sponsorResult));
+            cancelAttempt(candidate, "user");
           } else {
             rejectAttempt(candidate, sponsorResult.error);
           }
@@ -289,10 +285,14 @@ export const createGateCoordinator = ({
           rejectAttempt(candidate, protectedResult.error);
           return;
         }
-        if (protectedResult.requestId !== candidate.request.requestId) {
+        if (
+          protectedResult.requestId !== candidate.request.requestId ||
+          protectedResult.access.kind !== "sponsor_grant" ||
+          protectedResult.access.referenceId !== sponsorResult.evidence.grantId
+        ) {
           rejectAttempt(candidate, {
-            code: "IDEMPOTENCY_CONFLICT",
-            message: "The analysis result does not match this request.",
+            code: "INVALID_EVIDENCE",
+            message: "The analysis result does not match this sponsor grant.",
             retryable: false,
           });
           return;

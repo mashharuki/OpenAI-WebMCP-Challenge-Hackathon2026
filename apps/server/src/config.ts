@@ -3,14 +3,19 @@ import { validatePaymentRuntime } from "./adgate/paymentPolicy.js";
 
 const payTo = process.env.EVM_ADDRESS;
 const facilitatorUrl = process.env.FACILITATOR_URL;
+const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 const validation = validatePaymentRuntime({ payTo, facilitatorUrl });
 
-if (!validation.ok || !facilitatorUrl) {
+if (!validation.ok || !facilitatorUrl || allowedOrigins.length === 0) {
   throw new Error("Payment runtime configuration is invalid.");
 }
 
 export const paymentPolicy = validation.policy;
 export const paymentFacilitatorUrl = facilitatorUrl;
+export const paymentAllowedOrigins = allowedOrigins;
 
 export const x402Config = {
   [paymentPolicy.route]: {

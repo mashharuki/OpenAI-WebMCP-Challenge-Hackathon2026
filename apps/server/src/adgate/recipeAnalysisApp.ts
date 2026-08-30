@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type MiddlewareHandler } from "hono";
 import {
   type AdGateErrorEnvelope,
   premiumAnalysisRequestSchema,
@@ -7,9 +7,12 @@ import type {
   PaymentAuthorizedHandler,
   PaymentProtectionService,
 } from "./paymentProtection.js";
+import type { PaymentReadinessState } from "./readiness.js";
 
 type RecipeAnalysisAppDependencies = {
+  httpPolicy: MiddlewareHandler;
   paymentProtection: PaymentProtectionService;
+  paymentReadiness: Promise<PaymentReadinessState>;
   premiumHandler: PaymentAuthorizedHandler;
 };
 
@@ -23,12 +26,15 @@ const errorResponse = (
   );
 
 export const createRecipeAnalysisApp = ({
+  httpPolicy,
   paymentProtection,
+  paymentReadiness,
   premiumHandler,
 }: RecipeAnalysisAppDependencies): Hono => {
   const app = new Hono();
 
   app.get("/health", (context) => context.json({ report: { status: "OK" } }));
+  app.use("/api/*", httpPolicy);
 
   app.post("/api/recipe-analysis", async (context) => {
     let body: unknown;
@@ -73,6 +79,20 @@ export const createRecipeAnalysisApp = ({
         message: "Sponsor access is not available yet.",
         retryable: true,
       });
+    }
+
+    let readiness: PaymentReadinessState;
+    try {
+      readiness = await paymentReadiness;
+    } catch {
+      return errorResponse(503, {
+        code: "DEPENDENCY_UNAVAILABLE",
+        message: "Payment verification is temporarily unavailable.",
+        retryable: true,
+      });
+    }
+    if (readiness.type === "unavailable") {
+      return errorResponse(503, readiness.error);
     }
 
     return paymentProtection.handle(

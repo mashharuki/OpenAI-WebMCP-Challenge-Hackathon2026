@@ -58,7 +58,7 @@
   - _Boundary: PaymentProtection_
   - _Depends: 1.1, 1.4, 2.1_
 
-- [ ] 2.3 (P) CORS、支払い header 公開、no-store policy を実装する
+- [x] 2.3 (P) CORS、支払い header 公開、no-store policy を実装する
   - sponsor session/grant/protected analysis全routeへ共通適用し、`Authorization`をrequest allowlistへ含める。
   - allowlist origin の OPTIONS/POST、必要 request header、支払い response header の公開を設定する。
   - 402、200、4xx、5xx の全応答へ no-store と origin variation を適用する。
@@ -68,7 +68,7 @@
   - _Boundary: PaymentHttpPolicy_
   - _Depends: 1.4_
 
-- [ ] 2.4 (P) Facilitator readiness を安全に評価する
+- [x] 2.4 (P) Facilitator readiness を安全に評価する
   - 必須 config、health、supported capability を timeout 付きで検証し、Base Sepolia exact の組だけを ready とする。
   - probe failure と互換性不一致を安全な dependency error へ正規化し、raw response を公開しない。
   - payment unavailable を process health と sponsor availability から分離する。

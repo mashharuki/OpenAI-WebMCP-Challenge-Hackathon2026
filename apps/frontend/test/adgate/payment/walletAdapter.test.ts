@@ -52,6 +52,18 @@ describe("WalletAdapter", () => {
       "eth_chainId",
       "eth_signTypedData_v4",
     ]);
+    const signCall = provider.calls.find(
+      ({ method }) => method === "eth_signTypedData_v4",
+    );
+    const serializedTypedData = JSON.parse(
+      (signCall?.params as [string, string] | undefined)?.[1] ?? "null",
+    );
+    expect(serializedTypedData.types.EIP712Domain).toEqual([
+      { name: "name", type: "string" },
+      { name: "version", type: "string" },
+      { name: "chainId", type: "uint256" },
+      { name: "verifyingContract", type: "address" },
+    ]);
   });
 
   it("returns a safe error when no injected provider exists", async () => {

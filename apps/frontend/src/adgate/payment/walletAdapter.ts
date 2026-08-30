@@ -2,7 +2,7 @@ import { encodePaymentSignatureHeader } from "@x402/core/http";
 import type { PaymentRequirements } from "@x402/core/types";
 import type { ClientEvmSigner } from "@x402/evm";
 import { ExactEvmScheme } from "@x402/evm/exact/client";
-import type { EIP1193Provider } from "viem";
+import { type EIP1193Provider, getTypesForEIP712Domain } from "viem";
 import type { AdGateError } from "../contracts.js";
 import type { PaymentRequirement } from "./challenge.js";
 
@@ -76,11 +76,18 @@ const createSigner = (
 ): ClientEvmSigner => ({
   address: account,
   async signTypedData(message) {
+    const typedData = {
+      ...message,
+      types: {
+        EIP712Domain: getTypesForEIP712Domain({ domain: message.domain }),
+        ...message.types,
+      },
+    };
     const signature = await provider.request({
       method: "eth_signTypedData_v4",
       params: [
         account,
-        JSON.stringify(message, (_key, value) =>
+        JSON.stringify(typedData, (_key, value) =>
           typeof value === "bigint" ? value.toString() : value,
         ),
       ],

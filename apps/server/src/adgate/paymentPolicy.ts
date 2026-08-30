@@ -27,18 +27,37 @@ export type PaymentRuntimeValidation =
 const paymentRuntimeInputSchema = z
   .object({
     payTo: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
-    facilitatorUrl: z
-      .string()
-      .url()
-      .refine((value) => new URL(value).protocol === "https:"),
+    facilitatorUrl: z.string().url(),
   })
   .strict();
 
+export interface PaymentRuntimeValidationOptions {
+  readonly allowDevelopmentLoopbackHttp?: boolean;
+}
+
+const isAllowedFacilitatorUrl = (
+  value: string,
+  options: PaymentRuntimeValidationOptions,
+) => {
+  const url = new URL(value);
+  if (url.protocol === "https:") return true;
+
+  return (
+    options.allowDevelopmentLoopbackHttp === true &&
+    url.protocol === "http:" &&
+    ["localhost", "127.0.0.1", "::1"].includes(url.hostname)
+  );
+};
+
 export const validatePaymentRuntime = (
   input: unknown,
+  options: PaymentRuntimeValidationOptions = {},
 ): PaymentRuntimeValidation => {
   const parsed = paymentRuntimeInputSchema.safeParse(input);
-  if (!parsed.success) {
+  if (
+    !parsed.success ||
+    !isAllowedFacilitatorUrl(parsed.data.facilitatorUrl, options)
+  ) {
     return {
       ok: false,
       error: {

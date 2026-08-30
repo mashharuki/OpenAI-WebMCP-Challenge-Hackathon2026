@@ -7,7 +7,12 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
-const validation = validatePaymentRuntime({ payTo, facilitatorUrl });
+const validation = validatePaymentRuntime(
+  { payTo, facilitatorUrl },
+  {
+    allowDevelopmentLoopbackHttp: process.env.NODE_ENV === "development",
+  },
+);
 
 if (!validation.ok || !facilitatorUrl || allowedOrigins.length === 0) {
   throw new Error("Payment runtime configuration is invalid.");

@@ -10,6 +10,10 @@ single Base Sepolia x402 challenge used by the optional paid path.
 pnpm --filter x402server run dev
 ```
 
+The development entry point accepts `http://localhost` or a loopback IP for a
+local facilitator. The production build/start path still requires an HTTPS
+facilitator URL.
+
 Production-style validation:
 
 ```bash

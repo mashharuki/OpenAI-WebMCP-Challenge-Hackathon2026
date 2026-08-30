@@ -5,6 +5,7 @@ import { createFacilitatorApp } from "../src/app.js";
 import {
   BASE_SEPOLIA_NETWORK,
   createBaseSepoliaFacilitator,
+  safeVerificationFailureEvent,
 } from "../src/facilitator.js";
 
 const facilitatorAddress = "0x0000000000000000000000000000000000000001";
@@ -20,6 +21,21 @@ const createTestSigner = (): FacilitatorEvmSigner => ({
 });
 
 describe("local facilitator HTTP contract", () => {
+  it("logs only a bounded SDK reason code for verification failures", () => {
+    expect(
+      safeVerificationFailureEvent(
+        new Error(
+          "invalid_exact_evm_insufficient_balance: sensitive RPC detail",
+        ),
+      ),
+    ).toBe("facilitator.verify.failed.invalid_exact_evm_insufficient_balance");
+    expect(
+      safeVerificationFailureEvent(
+        new Error("unexpected failure containing 0xprivate-payment-signature"),
+      ),
+    ).toBe("facilitator.verify.failed");
+  });
+
   it("publishes Base Sepolia exact as its only payment capability", async () => {
     const facilitator = createBaseSepoliaFacilitator(createTestSigner());
     const app = createFacilitatorApp(facilitator);

@@ -14,6 +14,17 @@ const defaultLifecycleLogger: FacilitatorLifecycleLogger = {
   warn: (event) => console.warn(event),
 };
 
+const safeReasonPattern = /^[a-z][a-z0-9_]{2,80}$/;
+
+export const safeVerificationFailureEvent = (error: unknown): string => {
+  if (!(error instanceof Error)) return "facilitator.verify.failed";
+
+  const [reason] = error.message.split(":", 1);
+  return reason && safeReasonPattern.test(reason)
+    ? `facilitator.verify.failed.${reason}`
+    : "facilitator.verify.failed";
+};
+
 export const createBaseSepoliaFacilitator = (
   signer: FacilitatorEvmSigner,
   logger: FacilitatorLifecycleLogger = defaultLifecycleLogger,
@@ -25,8 +36,8 @@ export const createBaseSepoliaFacilitator = (
     .onAfterVerify(async () => {
       logger.info("facilitator.verify.succeeded");
     })
-    .onVerifyFailure(async () => {
-      logger.warn("facilitator.verify.failed");
+    .onVerifyFailure(async ({ error }) => {
+      logger.warn(safeVerificationFailureEvent(error));
     })
     .onBeforeSettle(async () => {
       logger.info("facilitator.settle.started");

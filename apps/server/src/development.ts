@@ -1,9 +1,17 @@
 import { serve } from "@hono/node-server";
 import { createDevelopmentRecipeAnalysisApp } from "./recipeAnalysis/developmentComposition.js";
-import { createRuntimeRecipeAnalysisDependencies } from "./runtimeComposition.js";
 
-const app = createDevelopmentRecipeAnalysisApp(
-  createRuntimeRecipeAnalysisDependencies(),
-);
+process.env.NODE_ENV ??= "development";
 
-serve({ fetch: app.fetch, port: 4021 });
+const start = async () => {
+  const { createRuntimeRecipeAnalysisDependencies } = await import(
+    "./runtimeComposition.js"
+  );
+  const app = createDevelopmentRecipeAnalysisApp(
+    createRuntimeRecipeAnalysisDependencies(),
+  );
+
+  serve({ fetch: app.fetch, port: 4021 });
+};
+
+void start();

@@ -46,4 +46,22 @@ describe("validatePaymentRuntime", () => {
       });
     }
   });
+
+  it("allows loopback HTTP only when development explicitly opts in", () => {
+    const input = {
+      payTo: "0x1111111111111111111111111111111111111111",
+      facilitatorUrl: "http://localhost:4022",
+    };
+
+    expect(validatePaymentRuntime(input).ok).toBe(false);
+    expect(
+      validatePaymentRuntime(input, { allowDevelopmentLoopbackHttp: true }).ok,
+    ).toBe(true);
+    expect(
+      validatePaymentRuntime(
+        { ...input, facilitatorUrl: "http://facilitator.example.com" },
+        { allowDevelopmentLoopbackHttp: true },
+      ).ok,
+    ).toBe(false);
+  });
 });

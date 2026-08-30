@@ -30,6 +30,7 @@ type RecipeAnalysisAppDependencies = {
   preview?: PreviewMountPolicy & { router: Hono };
   premiumHandler: PremiumAnalysisHandler;
   sponsorAuthorizer: SponsorAuthorizer;
+  sponsorRoutes?: Hono;
 };
 
 const errorResponse = (
@@ -48,6 +49,7 @@ export const createRecipeAnalysisApp = ({
   preview,
   premiumHandler,
   sponsorAuthorizer,
+  sponsorRoutes,
 }: RecipeAnalysisAppDependencies): Hono => {
   const app = new Hono();
 
@@ -56,6 +58,7 @@ export const createRecipeAnalysisApp = ({
   if (preview && shouldMountPreview(preview)) {
     app.route("/api/recipe-analysis/preview", preview.router);
   }
+  if (sponsorRoutes) app.route("/", sponsorRoutes);
 
   app.post("/api/recipe-analysis", async (context) => {
     let body: unknown;

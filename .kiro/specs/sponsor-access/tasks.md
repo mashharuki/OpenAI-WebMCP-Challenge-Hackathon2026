@@ -64,8 +64,8 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 6.3_
   - _Boundary: SponsorGrantService_
 
-- [ ] 4. server adapter と grant domain を統合する
-- [ ] 4.1 (P) sponsor grant 発行 route を提供する
+- [x] 4. server adapter と grant domain を統合する
+- [x] 4.1 (P) sponsor grant 発行 route を提供する
   - `/api/sponsor-sessions`は固定creative metadataとsingle-use sessionを201で返し、`/api/sponsor-grants`はstrict parse済みsession credentialだけをserviceへ渡す。
   - grant発行前にsession binding、90秒期限、未消費、server経過8秒を検証する。
   - invalid、conflict、dependency、internal failure を共通 error envelope と固定 status へ変換する。
@@ -75,7 +75,7 @@
   - _Boundary: SponsorGrantRoutes_
   - _Depends: 3.2_
 
-- [ ] 4.2 (P) Sponsor authorization adapter を提供する
+- [x] 4.2 (P) Sponsor authorization adapter を提供する
   - Authorization header の exact Sponsor scheme を parse し、resource と nonce を grant に照合する。
   - missing、malformed、unknown、expired、reused、mismatch を対応する AdGate error へ正規化する。
   - 成功時は上流 `SponsorAccessEvidence` のみを premium integration へ返す。

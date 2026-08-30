@@ -35,9 +35,17 @@ export interface SponsorGrantService {
   issue(
     input: SponsorGrantIssueRequest,
   ): Promise<SponsorResult<SponsorGrantIssueResponse>>;
+  issueWithOutcome(
+    input: SponsorGrantIssueRequest,
+  ): Promise<SponsorResult<SponsorGrantIssueOutcome>>;
   consume(
     input: SponsorConsumeRequest,
   ): Promise<SponsorResult<SponsorAccessEvidence>>;
+}
+
+export interface SponsorGrantIssueOutcome {
+  readonly response: SponsorGrantIssueResponse;
+  readonly replayed: boolean;
 }
 
 interface SponsorGrantServiceOptions {
@@ -107,6 +115,11 @@ export const createSponsorGrantService = ({
   },
 
   async issue(input) {
+    const result = await this.issueWithOutcome(input);
+    return result.ok ? { ok: true, value: result.value.response } : result;
+  },
+
+  async issueWithOutcome(input) {
     const parsedInput = sponsorGrantIssueRequestSchema.safeParse(input);
     if (!parsedInput.success) return invalidInput(parsedInput.error);
 
@@ -150,7 +163,13 @@ export const createSponsorGrantService = ({
         },
       });
       return completed.ok
-        ? { ok: true, value: completed.value.response }
+        ? {
+            ok: true,
+            value: {
+              response: completed.value.response,
+              replayed: completed.value.replayed,
+            },
+          }
         : completed;
     } catch {
       return internalError();

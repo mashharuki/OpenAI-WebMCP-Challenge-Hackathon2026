@@ -11,7 +11,7 @@ import {
   recipeAnalysisInputSchema,
   recipeAnalysisResultSchema,
   sponsorAccessEvidenceSchema,
-} from "./contracts";
+} from "../../src/adgate/contracts";
 
 type FixtureCase = {
   name: string;

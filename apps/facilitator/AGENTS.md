@@ -22,7 +22,7 @@ Use TypeScript and ESM imports. Repository Biome settings require space indentat
 
 ## Testing Guidelines
 
-There is currently no package-local automated test script. For each functional change, run `pnpm run build` at minimum and manually exercise the affected HTTP route with development configuration. When adding tests, use a `*.test.ts` filename near the module under test and add a package script so they are reproducible in CI.
+There is currently no package-local automated test script. For each functional change, run `pnpm run build` at minimum and manually exercise the affected HTTP route with development configuration. Put future tests under `test/`, mirror the corresponding `src/` subdirectory where useful, and name them `*.test.ts`. Do not colocate tests in `src/`; add a package script when the first tests are introduced so they are reproducible in CI.
 
 ## Commit & Pull Request Guidelines
 

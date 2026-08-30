@@ -6,8 +6,8 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import App from "./App";
-import { STORAGE_KEY } from "./useTodos";
+import App from "../src/App";
+import { STORAGE_KEY } from "../src/useTodos";
 
 type RegisteredTool = {
   name: string;

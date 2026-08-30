@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type GateState, transitionGate } from "./gateMachine";
+import { type GateState, transitionGate } from "../../src/adgate/gateMachine";
 
 describe("transitionGate", () => {
   it("starts a new attempt and records a payment choice", () => {

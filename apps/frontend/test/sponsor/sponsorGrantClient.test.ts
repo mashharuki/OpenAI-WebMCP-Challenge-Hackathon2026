@@ -1,13 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
 import fixture from "../../../../test/fixtures/sponsor-access.json";
 import {
+  sponsorGrantIssueRequestSchema,
   sponsorGrantIssueResponseSchema,
+  sponsorSessionStartRequestSchema,
   sponsorSessionStartResponseSchema,
 } from "../../src/sponsor/contracts";
 import { createSponsorGrantClient } from "../../src/sponsor/sponsorGrantClient";
 
 describe("SponsorGrantClient", () => {
   it("uses canonical session and grant payloads without putting credentials in URLs", async () => {
+    const startRequest = sponsorSessionStartRequestSchema.parse(
+      fixture.valid.startRequest,
+    );
+    const issueRequest = sponsorGrantIssueRequestSchema.parse(
+      fixture.valid.issueRequest,
+    );
     expect(
       sponsorSessionStartResponseSchema.parse(fixture.valid.startResponse),
     ).toEqual(fixture.valid.startResponse);
@@ -20,47 +28,46 @@ describe("SponsorGrantClient", () => {
       ).success,
     ).toBe(false);
 
-    const fetchImpl = vi
-      .fn<typeof fetch>()
-      .mockResolvedValueOnce(
-        Response.json(fixture.valid.startResponse, { status: 201 }),
-      )
-      .mockResolvedValueOnce(
-        Response.json(fixture.valid.issueResponse, { status: 201 }),
-      );
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const responses = [
+      Response.json(fixture.valid.startResponse, { status: 201 }),
+      Response.json(fixture.valid.issueResponse, { status: 201 }),
+    ];
+    const fetchImpl = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        calls.push({ input, init });
+        const response = responses.shift();
+        if (!response) throw new Error("Unexpected request");
+        return response;
+      },
+    );
     const client = createSponsorGrantClient({
       baseUrl: "https://publisher.example",
       fetchImpl,
     });
     const signal = new AbortController().signal;
 
-    await expect(
-      client.start(fixture.valid.startRequest, signal),
-    ).resolves.toEqual(fixture.valid.startResponse);
-    await expect(
-      client.issue(fixture.valid.issueRequest, signal),
-    ).resolves.toEqual({
+    await expect(client.start(startRequest, signal)).resolves.toEqual(
+      fixture.valid.startResponse,
+    );
+    await expect(client.issue(issueRequest, signal)).resolves.toEqual({
       ok: true,
       token: fixture.valid.issueResponse.token,
       evidence: fixture.valid.issueResponse.evidence,
     });
 
     expect(fetchImpl).toHaveBeenCalledTimes(2);
-    expect(fetchImpl.mock.calls[0]?.[0]).toBe(
+    expect(calls[0]?.input).toBe(
       "https://publisher.example/api/sponsor-sessions",
     );
-    expect(fetchImpl.mock.calls[1]?.[0]).toBe(
+    expect(calls[1]?.input).toBe(
       "https://publisher.example/api/sponsor-grants",
     );
-    expect(String(fetchImpl.mock.calls[1]?.[0])).not.toContain(
-      fixture.valid.issueRequest.sessionCredential,
+    expect(String(calls[1]?.input)).not.toContain(
+      issueRequest.sessionCredential,
     );
-    expect(JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body))).toEqual(
-      fixture.valid.startRequest,
-    );
-    expect(JSON.parse(String(fetchImpl.mock.calls[1]?.[1]?.body))).toEqual(
-      fixture.valid.issueRequest,
-    );
+    expect(JSON.parse(String(calls[0]?.init?.body))).toEqual(startRequest);
+    expect(JSON.parse(String(calls[1]?.init?.body))).toEqual(issueRequest);
   });
 
   it("returns a validated common error without echoing the session credential", async () => {

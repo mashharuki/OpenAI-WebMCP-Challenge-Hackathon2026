@@ -18,7 +18,7 @@
   - _Boundary: SponsorGrantClient_
 
 - [ ] 2. スポンサー閲覧体験を実装する
-- [ ] 2.1 (P) 試行単位の可視時間と終端状態を実装する
+- [x] 2.1 (P) 試行単位の可視時間と終端状態を実装する
   - 単調時計と visibility を注入可能にし、visible 区間だけを required duration へ加算する。
   - attempt ID と nonce を保持し、別試行の event、cancel 後の tick、遅延 response を無視する。
   - success、cancel、abort、unmount のうち最初の終端結果だけを通知する。
@@ -28,7 +28,7 @@
   - _Boundary: SponsorFlowController_
   - _Depends: 1.2_
 
-- [ ] 2.2 (P) アクセシブルなスポンサー表示を実装する
+- [x] 2.2 (P) アクセシブルなスポンサー表示を実装する
   - 無料経路、必要時間、取消方法、static sponsor creative を明確に表示する。
   - 明示的な start、disabled な continue、残り秒、完了状態、cancel 操作を提供する。
   - dialog semantics、initial focus、focus confinement、Escape、focus restoration を実装し、autoplay audio と tracking を含めない。

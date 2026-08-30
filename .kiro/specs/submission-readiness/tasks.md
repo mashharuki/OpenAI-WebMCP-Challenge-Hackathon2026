@@ -1,12 +1,12 @@
 # Implementation Plan
 
-- [ ] 1. Minimal local release gate
+- [x] 1. Minimal local release gate
   - Add one root read-only command for frozen install verification, Biome, frontend test/build, server typecheck/build/contract tests, facilitator typecheck/build, and cross-app conformance tests.
   - Print the tested commit and failed command without introducing a typed report or artifact manifest.
   - Run the same command in CI with pinned Node/pnpm and safe failure artifacts only.
   - _Requirements: 1.1–1.5_
 
-- [ ] 2. Deployable public shell
+- [x] 2. Deployable public shell
   - Replace starter-facing deployment metadata and document frontend API URL, exact allowed origin, Origin Trial token, release SHA, payTo, hosted facilitator, and Base Sepolia configuration placeholders.
   - Add deterministic server typecheck/build/start commands and safe environment examples.
   - Configure the resource server as one instance with autoscaling disabled; document that restarts invalidate active attempts.

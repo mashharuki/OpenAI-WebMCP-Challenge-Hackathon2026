@@ -1,16 +1,16 @@
 {
   "name": "frontend",
   "version": "0.1.0",
-  "description": "A React todo app demonstrating WebMCP tools on Cloudflare Workers.",
+  "description": "A human-in-the-loop WebMCP recipe analysis demo with sponsor and x402 access paths.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cloudflare/agents.git",
-    "directory": "examples/webmcp-react"
+    "url": "git+https://github.com/mashharuki/OpenAI-WebMCP-Challenge-Hackathon2026.git",
+    "directory": "apps/frontend"
   },
-  "homepage": "https://github.com/cloudflare/agents/tree/main/examples/webmcp-react#readme",
+  "homepage": "https://github.com/mashharuki/OpenAI-WebMCP-Challenge-Hackathon2026#readme",
   "bugs": {
-    "url": "https://github.com/cloudflare/agents/issues"
+    "url": "https://github.com/mashharuki/OpenAI-WebMCP-Challenge-Hackathon2026/issues"
   },
   "keywords": [
     "cloudflare-workers",
@@ -19,12 +19,11 @@
     "ai-agents"
   ],
   "cloudflare": {
-    "label": "WebMCP Starter",
+    "label": "AdGate · Open Table Journal",
     "products": [
       "Workers"
     ],
     "categories": [
-      "starter",
       "ai"
     ]
   },
@@ -35,7 +34,8 @@
     "build": "vite build",
     "deploy": "vite build && wrangler deploy",
     "types": "wrangler types env.d.ts --include-runtime false",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@cloudflare/kumo": "^2.6.0",

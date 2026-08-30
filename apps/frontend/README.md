@@ -1,7 +1,5 @@
 # Open Table Journal WebMCP Demo
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/agents/tree/main/examples/webmcp-react)
-
 A React publisher demo that exposes gated premium recipe analysis to people and browser-based AI agents with [WebMCP](https://github.com/webmachinelearning/webmcp), deployed as a Cloudflare Worker.
 
 > [!IMPORTANT]
@@ -48,7 +46,9 @@ split production deployment, copy `.env.example` and set `VITE_API_BASE_URL` to
 the public HTTP(S) origin of `apps/server`. Leave it unset only when production
 routes `/api` to that server on the frontend's origin.
 
-The directory is self-contained so create-cloudflare-cli can copy it as a standalone starter. Its package metadata and `.mcp.json` should remain usable outside this monorepo.
+For the production environment variables, exact-origin constraint, Origin Trial
+token, and release provenance, follow the repository
+[deployment runbook](../../docs/deployment.md).
 
 ## Connect a coding agent
 

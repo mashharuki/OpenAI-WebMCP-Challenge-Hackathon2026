@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: adgate-resource-server
+    runtime: node
+    plan: 0.5c-512mb
+    region: singapore
+    numInstances: 1
+    autoDeployTrigger: off
+    healthCheckPath: /health
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter x402server run typecheck && pnpm --filter x402server run build
+    startCommand: pnpm --filter x402server run start
+    envVars:
+      - key: FACILITATOR_URL
+        sync: false
+      - key: EVM_ADDRESS
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: RELEASE_SHA
+        sync: false

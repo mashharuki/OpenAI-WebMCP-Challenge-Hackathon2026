@@ -26,7 +26,7 @@
   - Verify payment terms/receipt and safe sponsor fallback with fake ports; do not use a browser private key or real transaction in automation.
   - _Requirements: 3.1–3.6_
 
-- [ ] 5. Hand-written public documentation
+- [x] 5. Hand-written public documentation
   - Write the English README/runbooks, architecture and provenance, deployment constraints, environment reference, and testnet/prototype limitations.
   - Remove the obsolete Todo D1 guide, replace starter metadata, align package license metadata with MIT, and document owned `Open Table Journal`/`Open Table Weekly` assets.
   - Write the Devpost draft, judging evidence map, English sub-three-minute script/shot list, screenshot checklist, and rights checklist as version-controlled files.

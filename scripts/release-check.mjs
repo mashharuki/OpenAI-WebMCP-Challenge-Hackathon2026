@@ -9,6 +9,11 @@ export const releaseChecks = Object.freeze([
   },
   { name: "Biome", command: "pnpm", args: ["exec", "biome", "check", "."] },
   {
+    name: "Public documentation",
+    command: "pnpm",
+    args: ["run", "test:public-docs"],
+  },
+  {
     name: "Frontend tests",
     command: "pnpm",
     args: ["--filter", "frontend", "run", "test"],

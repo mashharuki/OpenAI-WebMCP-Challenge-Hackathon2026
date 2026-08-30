@@ -2,6 +2,14 @@
   "name": "facilitator",
   "private": true,
   "version": "1.0.0",
+  "description": "Optional AdGate x402 verifier and settler for Base Sepolia testnet payments.",
+  "license": "MIT",
+  "author": "Haruki Kondo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mashharuki/OpenAI-WebMCP-Challenge-Hackathon2026.git",
+    "directory": "apps/facilitator"
+  },
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",

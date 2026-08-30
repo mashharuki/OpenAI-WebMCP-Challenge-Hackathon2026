@@ -11,6 +11,7 @@ describe("release check", () => {
     assert.deepEqual(releaseChecks.map(formatCommand), [
       "pnpm install --frozen-lockfile",
       "pnpm exec biome check .",
+      "pnpm run test:public-docs",
       "pnpm --filter frontend run test",
       "pnpm --filter frontend run test:e2e",
       "pnpm --filter frontend run typecheck",

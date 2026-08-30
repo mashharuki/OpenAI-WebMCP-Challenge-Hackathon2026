@@ -2,8 +2,7 @@
   "name": "OpenAI-WebMCP-Challenge-Hackathon2026",
   "version": "1.0.0",
   "private": true,
-  "description": "",
-  "main": "index.js",
+  "description": "AdGate: a human-in-the-loop WebMCP publisher demo with sponsor and x402 access paths.",
   "scripts": {
     "format": "pnpm exec biome format --write .",
     "check": "pnpm exec biome check --write .",
@@ -14,15 +13,26 @@
     "test:contracts": "pnpm --filter frontend exec vitest run test/adgate/contracts.test.ts test/publisher/previewContract.test.ts && pnpm --filter x402server exec vitest run test/adgate/contracts.test.ts test/recipeAnalysis/previewContract.test.ts",
     "test:deployment-shell": "node --test test/deployment-shell.test.mjs",
     "test:public-smoke": "node --test test/public-smoke.test.mjs",
+    "test:public-docs": "node --test test/public-documentation.test.mjs",
     "test:release-check": "node --test test/release-check.test.mjs",
     "validate:payment": "node scripts/validate-payment-boundaries.mjs",
     "facilitator": "pnpm --filter facilitator",
     "x402server": "pnpm --filter x402server",
     "frontend": "pnpm --filter frontend"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "webmcp",
+    "x402",
+    "cloudflare-workers",
+    "human-in-the-loop"
+  ],
+  "author": "Haruki Kondo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mashharuki/OpenAI-WebMCP-Challenge-Hackathon2026.git"
+  },
+  "homepage": "https://github.com/mashharuki/OpenAI-WebMCP-Challenge-Hackathon2026#readme",
   "packageManager": "pnpm@11.24.0",
   "devDependencies": {
     "@biomejs/biome": "2.5.11",

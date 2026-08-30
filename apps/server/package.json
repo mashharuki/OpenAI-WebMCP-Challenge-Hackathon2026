@@ -2,7 +2,7 @@
   "name": "x402server",
   "version": "1.0.0",
   "private": true,
-  "description": "",
+  "description": "AdGate Hono resource server for sponsor grants and Base Sepolia x402 access.",
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/development.ts",
@@ -12,9 +12,13 @@
     "test": "vitest run"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.33.0",
+  "author": "Haruki Kondo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mashharuki/OpenAI-WebMCP-Challenge-Hackathon2026.git",
+    "directory": "apps/server"
+  },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
     "@worldcoin/agentkit": "^0.2.1",

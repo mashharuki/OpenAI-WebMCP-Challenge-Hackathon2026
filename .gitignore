@@ -1,3 +1,5 @@
 .DS_Store
 node_modules
+apps/frontend/playwright-report/
+apps/frontend/test-results/
 .pnpm-store

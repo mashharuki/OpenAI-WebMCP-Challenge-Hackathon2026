@@ -117,7 +117,7 @@ export function GateExperience({
         </div>
       ) : null}
 
-      {snapshot.state.type === "awaiting_payment" ? (
+      {snapshot.state.type === "awaiting_payment" || snapshot.receipt ? (
         <div className="mt-4">
           <ActivePaymentPanel
             coordinator={paymentCoordinator}

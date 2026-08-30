@@ -12,6 +12,7 @@ describe("release check", () => {
       "pnpm install --frozen-lockfile",
       "pnpm exec biome check .",
       "pnpm --filter frontend run test",
+      "pnpm --filter frontend run test:e2e",
       "pnpm --filter frontend run typecheck",
       "pnpm --filter frontend run build",
       "pnpm --filter x402server run typecheck",

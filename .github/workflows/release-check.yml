@@ -24,5 +24,10 @@ jobs:
           corepack enable
           pnpm --version
 
+      - name: Install dependencies and Chromium
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter frontend exec playwright install --with-deps chromium
+
       - name: Run release gate
         run: pnpm release:check

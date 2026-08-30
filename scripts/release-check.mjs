@@ -14,6 +14,11 @@ export const releaseChecks = Object.freeze([
     args: ["--filter", "frontend", "run", "test"],
   },
   {
+    name: "Frontend browser E2E",
+    command: "pnpm",
+    args: ["--filter", "frontend", "run", "test:e2e"],
+  },
+  {
     name: "Frontend typecheck",
     command: "pnpm",
     args: ["--filter", "frontend", "run", "typecheck"],

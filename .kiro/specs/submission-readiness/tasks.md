@@ -19,7 +19,7 @@
   - Report facilitator health/Base exact support as optional payment readiness, not sponsor-release readiness.
   - _Requirements: 2.1–2.6_
 
-- [ ] 4. Fake-host browser E2E
+- [x] 4. Fake-host browser E2E
   - Exercise document-first, navigator-only, unsupported, registration failure, and abort-capable WebMCP modes.
   - Verify the sponsor-first path keeps the original invocation pending through server session and eight visible seconds, then returns one canonical result.
   - Cover visible UI parity, cancellation, duplicate rejection/busy UX, grant expiry, five-minute same-identity replay, and late-result isolation.

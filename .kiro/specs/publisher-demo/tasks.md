@@ -52,8 +52,8 @@
   - _Requirements: 3.1, 3.3, 3.4, 3.5, 5.1, 5.2, 5.3_
   - _Boundary: AnalysisClient_
 
-- [ ] 4. Publisher vertical slice を app へ統合する
-- [ ] 4.1 Publisher request lifecycle を接続する
+- [x] 4. Publisher vertical slice を app へ統合する
+- [x] 4.1 Publisher request lifecycle を接続する
   - recipe article、analysis panel、typed client を一画面に構成し、idle、loading、success、error の state transition を所有する。
   - pending 中の連打を一回の client call に抑え、retry は同じ recipe への新しい要求を一回だけ開始し、unmount abort 後は state を更新しない。
   - 完了時、fake client を使う UI test で loading、duplicate prevention、success、safe failure、retry recovery を一連に観察できる。
@@ -61,14 +61,14 @@
   - _Boundary: PublisherDemo_
   - _Depends: 3.1, 3.2, 3.3_
 
-- [ ] 4.2 Frontend root を publisher composition へ切り替える
+- [x] 4.2 Frontend root を publisher composition へ切り替える
   - todo UI を root から外し、publisher header、recipe、analysis experience と responsive visual treatment を app entry に接続する。
   - starter の reusable UI/runtime entry を維持しつつ、主要画面から todo/task 文言と操作を除く。
   - 完了時、root smoke test が publisher value proposition と analysis CTA を確認し、旧 todo UI が存在しないことを確認する。
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 6.1, 6.2, 6.3_
   - _Boundary: PublisherDemo, AppComposition_
 
-- [ ] 4.3 Preview router を development composition へ接続する
+- [x] 4.3 Preview router を development composition へ接続する
   - preview router factory を既存 Hono app の development composition に一度だけ明示接続し、health、weather、x402 middleware/config の既存挙動を変更しない。
   - preview が sponsor/payment header を要求せず、canonical protected route と異なる path であることを smoke test する。
   - production runtime の条件分岐を本 task へ取り込まず、後続 `x402-payment-access` が同じ seam から preview mount/除去 policy を所有できる状態を維持する。

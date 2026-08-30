@@ -70,10 +70,29 @@ pnpm --filter frontend run build
 pnpm --filter frontend run deploy
 ```
 
-After deployment, confirm that the page's Origin Trial and release-SHA metadata
-are present, that the API accepts only the exact frontend origin, and that the
-frontend and server expose the same release SHA. Public smoke probing is handled
-by the next implementation task.
+After deployment, run the read-only public-boundary probe with exact HTTPS
+origins:
+
+```bash
+pnpm smoke:public -- \
+  --frontend-url https://frontend.example.com \
+  --server-url https://api.example.com \
+  --facilitator-url https://facilitator.example.com
+```
+
+`--facilitator-url` is optional. An unavailable facilitator is reported as a
+warning and requires a same-release local payment recording; it does not block
+the public sponsor path. The probe never sends a payment signature, touches a
+wallet, or settles a transaction. To prove sponsor access, it creates one
+ephemeral process-local sponsor session, waits the required eight seconds,
+consumes its one-time grant, and verifies one canonical analysis. It prints only
+fixed check names and safe reasons—not credentials, challenges, response bodies,
+or full addresses.
+
+The probe requires the page's Origin Trial metadata, exact-origin CORS on all
+three API routes, private-response headers, one safe payment state, a working
+sponsor path, and a 404 from the production preview POST. Run it after every
+public deployment and before recording.
 
 ## Release placeholders
 

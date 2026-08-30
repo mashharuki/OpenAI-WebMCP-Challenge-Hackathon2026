@@ -64,6 +64,11 @@ export const releaseChecks = Object.freeze([
     args: ["run", "test:deployment-shell"],
   },
   {
+    name: "Public smoke tests",
+    command: "pnpm",
+    args: ["run", "test:public-smoke"],
+  },
+  {
     name: "Cross-app contracts",
     command: "pnpm",
     args: ["run", "test:contracts"],

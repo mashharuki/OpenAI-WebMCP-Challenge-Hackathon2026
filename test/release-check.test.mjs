@@ -22,6 +22,7 @@ describe("release check", () => {
       "pnpm --filter facilitator run test",
       "pnpm run test:release-check",
       "pnpm run test:deployment-shell",
+      "pnpm run test:public-smoke",
       "pnpm run test:contracts",
       "pnpm run validate:payment",
     ]);

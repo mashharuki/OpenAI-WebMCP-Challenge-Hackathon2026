@@ -12,7 +12,7 @@
   - Configure the resource server as one instance with autoscaling disabled; document that restarts invalidate active attempts.
   - _Requirements: 2.1–2.6, 4.3–4.6_
 
-- [ ] 3. Public read-only smoke probe
+- [x] 3. Public read-only smoke probe
   - Check HTTPS health, exact-origin CORS for all three API routes, `Authorization` and x402 headers, exposed settlement headers, no-store, production preview 404, and Origin Trial presence.
   - When payment is ready require one Base Sepolia exact 0.01-USDC offer; when unavailable require safe payment-disabled state and a working sponsor path instead of a 402.
   - Reject secret-like responses, disallowed-origin disclosure, malformed/multiple offers, or reachable production preview.

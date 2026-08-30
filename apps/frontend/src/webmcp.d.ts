@@ -15,28 +15,43 @@ declare module "react" {
 }
 
 declare global {
+  interface WebMCPToolExecuteOptions {
+    readonly signal: AbortSignal;
+  }
+
   interface WebMCPTool {
     name: string;
+    title?: string;
     description: string;
     inputSchema: object;
     annotations?: {
       readOnlyHint?: boolean;
       untrustedContentHint?: boolean;
     };
-    execute(input: unknown): Promise<unknown>;
+    execute(
+      input: unknown,
+      options: WebMCPToolExecuteOptions,
+    ): Promise<unknown>;
   }
 
   interface WebMCPRegisterToolOptions {
+    exposedTo?: readonly string[];
     signal?: AbortSignal;
   }
 
+  interface WebMCPModelContext {
+    registerTool(
+      tool: WebMCPTool,
+      options?: WebMCPRegisterToolOptions,
+    ): Promise<void>;
+  }
+
   interface Document {
-    readonly modelContext?: {
-      registerTool(
-        tool: WebMCPTool,
-        options?: WebMCPRegisterToolOptions,
-      ): Promise<void>;
-    };
+    readonly modelContext?: WebMCPModelContext;
+  }
+
+  interface Navigator {
+    readonly modelContext?: WebMCPModelContext;
   }
 
   interface SubmitEvent {

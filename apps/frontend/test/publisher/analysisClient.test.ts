@@ -11,7 +11,7 @@ const canonicalResult = {
 
 describe("createAnalysisClient", () => {
   it("sends one canonical preview request and returns validated analysis", async () => {
-    const fetchImpl = vi.fn(async () =>
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
       Response.json({
         ok: true,
         resourceId: "recipe_analysis",
@@ -20,7 +20,7 @@ describe("createAnalysisClient", () => {
     );
     const client = createAnalysisClient({
       baseUrl: "https://api.example/",
-      fetchImpl: fetchImpl as typeof fetch,
+      fetchImpl,
     });
     const abortController = new AbortController();
 

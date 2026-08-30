@@ -185,7 +185,7 @@ export const normalizeWebMCPResult = (
   value: PremiumAnalysisSuccess | AdGateErrorEnvelope,
 ): WebMCPToolResult => {
   if (!value.ok) {
-    return value;
+    return { ok: false, error: normalizeContractError(value.error) };
   }
 
   return {
@@ -199,7 +199,7 @@ export const normalizeContractError = (
   value: unknown,
   correlationId?: string,
 ): AdGateError => {
-  const parsed = adGateErrorSchema.safeParse(value);
+  const parsed = adGateErrorSchema.strip().safeParse(value);
   if (parsed.success) {
     return parsed.data;
   }

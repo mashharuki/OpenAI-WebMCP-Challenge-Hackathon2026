@@ -32,9 +32,11 @@ Object.defineProperty(globalThis, "localStorage", {
 beforeEach(() => {
   storage.clear();
   Reflect.deleteProperty(document, "modelContext");
+  Reflect.deleteProperty(navigator, "modelContext");
 });
 
 afterEach(() => {
   cleanup();
   Reflect.deleteProperty(document, "modelContext");
+  Reflect.deleteProperty(navigator, "modelContext");
 });

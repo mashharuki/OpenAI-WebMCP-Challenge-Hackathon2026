@@ -5,17 +5,18 @@ import { createAnalysisClient } from "../../src/publisher/analysisClient";
 
 describe("publisher preview contract fixture", () => {
   it("accepts the shared request and returns all four validated result regions", async () => {
-    expect(premiumAnalysisRequestSchema.parse(fixture.request)).toEqual(
-      fixture.request,
-    );
+    const request = premiumAnalysisRequestSchema.parse(fixture.request);
+    expect(request).toEqual(fixture.request);
 
-    const fetchImpl = vi.fn(async () => Response.json(fixture.response));
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      Response.json(fixture.response),
+    );
     const client = createAnalysisClient({
       baseUrl: "https://preview.example",
-      fetchImpl: fetchImpl as typeof fetch,
+      fetchImpl,
     });
 
-    await expect(client.analyze(fixture.request.input)).resolves.toEqual(
+    await expect(client.analyze(request.input)).resolves.toEqual(
       fixture.response.data,
     );
     expect(Object.keys(fixture.response.data).sort()).toEqual([
@@ -33,6 +34,7 @@ describe("publisher preview contract fixture", () => {
   });
 
   it("rejects fixture field drift at the browser boundary", async () => {
+    const request = premiumAnalysisRequestSchema.parse(fixture.request);
     const driftedResponse = {
       ...fixture.response,
       data: { ...fixture.response.data, internalPrompt: "must not cross" },
@@ -44,7 +46,7 @@ describe("publisher preview contract fixture", () => {
       ) as typeof fetch,
     });
 
-    await expect(client.analyze(fixture.request.input)).rejects.toMatchObject({
+    await expect(client.analyze(request.input)).rejects.toMatchObject({
       code: "INTERNAL_ERROR",
       retryable: false,
     });

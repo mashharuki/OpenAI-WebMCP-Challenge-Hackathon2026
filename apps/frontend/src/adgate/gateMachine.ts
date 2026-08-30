@@ -114,7 +114,13 @@ export const transitionGate = (
   state: GateState,
   event: GateEvent,
 ): GateTransitionResult => {
-  if (state.type === "idle" && event.type === "start") {
+  if (
+    event.type === "start" &&
+    (state.type === "idle" ||
+      state.type === "succeeded" ||
+      state.type === "failed" ||
+      state.type === "cancelled")
+  ) {
     return {
       ok: true,
       state: {

@@ -13,6 +13,12 @@ const hexPattern = /^0x[0-9a-fA-F]+$/;
 
 export type Eip1193ProviderPort = Pick<EIP1193Provider, "request">;
 
+declare global {
+  interface Window {
+    readonly ethereum?: Eip1193ProviderPort;
+  }
+}
+
 export type WalletPreparation =
   | { ok: true; account: `0x${string}`; chainId: 84532 }
   | { ok: false; error: AdGateError };

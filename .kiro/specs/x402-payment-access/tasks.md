@@ -135,8 +135,8 @@
   - _Boundary: PaymentPanel_
   - _Depends: 3.4_
 
-- [ ] 5. 支払い経路の統合契約を検証する
-- [ ] 5.1 Server の 402、決済、CORS、idempotency integration test を完成させる
+- [x] 5. 支払い経路の統合契約を検証する
+- [x] 5.1 Server の 402、決済、CORS、idempotency integration test を完成させる
   - contract-compliant stub handler と mock facilitator で、無証跡 402、paid retry 200、payment evidence、settlement header を検証する。
   - verify failure、timeout、wrong network、同一 retry、payload conflict、未許可 origin では handler と追加 settlement が呼ばれないことを検証する。
   - 全 response の no-store、公開 header、safe error body を検証する。
@@ -146,7 +146,7 @@
   - _Boundary: ServerPaymentTestHarness_
   - _Depends: 2.4, 2.5_
 
-- [ ] 5.2 (P) Browser の consent、network、retry、recovery integration test を完成させる
+- [x] 5.2 (P) Browser の consent、network、retry、recovery integration test を完成させる
   - UI、coordinator、mock provider、mock server を結び、表示された条件を明示承認して同じ要求が再送されることを検証する。
   - wallet absence/reject、wrong chain/switch reject、insufficient funds、cancel、uncertain settlement で premium success が返らないことを検証する。
   - error/serialized state/log に private key、seed、signature、raw provider response が現れないことを検証する。
@@ -156,7 +156,7 @@
   - _Boundary: BrowserPaymentTestHarness_
   - _Depends: 4.1_
 
-- [ ] 5.3 Base Sepolia-only invariant と package validation を最終確認する
+- [x] 5.3 Base Sepolia-only invariant と package validation を最終確認する
   - repository 内の payment registration と runtime policy に World Chain、mainnet、upto、複数 accepts が残っていないことを検証する。
   - frontend test/build、server test、facilitator build、lint/type checks を実行し、本仕様起因の失敗を修復する。
   - app 間 runtime import がなく、composition が sponsor domain/analyzer/WebMCP lifecycle を再実装せず、production app に preview route が登録されないことを確認する。

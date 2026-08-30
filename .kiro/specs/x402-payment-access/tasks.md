@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Base Sepolia 支払い基盤を単一方針へ整理する
+- [x] 1. Base Sepolia 支払い基盤を単一方針へ整理する
 - [x] 1.1 Server-authoritative な支払い設定と起動時検証を実装する
   - 価格を0.01 testnet USDCへ固定し、canonical asset/decimalsからbase-unit量を検証する。payToとfacilitator URLはenvironmentから取得する。
   - `recipe_analysis`、Base Sepolia、exact、testnet USDC、受取先、支払額を一つの immutable 方針として構築する。
@@ -30,7 +30,7 @@
   - _Requirements: 5.5, 6.5_
   - _Boundary: ServerPaymentTestHarness_
 
-- [ ] 1.5 Browser payer dependency と mock provider 基盤を追加する
+- [x] 1.5 Browser payer dependency と mock provider 基盤を追加する
   - frontend に viem、x402 HTTP client、EVM exact client の既存 2.23 系列 dependency を追加する。
   - EIP-1193 mock provider を frontend の既存 Vitest 環境から利用可能にする。
   - 完了時、実 wallet なしで provider method の呼出順を検証する smoke test と frontend build が成功する。

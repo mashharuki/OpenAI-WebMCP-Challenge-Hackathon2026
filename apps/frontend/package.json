@@ -40,9 +40,12 @@
   "dependencies": {
     "@cloudflare/kumo": "^2.6.0",
     "@phosphor-icons/react": "^2.1.10",
+    "@x402/core": "^2.23.0",
+    "@x402/evm": "^2.23.0",
     "agents": "latest",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "viem": "^2.55.19",
     "zod": "^4.4.3"
   },
   "devDependencies": {

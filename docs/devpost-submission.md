@@ -79,7 +79,7 @@ optional Hono/viem facilitator verifies and settles the fixed Base Sepolia
 policy. Sponsor access remains available when payment infrastructure is not.
 
 Detailed architecture, trust boundaries, fixed invariants, and provenance are
-in [`docs/architecture-and-provenance.md`](./docs/architecture-and-provenance.md).
+in [`architecture-and-provenance.md`](./architecture-and-provenance.md).
 
 ## Technology
 
@@ -159,7 +159,7 @@ continue to the canonical result.
 
 Outline: problem → WebMCP invocation → sponsor path → Base Sepolia evidence →
 architecture/release proof → impact. The full 2:45 English script and shot list
-are in [`docs/demo-video.md`](./docs/demo-video.md).
+are in [`demo-video.md`](./demo-video.md).
 
 ## Screenshot Shot List
 
@@ -169,7 +169,7 @@ are in [`docs/demo-video.md`](./docs/demo-video.md).
 4. Base Sepolia 0.01-USDC receipt, labeled if locally recorded
 5. Original WebMCP invocation showing the canonical result
 
-Capture requirements are in [`docs/screenshots.md`](./docs/screenshots.md).
+Capture requirements are in [`screenshots.md`](./screenshots.md).
 
 ## Submission Readiness Notes
 

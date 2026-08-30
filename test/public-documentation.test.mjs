@@ -47,6 +47,7 @@ describe("public documentation", () => {
       "docs/asset-rights.md",
       "docs/submission-checklist.md",
       "devpost-submission.md",
+      "docs/devpost-submission.md"
     ];
     await Promise.all(
       requiredFiles.map((path) =>

@@ -1,0 +1,58 @@
+{
+  "valid": {
+    "startRequest": {
+      "attemptId": "attempt-123",
+      "resourceId": "recipe_analysis",
+      "nonce": "request-123"
+    },
+    "startResponse": {
+      "ok": true,
+      "sessionCredential": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sponsor": {
+        "id": "open-table-weekly",
+        "name": "Open Table Weekly",
+        "creativeKey": "weekly-static-v1"
+      },
+      "requiredMs": 8000,
+      "expiresAt": "2026-08-30T00:01:30.000Z"
+    },
+    "issueRequest": {
+      "sessionCredential": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "issueResponse": {
+      "ok": true,
+      "token": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "evidence": {
+        "kind": "sponsor_grant",
+        "grantId": "grant-123",
+        "resourceId": "recipe_analysis",
+        "issuedAt": "2026-08-30T00:00:08.000Z",
+        "expiresAt": "2026-08-30T00:01:08.000Z",
+        "nonce": "request-123"
+      }
+    }
+  },
+  "invalid": {
+    "startRequestWithSponsor": {
+      "attemptId": "attempt-123",
+      "resourceId": "recipe_analysis",
+      "nonce": "request-123",
+      "sponsorId": "client-selected-sponsor"
+    },
+    "startResponseWrongDuration": {
+      "ok": true,
+      "sessionCredential": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sponsor": {
+        "id": "open-table-weekly",
+        "name": "Open Table Weekly",
+        "creativeKey": "weekly-static-v1"
+      },
+      "requiredMs": 7000,
+      "expiresAt": "2026-08-30T00:01:30.000Z"
+    },
+    "issueRequestWithCompletion": {
+      "sessionCredential": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "completionId": "client-completion"
+    }
+  }
+}

@@ -1,7 +1,7 @@
 # Implementation Plan
 
-- [ ] 1. スポンサーアクセス境界を準備する
-- [ ] 1.1 (P) server のスポンサー発行境界を定義する
+- [x] 1. スポンサーアクセス境界を準備する
+- [x] 1.1 (P) server のスポンサー発行境界を定義する
   - 上流 AdGate 契約を再利用し、session開始、grant発行、成功応答、エラー応答をstrict validationする。
   - server-owned sponsor metadata、8秒の必要時間、90秒session、60秒grantを固定し、client-supplied sponsor/completion IDを受け取らない。
   - server validator の valid/invalid payload と上限境界 test を追加する。
@@ -9,7 +9,7 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 6.1, 6.3_
   - _Boundary: SponsorGrantRoutes_
 
-- [ ] 1.2 (P) frontend のスポンサー発行 client 境界を定義する
+- [x] 1.2 (P) frontend のスポンサー発行 client 境界を定義する
   - server と同じ発行要求・成功応答・共通 error envelope を frontend で strict validation する。
   - valid/invalid fixture を用い、server schema と同じ payload を同じ結果として判定する。
   - token を永続 storage、URL、error message へ出さない client contract を固定する。

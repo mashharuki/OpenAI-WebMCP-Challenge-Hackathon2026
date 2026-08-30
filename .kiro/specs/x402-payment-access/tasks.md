@@ -16,7 +16,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 6.2, 6.3_
   - _Boundary: ServerPaymentRegistration_
 
-- [ ] 1.3 Optional local facilitator を Base Sepolia exact だけへ縮退する
+- [x] 1.3 Optional local facilitator を Base Sepolia exact だけへ縮退する
   - World Chain client、World Chain registration、upto scheme を削除し、Base Sepolia signer だけを構築する。
   - lifecycle logging から payment payload、signature、未加工 context を除去する。
   - 完了時、supported capability に Base Sepolia exact 以外が現れず、facilitator package の build が成功する。

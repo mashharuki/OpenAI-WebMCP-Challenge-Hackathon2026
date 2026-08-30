@@ -20,7 +20,9 @@ Keep changes within the relevant app. The frontend's `useTodos.ts`, `schemas.ts`
 - `pnpm --filter x402server run test`: execute the server Vitest suite under `apps/server/test/`.
 - `pnpm --filter x402server run typecheck`: type-check the resource server.
 - `pnpm --filter x402server run build`: build the resource server.
-- `pnpm --filter facilitator run dev`: watch and run the facilitator; use `run build` before distribution.
+- `pnpm --filter facilitator run dev`: watch and run the facilitator.
+- `pnpm --filter facilitator run test`: execute the facilitator Vitest suite under `apps/facilitator/test/`.
+- `pnpm --filter facilitator run build`: build the facilitator before distribution.
 - `pnpm exec biome check .`: run repository formatting and lint checks without modifying files. `pnpm check` applies automatic fixes.
 
 ## Coding Style & Naming Conventions
@@ -33,7 +35,7 @@ Frontend tests use Vitest with Testing Library and jsdom. Put them under `apps/f
 
 Server tests use Vitest. Put every server test under `apps/server/test/`, mirror the corresponding `src/` subdirectory where useful, and name it `*.test.ts`. Do not colocate server tests in `apps/server/src/`. For server behavior changes, add or update focused tests and run the server test, typecheck, and build commands.
 
-Facilitator tests belong under `apps/facilitator/test/`, should mirror the corresponding `src/` subdirectory where useful, and use the `*.test.ts` suffix. Do not colocate facilitator tests in `apps/facilitator/src/`. Until an automated test script is introduced, build the facilitator and manually exercise affected routes.
+Facilitator tests belong under `apps/facilitator/test/`, should mirror the corresponding `src/` subdirectory where useful, and use the `*.test.ts` suffix. Do not colocate facilitator tests in `apps/facilitator/src/`. For facilitator behavior changes, run its test and build commands, then manually exercise integration-sensitive routes.
 
 ## Commit & Pull Request Guidelines
 

@@ -11,6 +11,7 @@ The facilitator is one app in the repository's pnpm workspace. Its counterpart r
 Run commands from this directory or use the root workspace filter:
 
 - `pnpm run dev` — start `tsx watch src/index.ts` for local development.
+- `pnpm run test` — run the local facilitator Vitest suite under `test/`.
 - `pnpm run build` — type-check and compile TypeScript into `dist/`.
 - `pnpm run start` — run the compiled `dist/index.js`.
 - `pnpm --filter facilitator run build` — invoke the same build from the repository root.
@@ -22,7 +23,7 @@ Use TypeScript and ESM imports. Repository Biome settings require space indentat
 
 ## Testing Guidelines
 
-There is currently no package-local automated test script. For each functional change, run `pnpm run build` at minimum and manually exercise the affected HTTP route with development configuration. Put future tests under `test/`, mirror the corresponding `src/` subdirectory where useful, and name them `*.test.ts`. Do not colocate tests in `src/`; add a package script when the first tests are introduced so they are reproducible in CI.
+Put tests under `test/`, mirror the corresponding `src/` subdirectory where useful, and name them `*.test.ts`. Do not colocate tests in `src/`. For each functional change, run `pnpm run test` and `pnpm run build`, then manually exercise integration-sensitive HTTP routes with development configuration.
 
 ## Commit & Pull Request Guidelines
 

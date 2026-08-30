@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { recipeAnalysisResultSchema } from "../../src/adgate/contracts.js";
 import { premiumAnalysisHandler } from "../../src/adgate/premiumAnalysis.js";
+import { deterministicRecipeAnalyzer } from "../../src/recipeAnalysis/analyzeRecipe.js";
 
 describe("premiumAnalysisHandler", () => {
   it("returns a deterministic canonical result bound to payment evidence", async () => {
@@ -38,9 +39,17 @@ describe("premiumAnalysisHandler", () => {
       },
     });
     if (first.ok) {
+      const canonicalAnalysis = deterministicRecipeAnalyzer.analyze(
+        request.input,
+      );
+      if (!canonicalAnalysis.ok) {
+        throw new Error("Expected the published recipe to be supported.");
+      }
+
       expect(recipeAnalysisResultSchema.safeParse(first.data).success).toBe(
         true,
       );
+      expect(first.data).toEqual(canonicalAnalysis.data);
       expect(first.data.suggestions.join(" ")).toContain("higher protein");
     }
   });

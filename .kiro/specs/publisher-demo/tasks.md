@@ -11,8 +11,8 @@
   - _Requirements: 1.4, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1_
   - _Boundary: SampleRecipe_
 
-- [ ] 2. Deterministic premium analysis backend を実装する
-- [ ] 2.1 Pure analyzer と canonical result を実装する
+- [x] 2. Deterministic premium analysis backend を実装する
+- [x] 2.1 Pure analyzer と canonical result を実装する
   - 検証済み入力だけを受け、recipe の材料・手順・dietary goals に対応する summary、nutritional insights、suggestions、disclaimer を返す。
   - 時刻、乱数、environment、network、外部 AI に依存せず、同一入力から deep-equal な result を返す。
   - unsupported な有効入力を上流 taxonomy の safe error outcome にし、入力値を公開しない。thrown/unknown failure の正規化は HTTP boundary に委ねる。
@@ -20,7 +20,7 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
   - _Boundary: DeterministicAnalyzer_
 
-- [ ] 2.2 Preview HTTP boundary を追加する
+- [x] 2.2 Preview HTTP boundary を追加する
   - preview request を上流 server contract で strict validation し、analyzer outcome を success または normalized error response に写像する。
   - access evidence を生成・要求せず、invalid body、unsupported sample、unknown exception を設計どおりの status と safe envelope で返す。
   - router を server import 時に自己登録しない factory として公開し、development composition が明示的に mount または省略できる seam にする。
@@ -29,8 +29,8 @@
   - _Requirements: 3.5, 3.6, 4.3, 4.5, 5.2, 5.3_
   - _Boundary: PreviewRoute_
 
-- [ ] 3. Publisher presentation と browser client を構築する
-- [ ] 3.1 (P) Semantic recipe article を実装する
+- [x] 3. Publisher presentation と browser client を構築する
+- [x] 3.1 (P) Semantic recipe article を実装する
   - publisher value proposition と recipe metadata、材料、順序付き手順、食事上の特徴を semantic heading/list 構造で提示する。
   - owned hero asset に意味のある代替説明を付け、asset failure 時にも本文と分析操作を失わない layout を提供する。
   - 完了時、desktop と small viewport の双方で todo 文脈を表示せず、recipe 全情報を横 scroll なしで読める component になる。
@@ -38,14 +38,14 @@
   - _Boundary: RecipeArticle_
   - _Depends: 1.1_
 
-- [ ] 3.2 (P) Accessible analysis states を実装する
+- [x] 3.2 (P) Accessible analysis states を実装する
   - idle CTA、loading、success の四結果領域、safe error と retry action を判別 state から表示する。
   - loading と更新を色以外の text、disabled semantics、live announcement で伝え、全操作を keyboard から実行可能にする。
   - 完了時、各 state を単独 render して summary、insights、suggestions、disclaimer、error、retry の accessible name/state を検証できる。
   - _Requirements: 3.2, 3.3, 5.1, 5.2, 5.3, 5.5, 6.1, 6.2, 6.3, 6.4, 6.5_
   - _Boundary: AnalysisPanel_
 
-- [ ] 3.3 (P) Typed preview analysis client を実装する
+- [x] 3.3 (P) Typed preview analysis client を実装する
   - sample input を request ID と idempotency key を持つ preview request として一度送信し、成功・error の双方を frontend contract で検証する。
   - network failure、invalid JSON、wrong resource、unknown response を safe error に正規化し、AbortSignal を transport へ伝播する。
   - 完了時、mock transport に対する success、failure、abort の focused test で unvalidated payload が UI へ到達しない。

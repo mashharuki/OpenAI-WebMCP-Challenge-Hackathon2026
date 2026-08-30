@@ -1,19 +1,35 @@
 import { Hono, type MiddlewareHandler } from "hono";
 import {
+  type AccessEvidence,
   type AdGateErrorEnvelope,
+  type PremiumAnalysisRequest,
+  type PremiumAnalysisSuccess,
   premiumAnalysisRequestSchema,
 } from "./contracts.js";
-import type {
-  PaymentAuthorizedHandler,
-  PaymentProtectionService,
-} from "./paymentProtection.js";
+import type { PaymentProtectionService } from "./paymentProtection.js";
 import type { PaymentReadinessState } from "./readiness.js";
+import type { SponsorAuthorizer } from "./sponsorAuthorization.js";
+
+export type PremiumAnalysisHandler = (
+  request: PremiumAnalysisRequest,
+  evidence: AccessEvidence,
+) => Promise<PremiumAnalysisSuccess | AdGateErrorEnvelope>;
+
+export interface PreviewMountPolicy {
+  readonly environment: "development" | "test" | "production";
+  readonly explicitlyEnabled: boolean;
+}
+
+export const shouldMountPreview = (policy: PreviewMountPolicy): boolean =>
+  policy.environment !== "production" && policy.explicitlyEnabled;
 
 type RecipeAnalysisAppDependencies = {
   httpPolicy: MiddlewareHandler;
   paymentProtection: PaymentProtectionService;
   paymentReadiness: Promise<PaymentReadinessState>;
-  premiumHandler: PaymentAuthorizedHandler;
+  preview?: PreviewMountPolicy & { router: Hono };
+  premiumHandler: PremiumAnalysisHandler;
+  sponsorAuthorizer: SponsorAuthorizer;
 };
 
 const errorResponse = (
@@ -29,12 +45,17 @@ export const createRecipeAnalysisApp = ({
   httpPolicy,
   paymentProtection,
   paymentReadiness,
+  preview,
   premiumHandler,
+  sponsorAuthorizer,
 }: RecipeAnalysisAppDependencies): Hono => {
   const app = new Hono();
 
   app.get("/health", (context) => context.json({ report: { status: "OK" } }));
   app.use("/api/*", httpPolicy);
+  if (preview && shouldMountPreview(preview)) {
+    app.route("/api/recipe-analysis/preview", preview.router);
+  }
 
   app.post("/api/recipe-analysis", async (context) => {
     let body: unknown;
@@ -73,12 +94,11 @@ export const createRecipeAnalysisApp = ({
       });
     }
 
-    if (context.req.header("Authorization")) {
-      return errorResponse(503, {
-        code: "DEPENDENCY_UNAVAILABLE",
-        message: "Sponsor access is not available yet.",
-        retryable: true,
-      });
+    if (context.req.raw.headers.has("Authorization")) {
+      return sponsorAuthorizer.handle(
+        { request: context.req.raw, parsedRequest: parsed.data },
+        premiumHandler,
+      );
     }
 
     let readiness: PaymentReadinessState;

@@ -6,6 +6,7 @@ import { createPaymentProtection } from "./adgate/paymentProtection.js";
 import { premiumAnalysisHandler } from "./adgate/premiumAnalysis.js";
 import { evaluatePaymentReadiness } from "./adgate/readiness.js";
 import { createRecipeAnalysisApp } from "./adgate/recipeAnalysisApp.js";
+import { createUnavailableSponsorAuthorizer } from "./adgate/sponsorAuthorization.js";
 import { createX402PaymentAuthorization } from "./adgate/x402PaymentAuthorization.js";
 import {
   paymentAllowedOrigins,
@@ -36,6 +37,7 @@ const app = createRecipeAnalysisApp({
   paymentProtection,
   paymentReadiness,
   premiumHandler: premiumAnalysisHandler,
+  sponsorAuthorizer: createUnavailableSponsorAuthorizer(),
 });
 
 serve({ fetch: app.fetch, port: 4021 });

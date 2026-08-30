@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createPaymentHttpPolicy } from "../../src/adgate/cors.js";
 import { createRecipeAnalysisApp } from "../../src/adgate/recipeAnalysisApp.js";
+import { createUnavailableSponsorAuthorizer } from "../../src/adgate/sponsorAuthorization.js";
 
 const frontendOrigin = "https://demo.example";
 
@@ -21,6 +22,7 @@ describe("payment HTTP policy", () => {
       premiumHandler: async () => {
         throw new Error("preflight must not execute premium analysis");
       },
+      sponsorAuthorizer: createUnavailableSponsorAuthorizer(),
     });
 
     const response = await app.request("/api/recipe-analysis", {
@@ -80,6 +82,7 @@ describe("payment HTTP policy", () => {
       premiumHandler: async () => {
         throw new Error("disallowed origin must not execute premium analysis");
       },
+      sponsorAuthorizer: createUnavailableSponsorAuthorizer(),
     });
 
     const response = await app.request("/api/recipe-analysis", {
@@ -126,6 +129,7 @@ describe("payment HTTP policy", () => {
       premiumHandler: async () => {
         throw new Error("unexpected premium handler call");
       },
+      sponsorAuthorizer: createUnavailableSponsorAuthorizer(),
     });
 
     const response = await app.request("/api/recipe-analysis", {

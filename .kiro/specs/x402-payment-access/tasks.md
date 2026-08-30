@@ -37,7 +37,7 @@
   - _Requirements: 2.2, 2.5, 6.5_
   - _Boundary: BrowserPaymentTestHarness_
 
-- [ ] 2. Server の支払い保護境界を実装する
+- [x] 2. Server の支払い保護境界を実装する
 - [x] 2.1 Prototype の bounded idempotency registry を実装する
   - sponsor/payment共通でidempotency key、request digest、evidence fingerprintを照合し、成功結果だけ五分cacheする。
   - route認可より先にidentityのin-flight slotをclaimし、そのoperation内でauthorize/consume/verify/settle/handlerを一度だけ実行する。同一identityはpromise/cacheを共有し、既存keyに対するdigestまたはfingerprint不一致は409にする。
@@ -77,7 +77,7 @@
   - _Boundary: PaymentReadiness_
   - _Depends: 1.1, 1.4_
 
-- [ ] 2.5 Canonical recipe analysis route と preview mounting を合成する
+- [x] 2.5 Canonical recipe analysis route と preview mounting を合成する
   - `POST /api/recipe-analysis` を一度だけ mount し、`Authorization` header が存在すれば `SponsorAuthorizer`、存在しなければ `PaymentProtection` へ排他的に振り分ける。
   - malformed/invalid/expired/reused sponsor header と sponsor dependency failure は payment challenge へ fall through させず、payment failure/challenge も sponsor へ fall through させない。どの失敗でも premium handler を呼ばない。
   - 両認可経路が同一 `PremiumAnalysisHandler` instance へ canonical request と対応する `AccessEvidence` subtype を渡すようにし、publisher の分析ロジックを composition 内へ複製しない。

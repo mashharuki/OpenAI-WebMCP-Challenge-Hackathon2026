@@ -1,6 +1,6 @@
-import type { PaymentAuthorizedHandler } from "./paymentProtection.js";
+import type { PremiumAnalysisHandler } from "./recipeAnalysisApp.js";
 
-export const premiumAnalysisHandler: PaymentAuthorizedHandler = async (
+export const premiumAnalysisHandler: PremiumAnalysisHandler = async (
   request,
   evidence,
 ) => {
@@ -13,8 +13,11 @@ export const premiumAnalysisHandler: PaymentAuthorizedHandler = async (
     requestId: request.requestId,
     resourceId: "recipe_analysis",
     access: {
-      kind: "x402_payment",
-      referenceId: evidence.transactionHash,
+      kind: evidence.kind,
+      referenceId:
+        evidence.kind === "sponsor_grant"
+          ? evidence.grantId
+          : evidence.transactionHash,
     },
     data: {
       summary:

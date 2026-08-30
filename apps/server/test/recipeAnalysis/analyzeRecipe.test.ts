@@ -30,7 +30,7 @@ describe("deterministicRecipeAnalyzer", () => {
     expect(first.data.disclaimer).toContain("not medical advice");
   });
 
-  it("rejects an unsupported recipe without disclosing its input", () => {
+  it("defensively rejects an invalid recipe when transport validation is bypassed", () => {
     const unsupportedRecipeId = "private-test-recipe";
     const outcome = deterministicRecipeAnalyzer.analyze({
       recipeId: unsupportedRecipeId,

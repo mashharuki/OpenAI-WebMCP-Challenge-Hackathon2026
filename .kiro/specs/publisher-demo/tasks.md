@@ -15,16 +15,16 @@
 - [x] 2.1 Pure analyzer と canonical result を実装する
   - 検証済み入力だけを受け、recipe の材料・手順・dietary goals に対応する summary、nutritional insights、suggestions、disclaimer を返す。
   - 時刻、乱数、environment、network、外部 AI に依存せず、同一入力から deep-equal な result を返す。
-  - unsupported な有効入力を上流 taxonomy の safe error outcome にし、入力値を公開しない。thrown/unknown failure の正規化は HTTP boundary に委ねる。
-  - 完了時、sample input の反復分析が常に canonical result schema に適合し、unsupported case が安全に失敗する unit test が成功する。
+  - transport validation を迂回した不正入力も上流 taxonomy の safe error outcome にし、入力値を公開しない。thrown/unknown failure の正規化は HTTP boundary に委ねる。
+  - 完了時、sample input の反復分析が常に canonical result schema に適合し、防御的な不正入力 case が安全に失敗する unit test が成功する。
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
   - _Boundary: DeterministicAnalyzer_
 
 - [x] 2.2 Preview HTTP boundary を追加する
   - preview request を上流 server contract で strict validation し、analyzer outcome を success または normalized error response に写像する。
-  - access evidence を生成・要求せず、invalid body、unsupported sample、unknown exception を設計どおりの status と safe envelope で返す。
+  - access evidence を生成・要求せず、invalid body と unknown recipe ID を analyzer 実行前に拒否し、domain rejection、unknown exception を設計どおりの status と safe envelope で返す。
   - router を server import 時に自己登録しない factory として公開し、development composition が明示的に mount または省略できる seam にする。
-  - Hono in-memory request によって valid、unknown field、unsupported、sanitized internal failure、および省略時の route absence を検証する。
+  - Hono in-memory request によって valid、unknown field、unknown recipe ID、domain rejection、sanitized internal failure、および省略時の route absence を検証する。
   - 完了時、`POST /api/recipe-analysis/preview` router が network listener なしで契約適合 response を返し、factory を組み込まない app には route が追加されない。
   - _Requirements: 3.5, 3.6, 4.3, 4.5, 5.2, 5.3_
   - _Boundary: PreviewRoute_

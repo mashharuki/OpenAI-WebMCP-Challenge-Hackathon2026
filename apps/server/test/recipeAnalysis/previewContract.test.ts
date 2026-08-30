@@ -29,7 +29,7 @@ describe("publisher preview contract fixture", () => {
     expect(fixture.response).not.toHaveProperty("access");
   });
 
-  it("rejects fixture field drift before invoking the analyzer", async () => {
+  it("rejects an unknown recipe value before invoking the analyzer", async () => {
     let analysisCalls = 0;
     const app = new Hono();
     app.route(
@@ -47,10 +47,23 @@ describe("publisher preview contract fixture", () => {
     const response = await app.request("/api/recipe-analysis/preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...fixture.request, recipeText: "field drift" }),
+      body: JSON.stringify({
+        ...fixture.request,
+        input: { recipeId: "unpublished-recipe" },
+      }),
     });
 
     expect(response.status).toBe(400);
     expect(analysisCalls).toBe(0);
+    const body = await response.json();
+    expect(body).toEqual({
+      ok: false,
+      error: {
+        code: "INVALID_INPUT",
+        message: "The recipe analysis request is invalid.",
+        retryable: false,
+      },
+    });
+    expect(JSON.stringify(body)).not.toContain("unpublished-recipe");
   });
 });

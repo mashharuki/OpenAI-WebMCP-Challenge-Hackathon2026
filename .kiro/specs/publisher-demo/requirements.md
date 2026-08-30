@@ -58,7 +58,7 @@
 2. The Premium Analysis Service shall 分析入力で示された材料、手順、または食事上の目的に関連する所見と提案のみを返す。
 3. The Premium Analysis Service shall 各成功応答を `recipe_analysis` の共有成功契約に適合させる。
 4. The Premium Analysis Service shall 医療上の診断または個別治療の代替ではないことを示す免責情報を全ての成功結果に含める。
-5. If 有効だがサンプル分析の対象として扱えない入力を受け取る, the Premium Analysis Service shall 内部情報を含まない安全な失敗応答を返す。
+5. If canonical sample と一致しない recipe ID または許容範囲外の入力値を受け取る, the Premium Analysis Service shall analyzer を実行せず、入力値や内部情報を含まない `INVALID_INPUT` 応答を返す。
 
 ### Requirement 5: 失敗からの理解可能な回復
 

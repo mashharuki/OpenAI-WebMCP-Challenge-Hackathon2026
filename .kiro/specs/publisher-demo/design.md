@@ -120,7 +120,7 @@ apps/
 └── server/src/
     └── recipeAnalysis/
         ├── analyzeRecipe.ts               # pure deterministic analysis service
-        ├── analyzeRecipe.test.ts          # repeatability and unsupported-input tests
+        ├── analyzeRecipe.test.ts          # repeatability and defensive-input tests
         ├── previewRoute.ts                # independently mountable development-only adapter
         └── previewRoute.test.ts           # contract, mount and omission integration tests
 test/fixtures/
@@ -282,14 +282,14 @@ interface RecipeAnalyzer {
 - Preconditions: server contract schema で検証済みの input を受け取る。
 - Postconditions: success は `RecipeAnalysisResult` schema に適合し、同じ input は deep-equal な data を返す。
 - Invariants: I/O、Date、random、environment、external model を参照しない。固定recipe IDからcanonical ingredients/instructionsを解決し、栄養要約、代替食材、アレルゲン注意、および医療助言ではない免責を含むowned resultを返す。
-- supported sample と一致しない有効 input は、安全な `INVALID_INPUT` outcome として扱う。
+- transport validation を迂回して canonical sample と一致しない input が渡された場合も、防御的に安全な `INVALID_INPUT` outcome として扱う。
 
 #### PreviewRoute
 
 **Contracts**: Service [ ] / API [x] / Event [ ] / Batch [ ] / State [ ]
 
 - request body と response body の双方を server contract で検証する。
-- body parse/schema failure は 400 `INVALID_INPUT`、unsupported sample は 422 `INVALID_INPUT`、unknown exception は 500 `INTERNAL_ERROR` に正規化する。
+- body parse/schema failure と canonical sample に一致しない recipe ID は analyzer 実行前に 400 `INVALID_INPUT`、analyzer の domain rejection は 422 `INVALID_INPUT`、unknown exception は 500 `INTERNAL_ERROR` に正規化する。
 - route は access header を検査せず、grant/payment evidence を生成しない。
 - correlation ID は request header の安全な値を伝播できるが、秘密値や raw exception を返さない。
 
@@ -345,12 +345,12 @@ preview route は method、path、status、correlation ID のみを既存 server
 ### Unit Tests
 
 - `sampleRecipe`: displayed ingredient/instruction lists と `analysisInput` の source が同じで、upstream input schema に適合することを検証する (2.1–2.3, 3.1)。
-- `DeterministicAnalyzer`: 同一 input の deep equality、sample-specific finding、disclaimer、unsupported valid input の安全な error を検証する (4.1–4.5)。
+- `DeterministicAnalyzer`: 同一 input の deep equality、sample-specific finding、disclaimer、transport validation を迂回した不正 input の安全な error を検証する (4.1–4.5)。
 - `AnalysisClient`: success parse、network failure、invalid JSON、wrong resource ID、AbortSignal を検証する (3.3–3.5, 5.1–5.3)。
 
 ### Integration Tests
 
-- preview route が valid request を 200 canonical data、unknown field を 400、unsupported sample を 422、thrown error を sanitized 500 で返すことを検証する (3.5, 4.3, 4.5, 5.2–5.3)。
+- preview route が valid request を 200 canonical data、unknown field と unknown recipe ID を analyzer 実行前に 400、analyzer の domain rejection を 422、thrown error を sanitized 500 で返すことを検証する (3.5, 4.3, 4.5, 5.2–5.3)。
 - preview router factory を development composition に明示 mount した場合だけ route が到達可能で、factory を省略した in-memory app では同 path が存在しないことを検証する (3.6)。これは production policy または deployed endpoint の検証ではない。
 - frontend request fixture と server handler が request field を同じ意味で扱うことを検証する (2.2, 3.1, 4.3)。
 - existing `/health` と x402 `/weather` composition が route mount 後も応答可能であることを smoke test する。

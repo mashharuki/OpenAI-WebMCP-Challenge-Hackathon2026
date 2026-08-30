@@ -97,7 +97,7 @@ describe("createPreviewRecipeAnalysisRouter", () => {
     });
   });
 
-  it("maps an unsupported sample to a safe unprocessable response", async () => {
+  it("maps an analyzer domain rejection to a safe unprocessable response", async () => {
     const response = await createMountedApp({
       analyze: () => ({
         ok: false,

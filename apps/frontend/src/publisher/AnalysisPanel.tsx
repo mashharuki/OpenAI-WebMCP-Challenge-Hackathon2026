@@ -123,6 +123,19 @@ export function AnalysisPanel({ state, onStart, onRetry }: AnalysisPanelProps) {
               {state.result.disclaimer}
             </p>
           </section>
+
+          <div className="flex items-center justify-between gap-4 bg-[#213d32] p-5 sm:col-span-2 sm:p-6">
+            <p className="text-sm text-[#d7e1da]">
+              Run the same fixed recipe through the analysis once more.
+            </p>
+            <button
+              type="button"
+              onClick={onStart}
+              className="min-h-11 shrink-0 rounded-full border border-[#e2a93b] px-5 py-3 text-sm font-bold text-[#f6cd7c] hover:bg-[#315843] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#fbfaf6]"
+            >
+              Analyze again
+            </button>
+          </div>
         </div>
       ) : null}
 

@@ -51,6 +51,37 @@ describe("PublisherDemo", () => {
     );
   });
 
+  it("analyzes the unchanged recipe again and returns the same result", async () => {
+    const analyze = vi
+      .fn<AnalysisClientPort["analyze"]>()
+      .mockResolvedValue(analysisResult);
+    render(<PublisherDemo analysisClient={{ analyze }} />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Analyze this recipe" }),
+    );
+    await screen.findByText(analysisResult.summary);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      analysisResult.summary,
+    );
+
+    const analyzeAgain = screen.getByRole("button", {
+      name: "Analyze again",
+    });
+    fireEvent.click(analyzeAgain);
+    fireEvent.click(analyzeAgain);
+
+    expect(analyze).toHaveBeenCalledTimes(2);
+    expect(analyze).toHaveBeenLastCalledWith(
+      { recipeId: "roasted-chickpea-quinoa-bowl" },
+      expect.any(AbortSignal),
+    );
+    await screen.findByText(analysisResult.summary);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      analysisResult.summary,
+    );
+  });
+
   it("shows only a safe error and retries the same recipe once", async () => {
     const firstRequest = deferred<RecipeAnalysisResult>();
     const secondRequest = deferred<RecipeAnalysisResult>();

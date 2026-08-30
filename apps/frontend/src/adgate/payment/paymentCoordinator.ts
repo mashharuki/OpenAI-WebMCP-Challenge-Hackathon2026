@@ -49,7 +49,7 @@ export interface PaymentCoordinatorPort {
     request: PremiumAnalysisRequest,
     signal?: AbortSignal,
   ): Promise<PaymentTerminalResult>;
-  confirm(provider: Eip1193ProviderPort): Promise<void>;
+  confirm(provider?: Eip1193ProviderPort): Promise<void>;
   cancel(reason: PaymentCancellationReason): void;
   getSnapshot(): PaymentFlowState;
   subscribe(listener: (state: PaymentFlowState) => void): () => void;
@@ -195,6 +195,14 @@ export const createPaymentCoordinator = ({
         if (!isCurrent(candidate)) return;
         if (!preparation.ok) {
           fail(candidate, preparation.error);
+          return;
+        }
+        if (!provider) {
+          fail(candidate, {
+            code: "ACCESS_REQUIRED",
+            message: "An injected wallet is required.",
+            retryable: false,
+          });
           return;
         }
 

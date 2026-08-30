@@ -125,8 +125,8 @@
   - _Boundary: PaymentCoordinator_
   - _Depends: 3.2, 3.3_
 
-- [ ] 4. 人間確認と支払い結果を画面へ接続する
-- [ ] 4.1 支払い確認 panel を実装する
+- [x] 4. 人間確認と支払い結果を画面へ接続する
+- [x] 4.1 支払い確認 panel を実装する
   - 402 由来の network、USDC amount、asset、短縮 payTo と必要操作を署名前に表示する。
   - 明示確認、進行段階、disabled duplicate action、safe error、retry、sponsor return、settlement receipt を表示する。
   - provider request は確認 button の user event からだけ開始し、mount または challenge 表示では開始しない。

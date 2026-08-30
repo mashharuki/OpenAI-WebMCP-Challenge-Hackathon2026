@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "name": "valid-analysis-result",
+      "contract": "RecipeAnalysisResult",
+      "expect": "valid",
+      "targets": ["frontend", "server"],
+      "value": {
+        "summary": "A balanced plant-forward bowl with fiber and protein.",
+        "nutritionalInsights": [
+          "Chickpeas and quinoa provide complementary plant protein."
+        ],
+        "suggestions": ["Add lemon juice to brighten the finished bowl."],
+        "disclaimer": "General nutrition information only; not medical advice."
+      }
+    },
+    {
+      "name": "invalid-analysis-result-secret",
+      "contract": "RecipeAnalysisResult",
+      "expect": "invalid",
+      "errorCode": "INVALID_INPUT",
+      "targets": ["frontend", "server"],
+      "value": {
+        "summary": "A balanced plant-forward bowl with fiber and protein.",
+        "nutritionalInsights": [],
+        "suggestions": ["Add lemon juice to brighten the finished bowl."],
+        "disclaimer": "General nutrition information only; not medical advice.",
+        "internalPrompt": "must never cross the boundary"
+      }
+    },
+    {
+      "name": "valid-sponsor-evidence",
+      "contract": "SponsorAccessEvidence",
+      "expect": "valid",
+      "targets": ["frontend", "server"],
+      "value": {
+        "kind": "sponsor_grant",
+        "grantId": "grant-123",
+        "resourceId": "recipe_analysis",
+        "issuedAt": "2026-08-30T00:00:00.000Z",
+        "expiresAt": "2026-08-30T00:01:00.000Z",
+        "nonce": "request-123"
+      }
+    },
+    {
+      "name": "invalid-sponsor-evidence-secret",
+      "contract": "SponsorAccessEvidence",
+      "expect": "invalid",
+      "errorCode": "INVALID_INPUT",
+      "targets": ["frontend", "server"],
+      "value": {
+        "kind": "sponsor_grant",
+        "grantId": "grant-123",
+        "resourceId": "recipe_analysis",
+        "issuedAt": "2026-08-30T00:00:00.000Z",
+        "expiresAt": "2026-08-30T00:01:00.000Z",
+        "nonce": "request-123",
+        "token": "reusable-secret"
+      }
+    },
+    {
+      "name": "invalid-sponsor-expiry-equality",
+      "contract": "SponsorAccessEvidence",
+      "expect": "invalid",
+      "errorCode": "ACCESS_EXPIRED",
+      "targets": ["frontend", "server"],
+      "value": {
+        "kind": "sponsor_grant",
+        "grantId": "grant-123",
+        "resourceId": "recipe_analysis",
+        "issuedAt": "2026-08-30T00:00:00.000Z",
+        "expiresAt": "2026-08-30T00:00:00.000Z",
+        "nonce": "request-123"
+      }
+    },
+    {
+      "name": "valid-payment-receipt",
+      "contract": "PaymentReceipt",
+      "expect": "valid",
+      "targets": ["frontend", "server"],
+      "value": {
+        "resourceId": "recipe_analysis",
+        "paymentRequestId": "payment-request-123",
+        "transactionHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "network": "eip155:84532",
+        "asset": "0x2222222222222222222222222222222222222222",
+        "amount": "10000",
+        "confirmedAt": "2026-08-30T00:00:10.000Z"
+      }
+    },
+    {
+      "name": "invalid-payment-receipt",
+      "contract": "PaymentReceipt",
+      "expect": "invalid",
+      "errorCode": "INVALID_INPUT",
+      "targets": ["frontend", "server"],
+      "value": {
+        "resourceId": "recipe_analysis",
+        "paymentRequestId": "payment-request-123",
+        "transactionHash": "0xnot-a-hash",
+        "network": "eip155:4801",
+        "asset": "0x2222222222222222222222222222222222222222",
+        "amount": "0.01",
+        "confirmedAt": "2026-08-30T00:00:10.000Z"
+      }
+    },
+    {
+      "name": "valid-payment-evidence",
+      "contract": "PaymentAccessEvidence",
+      "expect": "valid",
+      "targets": ["frontend", "server"],
+      "value": {
+        "kind": "x402_payment",
+        "resourceId": "recipe_analysis",
+        "paymentRequestId": "payment-request-123",
+        "transactionHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "network": "eip155:84532",
+        "asset": "0x2222222222222222222222222222222222222222",
+        "amount": "10000",
+        "confirmedAt": "2026-08-30T00:00:10.000Z"
+      }
+    },
+    {
+      "name": "invalid-payment-evidence-network",
+      "contract": "PaymentAccessEvidence",
+      "expect": "invalid",
+      "errorCode": "INVALID_EVIDENCE",
+      "targets": ["frontend", "server"],
+      "value": {
+        "kind": "x402_payment",
+        "resourceId": "recipe_analysis",
+        "paymentRequestId": "payment-request-123",
+        "transactionHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "network": "eip155:1",
+        "asset": "0x2222222222222222222222222222222222222222",
+        "amount": "10000",
+        "confirmedAt": "2026-08-30T00:00:10.000Z"
+      }
+    },
+    {
+      "name": "valid-recipe-input",
+      "contract": "RecipeAnalysisInput",
+      "expect": "valid",
+      "targets": ["frontend", "server"],
+      "value": {
+        "recipeId": "roasted-chickpea-quinoa-bowl",
+        "dietaryGoals": ["higher protein"]
+      }
+    },
+    {
+      "name": "invalid-recipe-input-unknown-field",
+      "contract": "RecipeAnalysisInput",
+      "expect": "invalid",
+      "errorCode": "INVALID_INPUT",
+      "targets": ["frontend", "server"],
+      "value": {
+        "recipeId": "roasted-chickpea-quinoa-bowl",
+        "ingredients": ["agent supplied"]
+      }
+    },
+    {
+      "name": "valid-premium-request",
+      "contract": "PremiumAnalysisRequest",
+      "expect": "valid",
+      "targets": ["frontend", "server"],
+      "value": {
+        "requestId": "request-123",
+        "idempotencyKey": "idempotency-key-123",
+        "resourceId": "recipe_analysis",
+        "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
+      }
+    },
+    {
+      "name": "invalid-premium-request-short-key",
+      "contract": "PremiumAnalysisRequest",
+      "expect": "invalid",
+      "errorCode": "INVALID_INPUT",
+      "targets": ["frontend", "server"],
+      "value": {
+        "requestId": "request-123",
+        "idempotencyKey": "short",
+        "resourceId": "recipe_analysis",
+        "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
+      }
+    },
+    {
+      "name": "valid-premium-success",
+      "contract": "PremiumAnalysisSuccess",
+      "expect": "valid",
+      "targets": ["frontend", "server"],
+      "value": {
+        "ok": true,
+        "requestId": "request-123",
+        "resourceId": "recipe_analysis",
+        "access": { "kind": "sponsor_grant", "referenceId": "grant-123" },
+        "data": {
+          "summary": "A balanced plant-forward bowl with fiber and protein.",
+          "nutritionalInsights": [
+            "Chickpeas and quinoa provide complementary plant protein."
+          ],
+          "suggestions": ["Add lemon juice to brighten the finished bowl."],
+          "disclaimer": "General nutrition information only; not medical advice."
+        }
+      }
+    },
+    {
+      "name": "valid-error-envelope",
+      "contract": "AdGateErrorEnvelope",
+      "expect": "valid",
+      "targets": ["frontend", "server"],
+      "value": {
+        "ok": false,
+        "error": {
+          "code": "ACCESS_REQUIRED",
+          "message": "Choose an access method.",
+          "retryable": true
+        }
+      }
+    },
+    {
+      "name": "invalid-error-envelope-secret",
+      "contract": "AdGateErrorEnvelope",
+      "expect": "invalid",
+      "errorCode": "INTERNAL_ERROR",
+      "targets": ["frontend", "server"],
+      "value": {
+        "ok": false,
+        "error": {
+          "code": "INTERNAL_ERROR",
+          "message": "Failed.",
+          "retryable": false,
+          "stack": "PRIVATE_KEY=reusable-secret"
+        }
+      }
+    }
+  ]
+}

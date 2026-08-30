@@ -46,6 +46,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@babel/plugin-proposal-decorators": "^8.0.2",
     "@cloudflare/vite-plugin": "^1.48.0",
     "@cloudflare/workers-types": "^5.20260729.1",
     "@tailwindcss/vite": "^4",

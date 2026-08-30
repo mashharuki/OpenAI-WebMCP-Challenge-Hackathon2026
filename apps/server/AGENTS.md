@@ -18,7 +18,7 @@ Keep payment policy in `config.ts`, AgentKit setup in `resourceServer.ts`, and H
 - `pnpm exec biome check .` — from the root, check formatting and linting without changing files.
 - `pnpm check` — run Biome with automatic fixes; use only when modifying the worktree is intended.
 
-This package has no `build` or `test` script yet. Before submitting a server change, run the development server with valid local configuration and exercise `/health` plus the affected protected route.
+Before submitting a server change, run the package's `test`, `typecheck`, and `build` scripts. For integration-sensitive changes, also run the development server with valid local configuration and exercise `/health` plus the affected protected route.
 
 ## Coding Style & Naming Conventions
 
@@ -26,7 +26,7 @@ Write TypeScript using ESM imports. The repository uses Biome with space indenta
 
 ## Testing Guidelines
 
-When adding tests, colocate them with the source as `*.test.ts` and add a reproducible `test` script to `package.json`. Cover payment middleware behavior, error responses, and route authorization boundaries; do not require live payment infrastructure in unit tests. No coverage threshold is currently configured.
+Place server tests under `test/`, mirroring the relevant `src/` module directory when useful, and name them `*.test.ts`. Cover payment middleware behavior, error responses, and route authorization boundaries; do not require live payment infrastructure in unit tests. No coverage threshold is currently configured.
 
 ## Commit & Pull Request Guidelines
 

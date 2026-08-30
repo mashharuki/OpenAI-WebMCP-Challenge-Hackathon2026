@@ -1,7 +1,7 @@
 # Implementation Plan
 
 - [ ] 1. Base Sepolia 支払い基盤を単一方針へ整理する
-- [ ] 1.1 Server-authoritative な支払い設定と起動時検証を実装する
+- [x] 1.1 Server-authoritative な支払い設定と起動時検証を実装する
   - 価格を0.01 testnet USDCへ固定し、canonical asset/decimalsからbase-unit量を検証する。payToとfacilitator URLはenvironmentから取得する。
   - `recipe_analysis`、Base Sepolia、exact、testnet USDC、受取先、支払額を一つの immutable 方針として構築する。
   - 欠落設定、不正 address/amount、複数 offer、他 network/scheme を fail-closed の安全な error にする。
@@ -9,7 +9,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.5, 6.1, 6.2_
   - _Boundary: PaymentPolicy_
 
-- [ ] 1.2 Resource server の登録を Base Sepolia exact だけへ縮退する
+- [x] 1.2 Resource server の登録を Base Sepolia exact だけへ縮退する
   - weather 用 policy、World Chain、multi-network accepts の登録を除去する。
   - resource server が `eip155:84532` の exact だけを登録し、AgentKit free-trial を支払い authorization として扱わないようにする。
   - 完了時、server の payment registration と offer に Base Sepolia exact 以外が現れない。
@@ -23,7 +23,7 @@
   - _Requirements: 1.2, 1.3, 2.5, 5.5, 6.2, 6.3_
   - _Boundary: LocalFacilitatorCompatibility_
 
-- [ ] 1.4 Server 支払い用の再現可能な test runtime を追加する
+- [x] 1.4 Server 支払い用の再現可能な test runtime を追加する
   - server に package-level test command と mock facilitator を実行できる test dependency を追加する。
   - 実秘密鍵、testnet RPC、hosted facilitator なしで server 境界 test が動く構成にする。
   - 完了時、server test command が最小 smoke test を検出して成功する。
@@ -49,7 +49,7 @@
   - _Boundary: ProtectedAttemptRegistry_
   - _Depends: 1.4_
 
-- [ ] 2.2 x402 保護 adapter を実装する
+- [x] 2.2 x402 保護 adapter を実装する
   - 無証跡要求には単一の 402 offer を返し、検証・決済成功時だけ注入された premium handler へ委譲する。
   - request ID、idempotency key、canonical payload を registry へ渡し、同内容 retry と payload 競合を一貫して扱う。
   - settlement 成功を canonical payment evidence と成功 envelope へ正規化し、未加工 facilitator response を公開しない。

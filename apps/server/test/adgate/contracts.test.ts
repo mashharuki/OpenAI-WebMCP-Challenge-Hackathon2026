@@ -10,7 +10,7 @@ import {
   recipeAnalysisInputSchema,
   recipeAnalysisResultSchema,
   sponsorAccessEvidenceSchema,
-} from "./contracts.js";
+} from "../../src/adgate/contracts.js";
 
 type FixtureCase = {
   name: string;

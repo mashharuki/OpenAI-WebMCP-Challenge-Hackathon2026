@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { PremiumAnalysisSuccess } from "./contracts.js";
-import { createProtectedAttemptRegistry } from "./idempotency.js";
+import type { PremiumAnalysisSuccess } from "../../src/adgate/contracts.js";
+import { createProtectedAttemptRegistry } from "../../src/adgate/idempotency.js";
 
 const identity = {
   idempotencyKey: "idempotency-key-123",

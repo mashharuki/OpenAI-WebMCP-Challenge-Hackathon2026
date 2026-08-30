@@ -1,47 +1,30 @@
-import { declareAgentkitExtension } from "@worldcoin/agentkit";
-import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import "dotenv/config";
+import { validatePaymentRuntime } from "./adgate/paymentPolicy.js";
 
-// x402に関する設定
+const payTo = process.env.EVM_ADDRESS;
+const facilitatorUrl = process.env.FACILITATOR_URL;
+const validation = validatePaymentRuntime({ payTo, facilitatorUrl });
+
+if (!validation.ok || !facilitatorUrl) {
+  throw new Error("Payment runtime configuration is invalid.");
+}
+
+export const paymentPolicy = validation.policy;
+export const paymentFacilitatorUrl = facilitatorUrl;
+
 export const x402Config = {
-  "GET /weather": {
+  [paymentPolicy.route]: {
     accepts: [
       {
-        scheme: "exact",
-        price: "$0.01",
-        network: "eip155:84532" as `${string}:${string}`, // Base Sepolia
-        payTo: process.env.EVM_ADDRESS as `0x${string}`,
-      },
-      {
-        scheme: "exact",
-        price: {
-          amount: "10000",
-          asset: "0x66145f38cBAC35Ca6F1Dfb4914dF98F1614aeA88" as `0x${string}`,
-          extra: {
-            name: "USDC",
-            version: "2",
-          },
-        },
-        network: "eip155:4801" as `${string}:${string}`, // Worldchain Sepolia
-        payTo: process.env.EVM_ADDRESS as `0x${string}`,
+        scheme: paymentPolicy.scheme,
+        price: paymentPolicy.price,
+        network: paymentPolicy.network,
+        payTo: paymentPolicy.payTo,
       },
     ],
+    resource: paymentPolicy.resourceId,
     description:
-      "Get real-time weather data including temperature, conditions, and humidity",
+      "Premium nutrition and preparation analysis for the published recipe",
     mimeType: "application/json",
-    extensions: {
-      ...declareDiscoveryExtension({
-        input: { city: "San Francisco" },
-        inputSchema: {
-          properties: { city: { type: "string", description: "City name" } },
-          required: ["city"],
-        },
-      }),
-      ...declareAgentkitExtension({
-        network: ["eip155:84532", "eip155:4801"],
-        statement: "Verify your agent is backed by a real human",
-        mode: { type: "free-trial", uses: 3 },
-      }),
-    },
   },
 };

@@ -84,8 +84,8 @@
   - _Boundary: SponsorAuthorizer_
   - _Depends: 3.2_
 
-- [ ] 5. スポンサー経路を境界横断で検証する
-- [ ] 5.1 browser から一回消費までの統合 test を完成する
+- [x] 5. スポンサー経路を境界横断で検証する
+- [x] 5.1 browser から一回消費までの統合 test を完成する
   - session開始、hidden中に止まる8秒visible countdown、server elapsed検証、grant issue、Authorization変換、consume successを一つのdeterministic flowで検証する。
   - cancel、abort、hidden countdown、expiry、replay、resource/nonce mismatch を end-to-end boundary case として検証する。
   - sponsor content や token が storage、URL、公開 error、log に残らないことを確認する。

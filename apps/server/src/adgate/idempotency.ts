@@ -1,5 +1,7 @@
+import { createHash } from "node:crypto";
 import type {
   AdGateErrorEnvelope,
+  PremiumAnalysisRequest,
   PremiumAnalysisSuccess,
 } from "./contracts.js";
 
@@ -8,6 +10,31 @@ export type ProtectedAttemptIdentity = {
   requestDigest: string;
   evidenceFingerprint: string;
 };
+
+const digest = (value: string): string =>
+  createHash("sha256").update(value).digest("hex");
+
+const canonicalRequestBody = (request: PremiumAnalysisRequest): string =>
+  JSON.stringify({
+    requestId: request.requestId,
+    idempotencyKey: request.idempotencyKey,
+    resourceId: request.resourceId,
+    input: {
+      recipeId: request.input.recipeId,
+      ...(request.input.dietaryGoals
+        ? { dietaryGoals: request.input.dietaryGoals }
+        : {}),
+    },
+  });
+
+export const createProtectedAttemptIdentity = (
+  request: PremiumAnalysisRequest,
+  evidence: string,
+): ProtectedAttemptIdentity => ({
+  idempotencyKey: request.idempotencyKey,
+  requestDigest: digest(canonicalRequestBody(request)),
+  evidenceFingerprint: digest(evidence),
+});
 
 export type ProtectedAttemptResult =
   | PremiumAnalysisSuccess

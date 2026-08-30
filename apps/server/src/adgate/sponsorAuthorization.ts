@@ -7,6 +7,10 @@ import type {
   PremiumAnalysisSuccess,
   SponsorAccessEvidence,
 } from "./contracts.js";
+import {
+  createProtectedAttemptIdentity,
+  type ProtectedAttemptRegistry,
+} from "./idempotency.js";
 
 export type SponsorAuthorizedHandler = (
   request: PremiumAnalysisRequest,
@@ -21,6 +25,7 @@ export interface SponsorAuthorizer {
 }
 
 interface SponsorAuthorizerOptions {
+  readonly registry: ProtectedAttemptRegistry;
   readonly service: SponsorGrantService;
 }
 
@@ -60,6 +65,7 @@ const internalError = (): Response =>
 const sponsorAuthorizationPattern = /^Sponsor ([A-Za-z0-9_-]{43,128})$/;
 
 export const createSponsorAuthorizer = ({
+  registry,
   service,
 }: SponsorAuthorizerOptions): SponsorAuthorizer => ({
   async handle({ request, parsedRequest }, next) {
@@ -69,14 +75,19 @@ export const createSponsorAuthorizer = ({
     if (!match) return invalidEvidence();
 
     try {
-      const result = await service.consume({
-        token: match[1],
-        resourceId: parsedRequest.resourceId,
-        nonce: parsedRequest.requestId,
-      });
-      if (!result.ok) return errorResponse(result.error);
-
-      const downstream = await next(parsedRequest, result.value);
+      const downstream = await registry.execute(
+        createProtectedAttemptIdentity(parsedRequest, authorization),
+        async () => {
+          const result = await service.consume({
+            token: match[1],
+            resourceId: parsedRequest.resourceId,
+            nonce: parsedRequest.requestId,
+          });
+          return result.ok
+            ? next(parsedRequest, result.value)
+            : { ok: false, error: result.error };
+        },
+      );
       return jsonResponse(
         downstream,
         downstream.ok ? 200 : sponsorHttpStatusForError(downstream.error.code),

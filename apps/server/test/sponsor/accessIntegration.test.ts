@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createSponsorFlowController } from "../../../frontend/src/sponsor/sponsorFlowController";
 import { createSponsorGrantClient } from "../../../frontend/src/sponsor/sponsorGrantClient";
 import type { PremiumAnalysisRequest } from "../../src/adgate/contracts.js";
+import { createProtectedAttemptRegistry } from "../../src/adgate/idempotency.js";
 import { createRecipeAnalysisApp } from "../../src/adgate/recipeAnalysisApp.js";
 import { createSponsorAuthorizer } from "../../src/adgate/sponsorAuthorization.js";
 import { createSponsorGrantLedger } from "../../src/sponsor/grantLedger.js";
@@ -60,6 +61,7 @@ describe("Sponsor Access integration", () => {
     let visible = true;
     const observedUrls: string[] = [];
     const observedEvidence: unknown[] = [];
+    const registry = createProtectedAttemptRegistry({ now: () => 0 });
     const service = createSponsorGrantService({
       ledger: createSponsorGrantLedger(),
       now: () => serverNow,
@@ -77,7 +79,7 @@ describe("Sponsor Access integration", () => {
         },
       },
       paymentReadiness: Promise.resolve({ type: "ready" }),
-      sponsorAuthorizer: createSponsorAuthorizer({ service }),
+      sponsorAuthorizer: createSponsorAuthorizer({ registry, service }),
       sponsorRoutes: createSponsorGrantRoutes({
         service,
         now: () => serverNow,
@@ -166,7 +168,8 @@ describe("Sponsor Access integration", () => {
       });
     const authorized = await analyze();
     expect(authorized.status).toBe(200);
-    expect(await authorized.json()).toMatchObject({
+    const authorizedBody = await authorized.json();
+    expect(authorizedBody).toMatchObject({
       ok: true,
       access: {
         kind: "sponsor_grant",
@@ -176,11 +179,8 @@ describe("Sponsor Access integration", () => {
     expect(observedEvidence).toEqual([result.evidence]);
 
     const replay = await analyze();
-    expect(replay.status).toBe(401);
-    expect(await replay.json()).toMatchObject({
-      ok: false,
-      error: { code: "ACCESS_REUSED" },
-    });
+    expect(replay.status).toBe(200);
+    expect(await replay.json()).toEqual(authorizedBody);
     expect(observedEvidence).toHaveLength(1);
     expect(observedUrls).toEqual([
       "https://publisher.example/api/sponsor-sessions",
@@ -211,7 +211,10 @@ describe("Sponsor Access integration", () => {
         },
       },
       paymentReadiness: Promise.resolve({ type: "ready" }),
-      sponsorAuthorizer: createSponsorAuthorizer({ service }),
+      sponsorAuthorizer: createSponsorAuthorizer({
+        registry: createProtectedAttemptRegistry(),
+        service,
+      }),
       sponsorRoutes: createSponsorGrantRoutes({
         service,
         now: () => serverNow,

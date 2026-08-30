@@ -44,7 +44,10 @@ export const createRuntimeRecipeAnalysisDependencies =
       paymentProtection: createPaymentProtection({ registry, payment }),
       paymentReadiness,
       premiumHandler: premiumAnalysisHandler,
-      sponsorAuthorizer: createSponsorAuthorizer({ service: sponsorService }),
+      sponsorAuthorizer: createSponsorAuthorizer({
+        registry,
+        service: sponsorService,
+      }),
       sponsorRoutes: createSponsorGrantRoutes({ service: sponsorService }),
     };
   };

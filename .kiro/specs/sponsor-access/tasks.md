@@ -87,9 +87,9 @@
 - [x] 5. スポンサー経路を境界横断で検証する
 - [x] 5.1 browser から一回消費までの統合 test を完成する
   - session開始、hidden中に止まる8秒visible countdown、server elapsed検証、grant issue、Authorization変換、consume successを一つのdeterministic flowで検証する。
-  - cancel、abort、hidden countdown、expiry、replay、resource/nonce mismatch を end-to-end boundary case として検証する。
+  - cancel、abort、hidden countdown、expiry、同一identityの成功replay、別identityでのgrant再利用、resource/nonce mismatch を end-to-end boundary case として検証する。
   - sponsor content や token が storage、URL、公開 error、log に残らないことを確認する。
-  - 完了時、wallet なしのスポンサー経路が共通 evidence を一度返し、再利用が明示的に拒否される test suite が通る。
-  - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 6.4_
+  - 完了時、wallet なしのスポンサー経路が共通 evidence を一度消費し、同一identityの成功は五分cacheから返り、別identityでの再利用は明示的に拒否される test suite が通る。
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 6.1, 6.2, 6.3, 6.4_
   - _Boundary: Sponsor Access integration tests_
   - _Depends: 2.3, 4.1, 4.2_

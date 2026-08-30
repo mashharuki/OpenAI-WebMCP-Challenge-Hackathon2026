@@ -1,4 +1,5 @@
 import { expect, it } from "vitest";
+import { createProtectedAttemptRegistry } from "../../src/adgate/idempotency.js";
 import { createRecipeAnalysisApp } from "../../src/adgate/recipeAnalysisApp.js";
 import { createSponsorAuthorizer } from "../../src/adgate/sponsorAuthorization.js";
 import { createSponsorGrantLedger } from "../../src/sponsor/grantLedger.js";
@@ -21,7 +22,10 @@ it("mounts sponsor routes backed by the same service as authorization", async ()
     premiumHandler: async () => {
       throw new Error("Premium analysis is outside this route test.");
     },
-    sponsorAuthorizer: createSponsorAuthorizer({ service }),
+    sponsorAuthorizer: createSponsorAuthorizer({
+      registry: createProtectedAttemptRegistry(),
+      service,
+    }),
     sponsorRoutes: createSponsorGrantRoutes({ service, now: () => current }),
   });
 

@@ -1,11 +1,13 @@
-import { createHash } from "node:crypto";
 import type {
   AdGateErrorEnvelope,
   PaymentAccessEvidence,
   PremiumAnalysisRequest,
   PremiumAnalysisSuccess,
 } from "./contracts.js";
-import type { ProtectedAttemptRegistry } from "./idempotency.js";
+import {
+  createProtectedAttemptIdentity,
+  type ProtectedAttemptRegistry,
+} from "./idempotency.js";
 
 export type PaymentAuthorizationResult =
   | { type: "challenge"; response: Response }
@@ -42,22 +44,6 @@ type PaymentProtectionDependencies = {
   registry: ProtectedAttemptRegistry;
   payment: PaymentAuthorizationPort;
 };
-
-const digest = (value: string): string =>
-  createHash("sha256").update(value).digest("hex");
-
-const canonicalRequestBody = (request: PremiumAnalysisRequest): string =>
-  JSON.stringify({
-    requestId: request.requestId,
-    idempotencyKey: request.idempotencyKey,
-    resourceId: request.resourceId,
-    input: {
-      recipeId: request.input.recipeId,
-      ...(request.input.dietaryGoals
-        ? { dietaryGoals: request.input.dietaryGoals }
-        : {}),
-    },
-  });
 
 const statusForResult = (
   result: PremiumAnalysisSuccess | AdGateErrorEnvelope,
@@ -151,11 +137,7 @@ export const createPaymentProtection = ({
     let responseHeaders: Record<string, string> | undefined;
     try {
       result = await registry.execute(
-        {
-          idempotencyKey: parsedRequest.idempotencyKey,
-          requestDigest: digest(canonicalRequestBody(parsedRequest)),
-          evidenceFingerprint: digest(paymentHeader),
-        },
+        createProtectedAttemptIdentity(parsedRequest, paymentHeader),
         async () => {
           const authorization = await payment.authorize(request, {
             paymentRequestId: parsedRequest.requestId,

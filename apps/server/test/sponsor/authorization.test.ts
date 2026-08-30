@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PremiumAnalysisRequest } from "../../src/adgate/contracts.js";
+import { createProtectedAttemptRegistry } from "../../src/adgate/idempotency.js";
 import { createSponsorAuthorizer } from "../../src/adgate/sponsorAuthorization.js";
 import { createSponsorGrantLedger } from "../../src/sponsor/grantLedger.js";
 import { createSponsorGrantService } from "../../src/sponsor/grantService.js";
@@ -12,8 +13,9 @@ const premiumRequest: PremiumAnalysisRequest = {
 };
 
 describe("SponsorAuthorizer", () => {
-  it("authorizes an issued Sponsor token exactly once", async () => {
+  it("consumes once and replays the same successful identity for five minutes", async () => {
     let current = new Date("2026-08-30T00:00:00.000Z");
+    let registryNow = 0;
     const service = createSponsorGrantService({
       ledger: createSponsorGrantLedger(),
       now: () => current,
@@ -38,52 +40,95 @@ describe("SponsorAuthorizer", () => {
     });
     if (!grant.ok) throw new Error("Expected a sponsor grant.");
 
-    const authorizer = createSponsorAuthorizer({ service });
-    const authorize = () =>
+    const authorizer = createSponsorAuthorizer({
+      registry: createProtectedAttemptRegistry({ now: () => registryNow }),
+      service,
+    });
+    let handlerCalls = 0;
+    const authorize = (
+      parsedRequest = premiumRequest,
+      token = grant.value.token,
+    ) =>
       authorizer.handle(
         {
           request: new Request("https://server.example/api/recipe-analysis", {
-            headers: { Authorization: `Sponsor ${grant.value.token}` },
+            headers: { Authorization: `Sponsor ${token}` },
           }),
-          parsedRequest: premiumRequest,
+          parsedRequest,
         },
-        async (_request, evidence) => ({
-          ok: true,
-          requestId: premiumRequest.requestId,
-          resourceId: "recipe_analysis",
-          access: {
-            kind: evidence.kind,
-            referenceId: evidence.grantId,
-          },
-          data: {
-            summary: "Authorized sponsor analysis.",
-            nutritionalInsights: ["Balanced protein and fiber."],
-            suggestions: ["Add seasonal vegetables."],
-            disclaimer: "General information only.",
-          },
-        }),
+        async (_request, evidence) => {
+          handlerCalls += 1;
+          return {
+            ok: true,
+            requestId: premiumRequest.requestId,
+            resourceId: "recipe_analysis",
+            access: {
+              kind: evidence.kind,
+              referenceId: evidence.grantId,
+            },
+            data: {
+              summary: "Authorized sponsor analysis.",
+              nutritionalInsights: ["Balanced protein and fiber."],
+              suggestions: ["Add seasonal vegetables."],
+              disclaimer: "General information only.",
+            },
+          };
+        },
       );
 
-    const first = await authorize();
+    const [first, concurrent] = await Promise.all([authorize(), authorize()]);
     expect(first.status).toBe(200);
-    expect(await first.json()).toMatchObject({
+    const firstBody = await first.json();
+    expect(firstBody).toMatchObject({
       ok: true,
       access: {
         kind: "sponsor_grant",
         referenceId: "grant-authorization-123",
       },
     });
+    expect(concurrent.status).toBe(200);
+    expect(await concurrent.json()).toEqual(firstBody);
+    expect(handlerCalls).toBe(1);
 
     const replay = await authorize();
-    expect(replay.status).toBe(401);
-    expect(await replay.json()).toEqual({
-      ok: false,
-      error: {
-        code: "ACCESS_REUSED",
-        message: "The sponsor access has already been used.",
-        retryable: false,
+    expect(replay.status).toBe(200);
+    expect(await replay.json()).toEqual(firstBody);
+    expect(handlerCalls).toBe(1);
+
+    const changedRequest = await authorize({
+      ...premiumRequest,
+      input: {
+        ...premiumRequest.input,
+        dietaryGoals: ["higher protein"],
       },
     });
+    expect(changedRequest.status).toBe(409);
+    expect(await changedRequest.json()).toMatchObject({
+      error: { code: "IDEMPOTENCY_CONFLICT" },
+    });
+
+    const changedEvidence = await authorize(premiumRequest, "z".repeat(43));
+    expect(changedEvidence.status).toBe(409);
+    expect(await changedEvidence.json()).toMatchObject({
+      error: { code: "IDEMPOTENCY_CONFLICT" },
+    });
+
+    const reusedByAnotherIdentity = await authorize({
+      ...premiumRequest,
+      idempotencyKey: "another-idempotency-authorization-123",
+    });
+    expect(reusedByAnotherIdentity.status).toBe(401);
+    expect(await reusedByAnotherIdentity.json()).toMatchObject({
+      error: { code: "ACCESS_REUSED" },
+    });
+
+    registryNow = 300_000;
+    const expiredReplay = await authorize();
+    expect(expiredReplay.status).toBe(401);
+    expect(await expiredReplay.json()).toMatchObject({
+      error: { code: "ACCESS_EXPIRED" },
+    });
+    expect(handlerCalls).toBe(1);
   });
 
   it.each([
@@ -97,7 +142,10 @@ describe("SponsorAuthorizer", () => {
       const service = createSponsorGrantService({
         ledger: createSponsorGrantLedger(),
       });
-      const authorizer = createSponsorAuthorizer({ service });
+      const authorizer = createSponsorAuthorizer({
+        registry: createProtectedAttemptRegistry(),
+        service,
+      });
       const response = await authorizer.handle(
         {
           request: new Request("https://server.example/api/recipe-analysis", {
@@ -146,7 +194,10 @@ describe("SponsorAuthorizer", () => {
       sessionCredential: session.value.sessionCredential,
     });
     if (!grant.ok) throw new Error("Expected a sponsor grant.");
-    const authorizer = createSponsorAuthorizer({ service });
+    const authorizer = createSponsorAuthorizer({
+      registry: createProtectedAttemptRegistry(),
+      service,
+    });
     const request = new Request("https://server.example/api/recipe-analysis", {
       headers: { Authorization: `Sponsor ${grant.value.token}` },
     });

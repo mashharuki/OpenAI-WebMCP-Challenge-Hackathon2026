@@ -170,7 +170,7 @@ sequenceDiagram
 | 2.1, 2.2, 2.3, 2.4, 2.5 | visible countdown | SponsorFlowController, SponsorModal | SponsorClock, SponsorViewState | Sponsor View |
 | 3.1, 3.2, 3.3, 3.4 | cancel と attempt isolation | SponsorFlowController, SponsorGateProvider | SponsorFlowResult | Sponsor View |
 | 4.1, 4.2, 4.3, 4.4, 4.5 | short-lived grant issue | SponsorGrantClient, SponsorGrantRoutes, SponsorGrantService, SponsorGrantLedger | SponsorGrantIssueRequest, SponsorGrantIssueResponse | Sponsor View |
-| 5.1, 5.2, 5.3, 5.4, 5.5, 5.6 | atomic single use | SponsorAuthorizer, SponsorGrantService, SponsorGrantLedger | SponsorConsumeRequest, SponsorConsumeResult | Sponsor Consume |
+| 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7 | atomic single use and successful-result replay | SponsorAuthorizer, SponsorGrantService, SponsorGrantLedger, downstream ProtectedAttemptRegistry | SponsorConsumeRequest, SponsorConsumeResult | Sponsor Consume |
 | 6.1, 6.2, 6.3, 6.4 | downstream continuation and safe failure | SponsorFlowController, SponsorGrantClient, SponsorAuthorizer | SponsorFlowResult, AdGateError | Both |
 
 ## Components and Interfaces
@@ -365,6 +365,8 @@ interface SponsorAuthorizer {
 
 `Authorization` を exact `Sponsor <opaque-token>` scheme として parse する。欠落は `ACCESS_REQUIRED`、不正形式・unknown token・binding mismatch は `INVALID_EVIDENCE`、期限切れは `ACCESS_EXPIRED`、消費済みは `ACCESS_REUSED` へ正規化する。
 
+下流server compositionは共有`ProtectedAttemptRegistry`をAuthorizerへ注入し、認可・consumeより先にidempotency identityをclaimする。同じidempotency key、request digest、token fingerprintの成功再送は五分間同じ成功結果を返してgrantを再消費しない。別identityによる同じgrantの利用は`ACCESS_REUSED`、既存keyに対するrequest digestまたはfingerprint変更は`IDEMPOTENCY_CONFLICT`とする。このregistryとtop-level wiringの所有は`x402-payment-access`に残る。
+
 ## Data Models
 
 ### Domain Model
@@ -408,7 +410,7 @@ interface SponsorAuthorizer {
 
 - SponsorGrantRoutes: valid completion の 201、同一再送の 200、invalid request の安全な error envelope を検証する (4.1–4.5, 6.3)。
 - Client と route schema: success/error response の意味が frontend/server で一致する (4.1–4.5, 6.1, 6.3)。
-- issue された token を Authorizer が一度だけ受理し、二度目を `ACCESS_REUSED` とする (5.1–5.5)。
+- issueされたtokenをAuthorizerが一度だけconsumeし、同一identityの同時・事後retryは共有registryから同じ成功を返し、別identityの再利用は`ACCESS_REUSED`とする (5.1–5.7)。
 
 ### UI Tests
 

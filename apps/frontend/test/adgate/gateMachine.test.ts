@@ -1,5 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { type GateState, transitionGate } from "../../src/adgate/gateMachine";
+import {
+  type GateEvent,
+  type GateState,
+  transitionGate,
+} from "../../src/adgate/gateMachine";
+
+const result = {
+  summary: "A balanced plant-forward bowl.",
+  nutritionalInsights: ["Chickpeas provide plant protein."],
+  suggestions: ["Add lemon juice."],
+  disclaimer: "General information only.",
+};
+
+const evidence = {
+  kind: "sponsor_grant" as const,
+  grantId: "grant-invalid-table",
+  resourceId: "recipe_analysis" as const,
+  issuedAt: "2026-08-30T00:00:00.000Z",
+  expiresAt: "2026-08-30T00:01:00.000Z",
+  nonce: "request-invalid-table",
+};
 
 describe("transitionGate", () => {
   it("starts a new attempt and records a payment choice", () => {
@@ -189,4 +209,109 @@ describe("transitionGate", () => {
       },
     });
   });
+
+  it.each<{ state: GateState; event: GateEvent }>([
+    {
+      state: { type: "idle" },
+      event: { type: "cancel", attemptId: "attempt-invalid", reason: "user" },
+    },
+    {
+      state: {
+        type: "awaiting_choice",
+        attemptId: "attempt-invalid",
+        input: { recipeId: "roasted-chickpea-quinoa-bowl" },
+      },
+      event: { type: "execute", attemptId: "attempt-invalid" },
+    },
+    {
+      state: {
+        type: "viewing_sponsor",
+        attemptId: "attempt-invalid",
+        sponsorId: "open-table-weekly",
+      },
+      event: {
+        type: "choose_payment",
+        attemptId: "attempt-invalid",
+        paymentRequestId: "payment-invalid",
+      },
+    },
+    {
+      state: {
+        type: "access_granted",
+        attemptId: "attempt-invalid",
+        evidence,
+      },
+      event: { type: "resolve", attemptId: "attempt-invalid", result },
+    },
+    {
+      state: {
+        type: "executing",
+        attemptId: "attempt-invalid",
+        evidence,
+      },
+      event: {
+        type: "choose_sponsor",
+        attemptId: "attempt-invalid",
+        sponsorId: "open-table-weekly",
+      },
+    },
+    {
+      state: {
+        type: "awaiting_payment",
+        attemptId: "attempt-invalid",
+        paymentRequestId: "payment-invalid",
+      },
+      event: { type: "execute", attemptId: "attempt-invalid" },
+    },
+    {
+      state: {
+        type: "succeeded",
+        attemptId: "attempt-invalid",
+        result,
+        access: { kind: "sponsor_grant", referenceId: "grant-invalid" },
+      },
+      event: { type: "cancel", attemptId: "attempt-invalid", reason: "user" },
+    },
+    {
+      state: {
+        type: "failed",
+        attemptId: "attempt-invalid",
+        error: {
+          code: "DEPENDENCY_UNAVAILABLE",
+          message: "Dependency unavailable.",
+          retryable: true,
+        },
+      },
+      event: { type: "cancel", attemptId: "attempt-invalid", reason: "user" },
+    },
+    {
+      state: {
+        type: "cancelled",
+        attemptId: "attempt-invalid",
+        reason: "user",
+      },
+      event: {
+        type: "reject",
+        attemptId: "attempt-invalid",
+        error: {
+          code: "DEPENDENCY_UNAVAILABLE",
+          message: "Dependency unavailable.",
+          retryable: true,
+        },
+      },
+    },
+  ])(
+    "rejects a representative invalid event from $state.type",
+    ({ state, event }) => {
+      const first = transitionGate(state, event);
+      const second = transitionGate(state, event);
+
+      expect(first).toEqual(second);
+      expect(first).toMatchObject({
+        ok: false,
+        state,
+        error: { code: "INVALID_TRANSITION" },
+      });
+    },
+  );
 });

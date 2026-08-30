@@ -10,7 +10,7 @@
     "knip": "knip",
     "release:check": "node scripts/release-check.mjs",
     "smoke:public": "node scripts/public-smoke.mjs",
-    "test:contracts": "pnpm --filter frontend exec vitest run test/adgate/contracts.test.ts test/publisher/previewContract.test.ts && pnpm --filter x402server exec vitest run test/adgate/contracts.test.ts test/recipeAnalysis/previewContract.test.ts",
+    "test:contracts": "node --test test/adgate-contract-conformance.test.mjs && pnpm --filter frontend exec vitest run test/adgate/contracts.test.ts test/adgate/gateMachine.test.ts test/publisher/previewContract.test.ts && pnpm --filter x402server exec vitest run test/adgate/contracts.test.ts test/adgate/idempotency.test.ts test/sponsor/authorization.test.ts test/sponsor/grantLedger.test.ts test/recipeAnalysis/previewContract.test.ts",
     "test:deployment-shell": "node --test test/deployment-shell.test.mjs",
     "test:public-smoke": "node --test test/public-smoke.test.mjs",
     "test:public-docs": "node --test test/public-documentation.test.mjs",

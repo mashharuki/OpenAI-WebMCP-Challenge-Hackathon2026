@@ -79,6 +79,33 @@ describe("premiumAnalysisRequestSchema", () => {
       }),
     ).toThrow();
   });
+
+  it("rejects explicit undefined and every bounded request field overflow", () => {
+    expect(
+      recipeAnalysisInputSchema.safeParse({
+        recipeId: "roasted-chickpea-quinoa-bowl",
+        dietaryGoals: undefined,
+      }).success,
+    ).toBe(false);
+    for (const request of [
+      {
+        requestId: "x".repeat(129),
+        idempotencyKey: "idempotency-key-123",
+      },
+      {
+        requestId: "request-123",
+        idempotencyKey: "x".repeat(129),
+      },
+    ]) {
+      expect(
+        premiumAnalysisRequestSchema.safeParse({
+          ...request,
+          resourceId: "recipe_analysis",
+          input: { recipeId: "roasted-chickpea-quinoa-bowl" },
+        }).success,
+      ).toBe(false);
+    }
+  });
 });
 
 describe("paymentAccessEvidenceSchema", () => {
@@ -186,5 +213,67 @@ describe("recipeAnalysisResultSchema", () => {
         fixtureValue("invalid-analysis-result-secret"),
       ),
     ).toThrow();
+  });
+
+  it.each([
+    [
+      "summary length",
+      {
+        ...fixtureValue("valid-analysis-result"),
+        summary: "x".repeat(1001),
+      },
+    ],
+    [
+      "insight length",
+      {
+        ...fixtureValue("valid-analysis-result"),
+        nutritionalInsights: ["x".repeat(301)],
+      },
+    ],
+    [
+      "insight count",
+      {
+        ...fixtureValue("valid-analysis-result"),
+        nutritionalInsights: Array.from({ length: 11 }, () => "insight"),
+      },
+    ],
+    [
+      "suggestion length",
+      {
+        ...fixtureValue("valid-analysis-result"),
+        suggestions: ["x".repeat(301)],
+      },
+    ],
+    [
+      "suggestion count",
+      {
+        ...fixtureValue("valid-analysis-result"),
+        suggestions: Array.from({ length: 11 }, () => "suggestion"),
+      },
+    ],
+    [
+      "disclaimer length",
+      {
+        ...fixtureValue("valid-analysis-result"),
+        disclaimer: "x".repeat(501),
+      },
+    ],
+  ])("rejects a value exceeding the %s limit", (_name, value) => {
+    expect(recipeAnalysisResultSchema.safeParse(value).success).toBe(false);
+  });
+
+  it("rejects Date and bigint values at the server boundary", () => {
+    expect(
+      recipeAnalysisResultSchema.safeParse({
+        ...fixtureValue("valid-analysis-result"),
+        summary: new Date(),
+      }).success,
+    ).toBe(false);
+    expect(
+      paymentAccessEvidenceSchema.safeParse({
+        ...fixtureValue("valid-payment-evidence"),
+        amount: 10n,
+      }).success,
+    ).toBe(false);
   });
 });

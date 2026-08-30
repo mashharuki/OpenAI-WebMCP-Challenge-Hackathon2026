@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "caseCounts": { "valid": 17, "invalid": 16, "total": 33 },
   "cases": [
     {
       "name": "valid-analysis-result",
@@ -231,6 +232,403 @@
           "message": "Failed.",
           "retryable": false,
           "stack": "PRIVATE_KEY=reusable-secret"
+        }
+      }
+    },
+    {
+      "name": "invalid-recipe-input-goal-too-long",
+      "contract": "RecipeAnalysisInput",
+      "expect": "invalid",
+      "errorCode": "INVALID_INPUT",
+      "targets": ["frontend", "server"],
+      "value": {
+        "recipeId": "roasted-chickpea-quinoa-bowl",
+        "dietaryGoals": [
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ]
+      }
+    },
+    {
+      "name": "invalid-recipe-input-too-many-goals",
+      "contract": "RecipeAnalysisInput",
+      "expect": "invalid",
+      "errorCode": "INVALID_INPUT",
+      "targets": ["frontend", "server"],
+      "value": {
+        "recipeId": "roasted-chickpea-quinoa-bowl",
+        "dietaryGoals": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "11"
+        ]
+      }
+    },
+    {
+      "name": "invalid-sponsor-evidence-resource",
+      "contract": "SponsorAccessEvidence",
+      "expect": "invalid",
+      "errorCode": "INVALID_EVIDENCE",
+      "targets": ["frontend", "server"],
+      "value": {
+        "kind": "sponsor_grant",
+        "grantId": "grant-123",
+        "resourceId": "weather_report",
+        "issuedAt": "2026-08-30T00:00:00.000Z",
+        "expiresAt": "2026-08-30T00:01:00.000Z",
+        "nonce": "request-123"
+      }
+    },
+    {
+      "name": "invalid-payment-evidence-resource",
+      "contract": "PaymentAccessEvidence",
+      "expect": "invalid",
+      "errorCode": "INVALID_EVIDENCE",
+      "targets": ["frontend", "server"],
+      "value": {
+        "kind": "x402_payment",
+        "resourceId": "weather_report",
+        "paymentRequestId": "payment-request-123",
+        "transactionHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "network": "eip155:84532",
+        "asset": "0x2222222222222222222222222222222222222222",
+        "amount": "10000",
+        "confirmedAt": "2026-08-30T00:00:10.000Z"
+      }
+    },
+    {
+      "name": "invalid-premium-request-long-request-id",
+      "contract": "PremiumAnalysisRequest",
+      "expect": "invalid",
+      "errorCode": "INVALID_INPUT",
+      "targets": ["frontend", "server"],
+      "value": {
+        "requestId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "idempotencyKey": "idempotency-key-123",
+        "resourceId": "recipe_analysis",
+        "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
+      }
+    },
+    {
+      "name": "invalid-premium-request-long-idempotency-key",
+      "contract": "PremiumAnalysisRequest",
+      "expect": "invalid",
+      "errorCode": "INVALID_INPUT",
+      "targets": ["frontend", "server"],
+      "value": {
+        "requestId": "request-123",
+        "idempotencyKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "resourceId": "recipe_analysis",
+        "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
+      }
+    },
+    {
+      "name": "valid-gate-start",
+      "contract": "GateTransition",
+      "expect": "valid",
+      "targets": ["frontend"],
+      "value": {
+        "state": { "type": "idle" },
+        "event": {
+          "type": "start",
+          "attemptId": "attempt-gate",
+          "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
+        },
+        "expectedState": {
+          "type": "awaiting_choice",
+          "attemptId": "attempt-gate",
+          "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
+        }
+      }
+    },
+    {
+      "name": "valid-gate-choose-sponsor",
+      "contract": "GateTransition",
+      "expect": "valid",
+      "targets": ["frontend"],
+      "value": {
+        "state": {
+          "type": "awaiting_choice",
+          "attemptId": "attempt-gate",
+          "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
+        },
+        "event": {
+          "type": "choose_sponsor",
+          "attemptId": "attempt-gate",
+          "sponsorId": "open-table-weekly"
+        },
+        "expectedState": {
+          "type": "viewing_sponsor",
+          "attemptId": "attempt-gate",
+          "sponsorId": "open-table-weekly"
+        }
+      }
+    },
+    {
+      "name": "valid-gate-sponsor-granted",
+      "contract": "GateTransition",
+      "expect": "valid",
+      "targets": ["frontend"],
+      "value": {
+        "state": {
+          "type": "viewing_sponsor",
+          "attemptId": "attempt-gate",
+          "sponsorId": "open-table-weekly"
+        },
+        "event": {
+          "type": "sponsor_granted",
+          "attemptId": "attempt-gate",
+          "evidence": {
+            "kind": "sponsor_grant",
+            "grantId": "grant-gate",
+            "resourceId": "recipe_analysis",
+            "issuedAt": "2026-08-30T00:00:00.000Z",
+            "expiresAt": "2026-08-30T00:01:00.000Z",
+            "nonce": "request-gate"
+          }
+        },
+        "expectedState": {
+          "type": "access_granted",
+          "attemptId": "attempt-gate",
+          "evidence": {
+            "kind": "sponsor_grant",
+            "grantId": "grant-gate",
+            "resourceId": "recipe_analysis",
+            "issuedAt": "2026-08-30T00:00:00.000Z",
+            "expiresAt": "2026-08-30T00:01:00.000Z",
+            "nonce": "request-gate"
+          }
+        }
+      }
+    },
+    {
+      "name": "valid-gate-execute",
+      "contract": "GateTransition",
+      "expect": "valid",
+      "targets": ["frontend"],
+      "value": {
+        "state": {
+          "type": "access_granted",
+          "attemptId": "attempt-gate",
+          "evidence": {
+            "kind": "sponsor_grant",
+            "grantId": "grant-gate",
+            "resourceId": "recipe_analysis",
+            "issuedAt": "2026-08-30T00:00:00.000Z",
+            "expiresAt": "2026-08-30T00:01:00.000Z",
+            "nonce": "request-gate"
+          }
+        },
+        "event": { "type": "execute", "attemptId": "attempt-gate" },
+        "expectedState": {
+          "type": "executing",
+          "attemptId": "attempt-gate",
+          "evidence": {
+            "kind": "sponsor_grant",
+            "grantId": "grant-gate",
+            "resourceId": "recipe_analysis",
+            "issuedAt": "2026-08-30T00:00:00.000Z",
+            "expiresAt": "2026-08-30T00:01:00.000Z",
+            "nonce": "request-gate"
+          }
+        }
+      }
+    },
+    {
+      "name": "valid-gate-resolve",
+      "contract": "GateTransition",
+      "expect": "valid",
+      "targets": ["frontend"],
+      "value": {
+        "state": {
+          "type": "executing",
+          "attemptId": "attempt-gate",
+          "evidence": {
+            "kind": "sponsor_grant",
+            "grantId": "grant-gate",
+            "resourceId": "recipe_analysis",
+            "issuedAt": "2026-08-30T00:00:00.000Z",
+            "expiresAt": "2026-08-30T00:01:00.000Z",
+            "nonce": "request-gate"
+          }
+        },
+        "event": {
+          "type": "resolve",
+          "attemptId": "attempt-gate",
+          "result": {
+            "summary": "A balanced plant-forward bowl.",
+            "nutritionalInsights": ["Chickpeas provide plant protein."],
+            "suggestions": ["Add lemon juice."],
+            "disclaimer": "General information only."
+          }
+        },
+        "expectedState": {
+          "type": "succeeded",
+          "attemptId": "attempt-gate",
+          "result": {
+            "summary": "A balanced plant-forward bowl.",
+            "nutritionalInsights": ["Chickpeas provide plant protein."],
+            "suggestions": ["Add lemon juice."],
+            "disclaimer": "General information only."
+          },
+          "access": { "kind": "sponsor_grant", "referenceId": "grant-gate" }
+        }
+      }
+    },
+    {
+      "name": "valid-gate-choose-payment",
+      "contract": "GateTransition",
+      "expect": "valid",
+      "targets": ["frontend"],
+      "value": {
+        "state": {
+          "type": "awaiting_choice",
+          "attemptId": "attempt-gate",
+          "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
+        },
+        "event": {
+          "type": "choose_payment",
+          "attemptId": "attempt-gate",
+          "paymentRequestId": "payment-gate"
+        },
+        "expectedState": {
+          "type": "awaiting_payment",
+          "attemptId": "attempt-gate",
+          "paymentRequestId": "payment-gate"
+        }
+      }
+    },
+    {
+      "name": "valid-gate-payment-succeeded",
+      "contract": "GateTransition",
+      "expect": "valid",
+      "targets": ["frontend"],
+      "value": {
+        "state": {
+          "type": "awaiting_payment",
+          "attemptId": "attempt-gate",
+          "paymentRequestId": "payment-gate"
+        },
+        "event": {
+          "type": "payment_succeeded",
+          "attemptId": "attempt-gate",
+          "result": {
+            "summary": "A balanced plant-forward bowl.",
+            "nutritionalInsights": ["Chickpeas provide plant protein."],
+            "suggestions": ["Add lemon juice."],
+            "disclaimer": "General information only."
+          },
+          "access": { "kind": "x402_payment", "referenceId": "0xreceipt" }
+        },
+        "expectedState": {
+          "type": "succeeded",
+          "attemptId": "attempt-gate",
+          "result": {
+            "summary": "A balanced plant-forward bowl.",
+            "nutritionalInsights": ["Chickpeas provide plant protein."],
+            "suggestions": ["Add lemon juice."],
+            "disclaimer": "General information only."
+          },
+          "access": { "kind": "x402_payment", "referenceId": "0xreceipt" }
+        }
+      }
+    },
+    {
+      "name": "valid-gate-reject",
+      "contract": "GateTransition",
+      "expect": "valid",
+      "targets": ["frontend"],
+      "value": {
+        "state": {
+          "type": "awaiting_choice",
+          "attemptId": "attempt-gate",
+          "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
+        },
+        "event": {
+          "type": "reject",
+          "attemptId": "attempt-gate",
+          "error": {
+            "code": "DEPENDENCY_UNAVAILABLE",
+            "message": "Dependency is temporarily unavailable.",
+            "retryable": true
+          }
+        },
+        "expectedState": {
+          "type": "failed",
+          "attemptId": "attempt-gate",
+          "error": {
+            "code": "DEPENDENCY_UNAVAILABLE",
+            "message": "Dependency is temporarily unavailable.",
+            "retryable": true
+          }
+        }
+      }
+    },
+    {
+      "name": "valid-gate-cancel",
+      "contract": "GateTransition",
+      "expect": "valid",
+      "targets": ["frontend"],
+      "value": {
+        "state": {
+          "type": "awaiting_choice",
+          "attemptId": "attempt-gate",
+          "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
+        },
+        "event": {
+          "type": "cancel",
+          "attemptId": "attempt-gate",
+          "reason": "user"
+        },
+        "expectedState": {
+          "type": "cancelled",
+          "attemptId": "attempt-gate",
+          "reason": "user"
+        }
+      }
+    },
+    {
+      "name": "invalid-gate-attempt-mismatch",
+      "contract": "GateTransition",
+      "expect": "invalid",
+      "errorCode": "INVALID_TRANSITION",
+      "targets": ["frontend"],
+      "value": {
+        "state": {
+          "type": "awaiting_choice",
+          "attemptId": "attempt-current",
+          "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
+        },
+        "event": {
+          "type": "choose_payment",
+          "attemptId": "attempt-stale",
+          "paymentRequestId": "payment-stale"
+        }
+      }
+    },
+    {
+      "name": "invalid-gate-terminal-resume",
+      "contract": "GateTransition",
+      "expect": "invalid",
+      "errorCode": "INVALID_TRANSITION",
+      "targets": ["frontend"],
+      "value": {
+        "state": {
+          "type": "cancelled",
+          "attemptId": "attempt-gate",
+          "reason": "user"
+        },
+        "event": {
+          "type": "choose_payment",
+          "attemptId": "attempt-gate",
+          "paymentRequestId": "payment-gate"
         }
       }
     }

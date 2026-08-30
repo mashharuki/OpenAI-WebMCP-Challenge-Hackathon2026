@@ -12,6 +12,11 @@ import {
   recipeAnalysisResultSchema,
   sponsorAccessEvidenceSchema,
 } from "../../src/adgate/contracts";
+import {
+  type GateEvent,
+  type GateState,
+  transitionGate,
+} from "../../src/adgate/gateMachine";
 
 type FixtureCase = {
   name: string;
@@ -19,6 +24,7 @@ type FixtureCase = {
   expect: "valid" | "invalid";
   targets: string[];
   value: unknown;
+  errorCode?: string;
 };
 
 const fixtureCases = fixtures.cases as FixtureCase[];
@@ -50,6 +56,22 @@ describe("versioned cross-app conformance fixtures", () => {
     for (const fixture of fixtureCases.filter(({ targets }) =>
       targets.includes("frontend"),
     )) {
+      if (fixture.contract === "GateTransition") {
+        const value = fixture.value as {
+          state: GateState;
+          event: GateEvent;
+          expectedState?: GateState;
+        };
+        const result = transitionGate(value.state, value.event);
+        expect(result.ok, fixture.name).toBe(fixture.expect === "valid");
+        if (result.ok) {
+          expect(result.state, fixture.name).toEqual(value.expectedState);
+        } else {
+          expect(result.state, fixture.name).toEqual(value.state);
+          expect(result.error.code, fixture.name).toBe(fixture.errorCode);
+        }
+        continue;
+      }
       const schema = frontendContractRegistry[fixture.contract];
       expect(schema, fixture.name).toBeDefined();
       if (!schema) throw new Error(`Unknown contract: ${fixture.contract}`);
@@ -174,6 +196,115 @@ describe("normalizeWebMCPResult", () => {
       },
     });
     expect(normalizeWebMCPResult(failure)).toEqual(failure);
+  });
+
+  it("round-trips through JSON without undefined, Date, or bigint values", () => {
+    const normalized = normalizeWebMCPResult(
+      premiumAnalysisSuccessSchema.parse({
+        ok: true,
+        requestId: "request-123",
+        resourceId: "recipe_analysis",
+        access: { kind: "sponsor_grant", referenceId: "grant-123" },
+        data: fixtureValue("valid-analysis-result"),
+      }),
+    );
+    const json = JSON.stringify(normalized, (_key, value) => {
+      expect(value).not.toBeInstanceOf(Date);
+      expect(typeof value).not.toBe("undefined");
+      expect(typeof value).not.toBe("bigint");
+      return value;
+    });
+
+    expect(JSON.parse(json)).toEqual(normalized);
+    expect(
+      recipeAnalysisInputSchema.safeParse({
+        recipeId: "roasted-chickpea-quinoa-bowl",
+        dietaryGoals: undefined,
+      }).success,
+    ).toBe(false);
+    expect(
+      recipeAnalysisResultSchema.safeParse({
+        ...fixtureValue("valid-analysis-result"),
+        summary: new Date(),
+      }).success,
+    ).toBe(false);
+    expect(
+      paymentAccessEvidenceSchema.safeParse({
+        ...fixtureValue("valid-payment-evidence"),
+        amount: 10n,
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("bounded contract fields", () => {
+  it.each([
+    [
+      "dietary goal length",
+      recipeAnalysisInputSchema,
+      {
+        recipeId: "roasted-chickpea-quinoa-bowl",
+        dietaryGoals: ["x".repeat(81)],
+      },
+    ],
+    [
+      "dietary goal count",
+      recipeAnalysisInputSchema,
+      {
+        recipeId: "roasted-chickpea-quinoa-bowl",
+        dietaryGoals: Array.from({ length: 11 }, () => "goal"),
+      },
+    ],
+    [
+      "summary length",
+      recipeAnalysisResultSchema,
+      {
+        ...fixtureValue("valid-analysis-result"),
+        summary: "x".repeat(1001),
+      },
+    ],
+    [
+      "insight length",
+      recipeAnalysisResultSchema,
+      {
+        ...fixtureValue("valid-analysis-result"),
+        nutritionalInsights: ["x".repeat(301)],
+      },
+    ],
+    [
+      "insight count",
+      recipeAnalysisResultSchema,
+      {
+        ...fixtureValue("valid-analysis-result"),
+        nutritionalInsights: Array.from({ length: 11 }, () => "insight"),
+      },
+    ],
+    [
+      "suggestion length",
+      recipeAnalysisResultSchema,
+      {
+        ...fixtureValue("valid-analysis-result"),
+        suggestions: ["x".repeat(301)],
+      },
+    ],
+    [
+      "suggestion count",
+      recipeAnalysisResultSchema,
+      {
+        ...fixtureValue("valid-analysis-result"),
+        suggestions: Array.from({ length: 11 }, () => "suggestion"),
+      },
+    ],
+    [
+      "disclaimer length",
+      recipeAnalysisResultSchema,
+      {
+        ...fixtureValue("valid-analysis-result"),
+        disclaimer: "x".repeat(501),
+      },
+    ],
+  ])("rejects a value exceeding the %s limit", (_name, schema, value) => {
+    expect(schema.safeParse(value).success).toBe(false);
   });
 });
 

@@ -3,12 +3,18 @@ import { z } from "zod";
 export const RECIPE_ANALYSIS_RESOURCE_ID = "recipe_analysis" as const;
 export const PUBLISHED_RECIPE_ID = "roasted-chickpea-quinoa-bowl" as const;
 
+const hasNoExplicitUndefined = (value: Record<string, unknown>) =>
+  Object.values(value).every((field) => field !== undefined);
+
 export const recipeAnalysisInputSchema = z
   .object({
     recipeId: z.literal(PUBLISHED_RECIPE_ID),
     dietaryGoals: z.array(z.string().trim().min(1).max(80)).max(10).optional(),
   })
-  .strict();
+  .strict()
+  .refine(hasNoExplicitUndefined, {
+    message: "explicit undefined values are not JSON-safe",
+  });
 
 const requestIdSchema = z.string().trim().min(1).max(128);
 const idempotencyKeySchema = z
@@ -153,7 +159,10 @@ export const adGateErrorSchema = z
       .max(20)
       .optional(),
   })
-  .strict();
+  .strict()
+  .refine(hasNoExplicitUndefined, {
+    message: "explicit undefined values are not JSON-safe",
+  });
 
 export type AdGateError = z.infer<typeof adGateErrorSchema>;
 

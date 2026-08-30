@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "request": {
+    "requestId": "publisher-preview-request-123",
+    "idempotencyKey": "publisher-preview-idempotency-123",
+    "resourceId": "recipe_analysis",
+    "input": {
+      "recipeId": "roasted-chickpea-quinoa-bowl",
+      "dietaryGoals": ["higher protein"]
+    }
+  },
+  "response": {
+    "ok": true,
+    "resourceId": "recipe_analysis",
+    "data": {
+      "summary": "This plant-forward bowl combines quinoa, roasted chickpeas, spinach, tomatoes, cucumber, and lemon-tahini dressing for a balanced meal.",
+      "nutritionalInsights": [
+        "Chickpeas and quinoa provide complementary plant protein and dietary fiber.",
+        "Spinach, tomatoes, and cucumber add micronutrients and freshness without relying on a heavy sauce."
+      ],
+      "suggestions": [
+        "For higher protein, adjust portions and toppings while keeping the chickpea and quinoa base.",
+        "Check the tahini and any packaged substitutions for allergens before serving."
+      ],
+      "disclaimer": "This analysis provides general nutrition information and is not medical advice or a substitute for individualized care."
+    }
+  }
+}

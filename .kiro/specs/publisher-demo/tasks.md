@@ -77,8 +77,8 @@
   - _Boundary: PreviewRouteFactory, DevelopmentServerComposition_
   - _Depends: 2.2_
 
-- [ ] 5. Publisher slice の contract と user journey を最終検証する
-- [ ] 5.1 Cross-app preview contract を検証する
+- [x] 5. Publisher slice の contract と user journey を最終検証する
+- [x] 5.1 Cross-app preview contract を検証する
   - 同じ test-only JSON fixture を frontend と server の app-local validator が独立に読み、sample request と response を同じ意味で受理することを確認する。
   - production code は fixture または相手 app の source を import せず、preview success の四結果領域と disclaimer が canonical schema に一致することを確認する。
   - preview endpoint が grant、payment、wallet、WebMCP import や自己登録 side effect を持たず、省略可能な development-only seam として隔離されていることを検証する。
@@ -87,7 +87,7 @@
   - _Boundary: AnalysisClient, PreviewRoute_
   - _Depends: 4.1, 4.3_
 
-- [ ] 5.2 Publisher UI、accessibility、build regression を検証する
+- [x] 5.2 Publisher UI、accessibility、build regression を検証する
   - frontend unit/UI suite、server analyzer/route suite、frontend build、repository quality check を実行する。
   - 320px 相当の responsive layout、keyboard CTA/retry、live status、owned local asset、raw error/secret 非公開を検証する。
   - publisher root が todo UI を表示せず、sample の閲覧から loading、result または retry recovery までを完了できることを確認する。

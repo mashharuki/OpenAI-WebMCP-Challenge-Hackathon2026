@@ -85,6 +85,27 @@ describe("PublisherDemo", () => {
     );
   });
 
+  it("keeps the recipe visible and hides raw details from unknown failures", async () => {
+    const analyze = vi.fn<AnalysisClientPort["analyze"]>(async () => {
+      throw new Error("PRIVATE_KEY=raw-secret stack detail");
+    });
+    render(<PublisherDemo analysisClient={{ analyze }} />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Analyze this recipe" }),
+    );
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(
+      "The request could not be completed safely.",
+    );
+    expect(alert).not.toHaveTextContent("PRIVATE_KEY");
+    expect(alert).not.toHaveTextContent("raw-secret");
+    expect(
+      screen.getByRole("heading", { name: "Roasted Chickpea Quinoa Bowl" }),
+    ).toBeInTheDocument();
+  });
+
   it("aborts an active request when the publisher view unmounts", () => {
     const request = deferred<RecipeAnalysisResult>();
     let receivedSignal: AbortSignal | undefined;

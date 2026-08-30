@@ -45,8 +45,8 @@
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 4.5, 6.1, 6.2, 6.3, 6.4_
   - _Boundary: SponsorGateProvider, SponsorGrantClient_
 
-- [ ] 3. 一回限り grant domain を実装する
-- [ ] 3.1 (P) process-local grant ledger を実装する
+- [x] 3. 一回限り grant domain を実装する
+- [x] 3.1 (P) process-local grant ledger を実装する
   - session/grant credentialのdigest、binding、開始・期限、上流証跡、状態だけを保持し、credential原文を保存しない。
   - available から consumed への比較と更新を await のない同期区間で行う。
   - expiry equality、resource/nonce mismatch、unknown、replay、競合 consume を上流 error code へ区別する。
@@ -56,7 +56,7 @@
   - _Boundary: SponsorGrantLedger_
   - _Depends: 1.1_
 
-- [ ] 3.2 grant 発行・消費 policy を実装する
+- [x] 3.2 grant 発行・消費 policy を実装する
   - CSPRNG token、短期 TTL、resource/nonce binding を用いて上流 `SponsorAccessEvidence` を発行する。
   - 同じ完了試行の再送を同じ logical issue とし、異なる内容の digest conflict を拒否する。
   - token digest を用いて ledger を消費し、安全な discriminated result だけを返す。

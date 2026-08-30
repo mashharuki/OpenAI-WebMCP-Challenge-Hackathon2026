@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title description">
+  <title id="title">Roasted chickpea quinoa bowl</title>
+  <desc id="description">An illustrated ceramic bowl filled with quinoa, roasted chickpeas, spinach, tomatoes, cucumber, and lemon tahini dressing.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f5ead8" />
+      <stop offset="1" stop-color="#dce9d8" />
+    </linearGradient>
+    <linearGradient id="bowl" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fffaf0" />
+      <stop offset="1" stop-color="#d8c7aa" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="22" stdDeviation="20" flood-color="#3c493f" flood-opacity="0.2" />
+    </filter>
+  </defs>
+
+  <rect width="1200" height="720" rx="48" fill="url(#background)" />
+  <circle cx="1040" cy="118" r="76" fill="#f2c96d" opacity="0.55" />
+  <path d="M92 602c128-64 211-53 320-7s207 52 340 2 234-39 356 8v115H92Z" fill="#b9cfb2" opacity="0.48" />
+
+  <g filter="url(#shadow)">
+    <ellipse cx="600" cy="344" rx="405" ry="218" fill="#f8f0df" />
+    <path d="M205 350c18 190 152 300 395 300s377-110 395-300c-92 92-224 136-395 136S297 442 205 350Z" fill="url(#bowl)" />
+    <ellipse cx="600" cy="339" rx="372" ry="188" fill="#eee2c8" stroke="#c5ad86" stroke-width="12" />
+  </g>
+
+  <path d="M250 338c64-126 173-173 319-159-24 82-112 170-267 205Z" fill="#356b50" />
+  <path d="M307 282c69-56 145-77 226-65-45 36-105 77-181 124Z" fill="#6f9b68" />
+
+  <path d="M455 192c138-33 281-11 410 72-59 89-167 151-321 161-70-51-100-129-89-233Z" fill="#dfc784" />
+  <g fill="#f0dda5" opacity="0.95">
+    <circle cx="520" cy="232" r="9" /><circle cx="561" cy="215" r="8" /><circle cx="603" cy="236" r="9" />
+    <circle cx="645" cy="214" r="8" /><circle cx="692" cy="238" r="9" /><circle cx="740" cy="226" r="8" />
+    <circle cx="497" cy="273" r="8" /><circle cx="543" cy="286" r="9" /><circle cx="590" cy="270" r="8" />
+    <circle cx="634" cy="292" r="9" /><circle cx="680" cy="275" r="8" /><circle cx="725" cy="294" r="9" />
+    <circle cx="775" cy="274" r="8" /><circle cx="529" cy="332" r="9" /><circle cx="579" cy="319" r="8" />
+    <circle cx="626" cy="343" r="9" /><circle cx="675" cy="326" r="8" /><circle cx="718" cy="348" r="9" />
+  </g>
+
+  <g fill="#b9602d" stroke="#8e3f22" stroke-width="5">
+    <circle cx="386" cy="345" r="38" /><circle cx="438" cy="306" r="36" /><circle cx="480" cy="361" r="40" />
+    <circle cx="829" cy="306" r="38" /><circle cx="882" cy="344" r="42" /><circle cx="812" cy="374" r="36" />
+  </g>
+
+  <g fill="#d95f4f">
+    <circle cx="352" cy="423" r="43" /><circle cx="898" cy="425" r="44" />
+  </g>
+  <g fill="#f5b0a4">
+    <circle cx="352" cy="423" r="28" /><circle cx="898" cy="425" r="29" />
+  </g>
+
+  <g fill="#8fbd88" stroke="#4f805b" stroke-width="5">
+    <path d="M694 401c51-70 115-81 176-34-30 71-93 94-176 34Z" />
+    <path d="M723 437c48-49 105-49 151 1-41 55-97 55-151-1Z" />
+  </g>
+
+  <path d="M468 426c89-44 188-44 279 0" fill="none" stroke="#f3e3b4" stroke-width="22" stroke-linecap="round" />
+  <path d="M468 426c89-44 188-44 279 0" fill="none" stroke="#fff7dc" stroke-width="8" stroke-linecap="round" />
+
+  <g transform="translate(944 164)">
+    <path d="M0 72A72 72 0 0 1 124 21L62 72Z" fill="#f4d35e" stroke="#d5a92f" stroke-width="6" />
+    <path d="M62 72 124 21" stroke="#fff3b0" stroke-width="5" />
+  </g>
+</svg>

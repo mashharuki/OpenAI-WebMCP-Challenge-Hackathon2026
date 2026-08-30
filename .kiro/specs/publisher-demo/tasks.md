@@ -1,7 +1,7 @@
 # Implementation Plan
 
-- [ ] 1. Publisher が共有する sample recipe foundation を固定する
-- [ ] 1.1 Owned recipe content と分析入力を一つの source として提供する
+- [x] 1. Publisher が共有する sample recipe foundation を固定する
+- [x] 1.1 Owned recipe content と分析入力を一つの source として提供する
   - `Open Table Journal`の`Roasted Chickpea Quinoa Bowl`を固定recipe ID、owned copy、CSS/illustrationとして定義する。
   - tool/HTTP入力はrecipe IDと任意dietary goalsだけにし、title、ingredients、instructionsはcanonical sourceから解決する。
   - publisher の brand、紹介、人数、所要時間、tag、代替説明付き hero asset、材料、順序付き手順を immutable な sample として定義する。

@@ -6,6 +6,8 @@
   "scripts": {
     "format": "pnpm exec biome format --write .",
     "check": "pnpm exec biome check --write .",
+    "cloudflare:types": "pnpm --filter frontend run types && pnpm --filter x402server run types && pnpm --filter facilitator run types",
+    "cloudflare:dry-run": "pnpm --filter frontend run deploy:dry-run && pnpm --filter x402server run deploy:dry-run && pnpm --filter facilitator run deploy:dry-run",
     "jscpd": "jscpd ./apps ./packages",
     "knip": "knip",
     "release:check": "node scripts/release-check.mjs",

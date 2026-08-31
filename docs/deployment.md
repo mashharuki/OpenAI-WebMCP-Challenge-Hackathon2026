@@ -9,15 +9,58 @@ git rev-parse HEAD
 pnpm release:check
 ```
 
-## 1. Resource server
+## 1. Cloudflare deployment layout
 
-The root `render.yaml` is the reference deployment for `apps/server`. It pins
-the build and start commands, disables automatic deploys, and requests one
-instance. In the Render dashboard, confirm **Manual scaling: one instance** and
-**Autoscaling: disabled** before judging. Do not deploy or restart the service
-during a demo recording.
+All three applications deploy with Wrangler:
 
-Set these public configuration values in the host:
+| Application | Cloudflare runtime | Worker name |
+| --- | --- | --- |
+| `apps/frontend` | Workers Static Assets + the Vite plugin | `adgate-open-table-journal` |
+| `apps/server` | Worker routed through one Durable Object coordinator | `adgate-resource-server` |
+| `apps/facilitator` | Worker | `adgate-facilitator` |
+
+Install dependencies, authenticate Wrangler, generate binding/runtime types,
+and validate all three bundles before the first deployment:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm --filter frontend exec wrangler login
+pnpm cloudflare:types
+pnpm cloudflare:dry-run
+```
+
+The resource server's short-lived sponsor and idempotency registries are still
+in memory by design. Cloudflare routes every request to the same named Durable
+Object, preserving the existing single-coordinator invariant across Worker
+isolates. A Durable Object eviction or deployment resets those short-lived
+registries, just like restarting the former single-process deployment. Do not
+deploy during a demo recording.
+
+## 2. Deploy the facilitator
+
+Create an uncommitted `apps/facilitator/.env.production` containing only:
+
+```dotenv
+EVM_PRIVATE_KEY=0x...
+```
+
+Deploy the code and encrypted secret together on the first release:
+
+```bash
+cd apps/facilitator
+pnpm exec wrangler deploy --secrets-file .env.production
+```
+
+Record the resulting `https://adgate-facilitator.<account-subdomain>.workers.dev`
+origin. For later releases, `pnpm --filter facilitator run deploy` reuses the
+already configured secret.
+
+## 3. Deploy the resource server
+
+Create an uncommitted `apps/server/.env.production` with these values. Wrangler
+declares them as required encrypted bindings so a deployment cannot silently
+omit environment-specific configuration, even though the values themselves are
+public:
 
 | Variable | Value |
 | --- | --- |
@@ -26,14 +69,19 @@ Set these public configuration values in the host:
 | `ALLOWED_ORIGINS` | The exact final frontend origin, such as `https://adgate.example.workers.dev`; no wildcard, path, or trailing slash. |
 | `RELEASE_SHA` | The full Git commit SHA deployed to the server. |
 
-The sponsor session, grant, replay registry, and bounded attempt registry are
-process-local. A resource-server restart makes active attempts invalid and also
-clears active 90-second sponsor sessions, 60-second grants, and five-minute
-same-identity success replays. The client must start a new attempt after a
-restart. One instance and disabled autoscaling are therefore release
-correctness constraints, not performance recommendations.
+`RELEASE_SHA` is release metadata and is not currently consumed by the Worker.
+The three bindings declared in `wrangler.jsonc` are `FACILITATOR_URL`,
+`EVM_ADDRESS`, and `ALLOWED_ORIGINS`.
 
-## 2. Payment readiness
+```bash
+cd apps/server
+pnpm exec wrangler deploy --secrets-file .env.production
+```
+
+For later releases, `pnpm --filter x402server run deploy` reuses the configured
+bindings.
+
+## 4. Payment readiness
 
 The fixed demo payment policy is x402 `exact` on Base Sepolia
 (`eip155:84532`) using testnet USDC at
@@ -51,7 +99,7 @@ When hosting `apps/facilitator`, copy its `.env.example`. Store
 private key in a frontend variable, committed file, log, screenshot, or build
 artifact.
 
-## 3. Frontend
+## 5. Frontend
 
 Set the following values in the frontend build environment. Vite embeds them at
 build time, so changing the host environment requires a new build:
@@ -69,6 +117,13 @@ token, then build and deploy that same commit:
 pnpm --filter frontend run build
 pnpm --filter frontend run deploy
 ```
+
+Vite automatically loads an uncommitted `apps/frontend/.env.production` for the
+production build. The frontend is deployed last so `VITE_API_BASE_URL` can point
+to the resource-server URL. Set the server's `ALLOWED_ORIGINS` to the exact
+frontend Workers URL (or custom domain) before the public smoke test. Worker
+names are fixed in the checked-in Wrangler files, so both `workers.dev` origins
+can be determined from the Cloudflare account subdomain before deployment.
 
 After deployment, run the read-only public-boundary probe with exact HTTPS
 origins:

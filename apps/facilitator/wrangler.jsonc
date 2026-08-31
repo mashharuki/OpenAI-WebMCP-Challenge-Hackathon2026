@@ -1,11 +1,11 @@
 {
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "adgate-frontend",
-  "main": "src/server.ts",
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "adgate-facilitator",
+  "main": "src/worker.ts",
   "compatibility_date": "2026-08-31",
   "compatibility_flags": ["nodejs_compat"],
-  "assets": {
-    "not_found_handling": "single-page-application"
+  "secrets": {
+    "required": ["EVM_PRIVATE_KEY"]
   },
   "observability": {
     "enabled": true,

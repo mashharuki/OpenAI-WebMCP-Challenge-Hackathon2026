@@ -9,6 +9,14 @@ public sponsor flow does not depend on this service.
 pnpm --filter facilitator run dev
 ```
 
+To use the Cloudflare runtime, copy `.env.example` to the ignored `.dev.vars`,
+set `EVM_PRIVATE_KEY`, then run:
+
+```bash
+pnpm --filter facilitator run types
+pnpm --filter facilitator run dev:worker
+```
+
 Production-style validation:
 
 ```bash
@@ -34,6 +42,13 @@ authentication, rate limiting, monitoring, rail allowlists, treasury controls,
 or key-management hardening expected of a production settlement service. If it
 cannot be verified, disable public payment and use a same-release clip labeled
 `recorded local prototype`; keep sponsor access live.
+
+Validate and deploy the Worker with:
+
+```bash
+pnpm --filter facilitator run deploy:dry-run
+pnpm --filter facilitator run deploy
+```
 
 See [environment](../../docs/environment.md) and
 [deployment](../../docs/deployment.md).

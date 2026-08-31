@@ -32,7 +32,8 @@
   "scripts": {
     "start": "vite dev",
     "build": "vite build",
-    "deploy": "vite build && wrangler deploy",
+    "deploy": "node scripts/validate-deploy-env.mjs && vite build && wrangler deploy",
+    "deploy:dry-run": "node scripts/validate-deploy-env.mjs && vite build && wrangler deploy --dry-run",
     "types": "wrangler types env.d.ts --include-runtime false",
     "test": "vitest run --exclude 'test/e2e/**'",
     "test:e2e": "playwright test",

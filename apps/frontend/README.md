@@ -27,6 +27,14 @@ pnpm --filter frontend run typecheck
 pnpm --filter frontend run build
 ```
 
+The production build deploys as Cloudflare Workers Static Assets. Validate the
+generated Worker bundle or deploy it with:
+
+```bash
+pnpm --filter frontend run deploy:dry-run
+pnpm --filter frontend run deploy
+```
+
 The Vitest suite covers components, contracts, sponsor/payment orchestration,
 and safe errors. Playwright installs a fake browser-visible WebMCP host and fake
 HTTP/wallet boundaries; it never holds a private key or sends a transaction.

@@ -12,7 +12,9 @@
       "!.agents",
       "!.kiro/settings/templates",
       "!**/.wrangler",
-      "!apps/frontend/env.d.ts"
+      "!apps/frontend/env.d.ts",
+      "!apps/server/src/worker-configuration.d.ts",
+      "!apps/facilitator/src/worker-configuration.d.ts"
     ]
   },
   "formatter": {

@@ -6,8 +6,12 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/development.ts",
+    "dev:worker": "wrangler dev",
     "build": "tsc -p tsconfig.json",
+    "deploy": "wrangler deploy",
+    "deploy:dry-run": "wrangler deploy --dry-run",
     "start": "node dist/index.js",
+    "types": "wrangler types src/worker-configuration.d.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
@@ -36,6 +40,7 @@
   "devDependencies": {
     "@types/node": "^26.2.0",
     "typescript": "^7.0.2",
-    "vitest": "4.1.10"
+    "vitest": "4.1.10",
+    "wrangler": "^4.127.1"
   }
 }

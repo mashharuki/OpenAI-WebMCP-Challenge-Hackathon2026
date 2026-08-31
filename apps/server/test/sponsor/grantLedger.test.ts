@@ -17,6 +17,56 @@ const evidence: SponsorAccessEvidence = {
 };
 
 describe("SponsorGrantLedger", () => {
+  it("restores an active sponsor session after a Durable Object restart", () => {
+    const firstInstance = createSponsorGrantLedger();
+    expect(
+      firstInstance.createSession({
+        credentialDigest: digest("credential-restart"),
+        attemptId: "attempt-restart",
+        resourceId: "recipe_analysis",
+        nonce: "request-restart",
+        sponsorId: "open-table-weekly",
+        startedAt: "2026-08-30T00:00:00.000Z",
+        expiresAt: "2026-08-30T00:01:30.000Z",
+        status: "available",
+      }),
+    ).toMatchObject({ ok: true });
+
+    const restartedInstance = createSponsorGrantLedger({
+      initialSnapshot: firstInstance.snapshot(),
+    });
+    const result = restartedInstance.completeIssue({
+      credentialDigest: digest("credential-restart"),
+      issueDigest: digest("issue-restart"),
+      now: "2026-08-30T00:00:08.000Z",
+      requiredMs: 8_000,
+      createGrant: (session) => ({
+        grant: {
+          evidence: {
+            ...evidence,
+            grantId: "grant-restart",
+            nonce: session.nonce,
+          },
+          tokenDigest: digest(token),
+          issueDigest: digest("issue-restart"),
+          sponsorId: session.sponsorId,
+          status: "available",
+        },
+        response: {
+          ok: true,
+          token,
+          evidence: {
+            ...evidence,
+            grantId: "grant-restart",
+            nonce: session.nonce,
+          },
+        },
+      }),
+    });
+
+    expect(result).toMatchObject({ ok: true });
+  });
+
   it("allows exactly one synchronous consume and forgets grants on restart", async () => {
     const ledger = createSponsorGrantLedger();
     expect(

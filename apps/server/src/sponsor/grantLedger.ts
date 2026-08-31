@@ -75,17 +75,31 @@ export interface SponsorGrantLedger {
     input: SponsorConsumeRequest,
     now: string,
   ): SponsorResult<SponsorAccessEvidence>;
+  snapshot(): SponsorGrantLedgerSnapshot;
 }
 
 interface SponsorGrantLedgerOptions {
   readonly maxSessions?: number;
   readonly maxGrants?: number;
   readonly maxCachedResponses?: number;
+  readonly initialSnapshot?: SponsorGrantLedgerSnapshot;
 }
 
 interface CachedResponse {
   readonly response: SponsorGrantIssueResponse;
   readonly expiresAt: string;
+}
+
+export interface SponsorGrantLedgerSnapshot {
+  readonly version: 1;
+  readonly sessions: readonly SponsorSessionRecord[];
+  readonly grants: readonly SponsorGrantRecord[];
+  readonly responses: readonly {
+    readonly credentialDigest: string;
+    readonly issueDigest: string;
+    readonly response: SponsorGrantIssueResponse;
+    readonly expiresAt: string;
+  }[];
 }
 
 const invalidEvidence = (): SponsorResult<never> => ({
@@ -190,6 +204,23 @@ export const createSponsorGrantLedger = (
   const responses = new Map<string, CachedResponse>();
   const responseKey = (credentialDigest: string, issueDigest: string) =>
     `${credentialDigest}:${issueDigest}`;
+
+  for (const session of options.initialSnapshot?.sessions ?? []) {
+    const record = cloneSession(session);
+    sessions.set(record.credentialDigest, record);
+    sessionByNonce.set(record.nonce, record.credentialDigest);
+  }
+  for (const grant of options.initialSnapshot?.grants ?? []) {
+    const record = cloneGrant(grant);
+    grants.set(record.tokenDigest, record);
+    grantByIssue.set(record.issueDigest, record.tokenDigest);
+  }
+  for (const cached of options.initialSnapshot?.responses ?? []) {
+    responses.set(responseKey(cached.credentialDigest, cached.issueDigest), {
+      response: cloneResponse(cached.response),
+      expiresAt: cached.expiresAt,
+    });
+  }
 
   const cleanupSessions = (now: string) => {
     const current = timestamp(now);
@@ -371,6 +402,23 @@ export const createSponsorGrantLedger = (
       };
       grants.set(tokenDigest, consumedRecord);
       return { ok: true, value: cloneEvidence(record.evidence) };
+    },
+
+    snapshot() {
+      return {
+        version: 1,
+        sessions: [...sessions.values()].map(cloneSession),
+        grants: [...grants.values()].map(cloneGrant),
+        responses: [...responses.entries()].map(([key, cached]) => {
+          const separator = key.indexOf(":");
+          return {
+            credentialDigest: key.slice(0, separator),
+            issueDigest: key.slice(separator + 1),
+            response: cloneResponse(cached.response),
+            expiresAt: cached.expiresAt,
+          };
+        }),
+      };
     },
   };
 };

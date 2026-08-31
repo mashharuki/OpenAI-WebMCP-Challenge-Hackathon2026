@@ -1,3 +1,7 @@
 .env
+.env.local
+.env.production
+.dev.vars*
 node_modules
 dist
+worker-startup.cpuprofile

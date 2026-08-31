@@ -175,9 +175,10 @@ describe("GateCoordinator", () => {
     ).resolves.toEqual({
       ok: false,
       error: {
-        code: "INVALID_TRANSITION",
-        message: "Another analysis is waiting for access approval.",
-        retryable: true,
+        code: "REQUEST_IN_PROGRESS",
+        message:
+          "An analysis is already waiting for your choice on the page. Complete or cancel it before starting another.",
+        retryable: false,
       },
     });
     expect(createAttemptIdentity).toHaveBeenCalledOnce();

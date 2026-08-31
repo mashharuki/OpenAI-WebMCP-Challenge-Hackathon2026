@@ -90,6 +90,37 @@ describe("useWebMCPTools", () => {
     expect(coordinator.cancel).toHaveBeenCalledExactlyOnceWith("unmounted");
   });
 
+  it("accepts WebMCP hosts that omit execute options", async () => {
+    let tool: WebMCPTool | undefined;
+    Object.defineProperty(document, "modelContext", {
+      configurable: true,
+      value: {
+        registerTool: async (registeredTool: WebMCPTool) => {
+          tool = registeredTool;
+        },
+      },
+    });
+    const coordinator = createCoordinator();
+    render(<HookHarness coordinator={coordinator} />);
+    await waitFor(() => expect(tool).toBeDefined());
+
+    await expect(
+      (
+        tool?.execute as (
+          input: unknown,
+        ) => Promise<unknown>
+      )({ recipeId: "roasted-chickpea-quinoa-bowl" }),
+    ).resolves.toEqual({
+      ok: true,
+      resourceId: "recipe_analysis",
+      data: analysis,
+    });
+    expect(coordinator.requestAnalysis).toHaveBeenCalledExactlyOnceWith(
+      { recipeId: "roasted-chickpea-quinoa-bowl" },
+      { source: "webmcp", signal: undefined },
+    );
+  });
+
   it.each([
     [{ recipeId: "unknown-recipe" }],
     [{ recipeId: "roasted-chickpea-quinoa-bowl", recipeBody: "private" }],

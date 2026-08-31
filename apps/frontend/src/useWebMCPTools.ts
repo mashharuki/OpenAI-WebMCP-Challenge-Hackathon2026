@@ -34,7 +34,7 @@ const createAnalyzeRecipeTool = (
     readOnlyHint: false,
     untrustedContentHint: true,
   },
-  async execute(input, { signal }) {
+  async execute(input, options) {
     const parsed = recipeAnalysisInputSchema.safeParse(input);
     if (!parsed.success) {
       return {
@@ -44,7 +44,7 @@ const createAnalyzeRecipeTool = (
     }
     return coordinator.requestAnalysis(parsed.data, {
       source: "webmcp",
-      signal,
+      signal: options?.signal,
     });
   },
 });

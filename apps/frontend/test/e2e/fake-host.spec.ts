@@ -338,7 +338,10 @@ test.describe("fake-host browser journeys", () => {
       .poll(() => fakeState(page, "duplicateResult"))
       .toMatchObject({
         ok: false,
-        error: { code: "INVALID_TRANSITION" },
+        error: {
+          code: "REQUEST_IN_PROGRESS",
+          message: expect.stringContaining("choice on the page"),
+        },
       });
     await expect(
       page.getByRole("button", { name: "Analyze this recipe" }),

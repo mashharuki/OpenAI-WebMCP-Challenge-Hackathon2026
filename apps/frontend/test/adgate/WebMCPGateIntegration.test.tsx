@@ -217,12 +217,15 @@ describe("WebMCP gate integration", () => {
       tool.execute(input, { signal: new AbortController().signal }),
     ).resolves.toMatchObject({
       ok: false,
-      error: { code: "INVALID_TRANSITION" },
+      error: {
+        code: "REQUEST_IN_PROGRESS",
+        message: expect.stringContaining("choice on the page"),
+      },
     });
     fireEvent.click(screen.getByRole("button", { name: "Analyze visibly" }));
     await waitFor(() =>
       expect(onVisibleResult).toHaveBeenCalledWith(
-        expect.objectContaining({ code: "INVALID_TRANSITION" }),
+        expect.objectContaining({ code: "REQUEST_IN_PROGRESS" }),
       ),
     );
     expect(coordinator.getSnapshot()).toMatchObject({

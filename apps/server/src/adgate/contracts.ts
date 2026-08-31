@@ -131,6 +131,7 @@ export type PremiumAnalysisSuccess = z.infer<
 export const adGateErrorCodeSchema = z.enum([
   "INVALID_INPUT",
   "INVALID_TRANSITION",
+  "REQUEST_IN_PROGRESS",
   "ACCESS_REQUIRED",
   "INVALID_EVIDENCE",
   "ACCESS_EXPIRED",

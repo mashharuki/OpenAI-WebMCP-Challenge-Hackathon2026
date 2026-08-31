@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GateExperience } from "../../src/adgate/GateExperience";
 import { GateProvider } from "../../src/adgate/GateProvider";
 import type {
@@ -19,6 +19,12 @@ const awaitingChoice = (paymentAvailable = true): GateSnapshot => ({
   },
   source: "webmcp",
   paymentAvailable,
+});
+
+const scrollIntoView = vi.fn();
+Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+  configurable: true,
+  value: scrollIntoView,
 });
 
 const createGate = (snapshot: GateSnapshot): GateCoordinatorPort => ({
@@ -80,6 +86,23 @@ const renderExperience = (
   );
 
 describe("GateExperience", () => {
+  beforeEach(() => {
+    scrollIntoView.mockClear();
+  });
+
+  it("brings an agent-started access choice into view and focuses it", () => {
+    renderExperience(createGate(awaitingChoice()));
+
+    const experience = screen.getByRole("complementary", {
+      name: "Recipe analysis access",
+    });
+    expect(scrollIntoView).toHaveBeenCalledExactlyOnceWith({
+      behavior: "smooth",
+      block: "center",
+    });
+    expect(experience).toHaveFocus();
+  });
+
   it("offers explicit access choices and suppresses a second selection", () => {
     const gate = createGate(awaitingChoice());
     renderExperience(gate);

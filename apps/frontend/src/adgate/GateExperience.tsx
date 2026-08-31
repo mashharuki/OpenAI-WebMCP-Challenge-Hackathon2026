@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGate } from "./GateProvider";
 import { ActivePaymentPanel } from "./payment/PaymentPanel";
 import type { PaymentCoordinatorPort } from "./payment/paymentCoordinator";
@@ -39,12 +39,33 @@ export function GateExperience({
   walletProvider,
 }: GateExperienceProps) {
   const { coordinator, snapshot } = useGate();
+  const experienceRef = useRef<HTMLElement | null>(null);
+  const focusedAttempt = useRef<string | undefined>(undefined);
   const lockedAttempt = useRef<string | undefined>(undefined);
   const [selectedAttempt, setSelectedAttempt] = useState<string | undefined>(
     undefined,
   );
   const attemptId =
     "attemptId" in snapshot.state ? snapshot.state.attemptId : undefined;
+
+  useEffect(() => {
+    if (
+      snapshot.source !== "webmcp" ||
+      snapshot.state.type !== "awaiting_choice" ||
+      !attemptId ||
+      focusedAttempt.current === attemptId
+    ) {
+      return;
+    }
+
+    focusedAttempt.current = attemptId;
+    experienceRef.current?.scrollIntoView?.({
+      behavior: "smooth",
+      block: "center",
+    });
+    experienceRef.current?.focus({ preventScroll: true });
+  }, [attemptId, snapshot.source, snapshot.state.type]);
+
   if (lockedAttempt.current && lockedAttempt.current !== attemptId) {
     lockedAttempt.current = undefined;
   }
@@ -63,7 +84,9 @@ export function GateExperience({
 
   return (
     <aside
+      ref={experienceRef}
       aria-label="Recipe analysis access"
+      tabIndex={-1}
       className="mx-auto mt-8 max-w-[96rem] rounded-2xl border border-[#c8bea8] bg-[#fbfaf6] p-5 shadow-lg sm:p-6"
     >
       <p

@@ -16,7 +16,7 @@ declare module "react" {
 
 declare global {
   interface WebMCPToolExecuteOptions {
-    readonly signal: AbortSignal;
+    readonly signal?: AbortSignal;
   }
 
   interface WebMCPTool {
@@ -30,7 +30,7 @@ declare global {
     };
     execute(
       input: unknown,
-      options: WebMCPToolExecuteOptions,
+      options?: WebMCPToolExecuteOptions,
     ): Promise<unknown>;
   }
 

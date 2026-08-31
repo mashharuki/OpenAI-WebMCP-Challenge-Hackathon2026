@@ -87,7 +87,8 @@ in [`architecture-and-provenance.md`](./architecture-and-provenance.md).
 - WebMCP imperative tool registration
 - Hono resource server and optional facilitator
 - x402 Core/EVM, viem, Base Sepolia testnet USDC
-- Cloudflare Workers frontend and a single-instance Node resource server
+- Cloudflare Workers frontend and resource server, with one named Durable
+  Object coordinator and a persisted sponsor ledger
 - Biome and pnpm workspace release automation
 
 ## Challenges
@@ -97,8 +98,9 @@ human interaction. Cancellation, unmounting, duplicate entry points, late HTTP
 results, grant expiry, and consumed evidence all had to end once without
 leaking credentials. Payment also needed to display server-provided terms
 before wallet access and keep the same request identity through settlement.
-Finally, process-local prototype state required explicit single-instance and
-no-redeploy deployment rules.
+Finally, the sponsor ledger had to remain correct across Worker isolates and
+Durable Object recreation, which required serialized request handling and a
+storage snapshot restored before serving traffic.
 
 ## Accomplishments
 
@@ -113,11 +115,11 @@ no-redeploy deployment rules.
 
 WebMCP makes a web page an active participant in agent workflows, not merely a
 document to scrape. Human approval can be part of a tool invocation without
-breaking structured context. Next steps would replace process-local sponsor
-state with durable storage, harden facilitator authentication/key management,
-measure sponsor outcomes with privacy-preserving fraud controls, generalize the
-gate to more publisher resources, and evaluate production payment rails beyond
-the fixed testnet demo.
+breaking structured context. Next steps would persist the remaining
+protected-attempt replay registry, add storage cleanup and observability,
+harden facilitator authentication/key management, measure sponsor outcomes
+with privacy-preserving fraud controls, generalize the gate to more publisher
+resources, and evaluate production payment rails beyond the fixed testnet demo.
 
 ## Testing Instructions
 
@@ -185,7 +187,10 @@ Capture requirements are in [`screenshots.md`](./screenshots.md).
 
 - WebMCP browser support is experimental and real-host validation remains manual.
 - Sponsor timing is not proof of attention or fraud-resistant ad measurement.
-- Resource-server state is process-local and requires one non-autoscaling instance.
+- Sponsor authorization is persisted in Durable Object Storage and restored
+  after object recreation. Protected-analysis attempt/result replay remains
+  in-memory within the named coordinator. If a final response is lost across
+  eviction or deployment, the client must begin a new access attempt.
 - The facilitator lacks production authentication, rate limiting, monitoring,
   treasury controls, and hardened key management.
 - Analysis is deterministic demo content and not medical advice.

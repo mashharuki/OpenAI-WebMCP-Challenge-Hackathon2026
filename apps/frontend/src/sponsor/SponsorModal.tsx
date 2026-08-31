@@ -1,4 +1,5 @@
 import { type KeyboardEvent, useEffect, useRef } from "react";
+import { SponsorCreative } from "./SponsorCreative";
 import type { SponsorViewState } from "./sponsorFlowController";
 
 export interface SponsorModalProps {
@@ -99,7 +100,7 @@ export function SponsorModal({
         aria-describedby="sponsor-modal-description"
         tabIndex={-1}
         onKeyDown={handleKeyDown}
-        className="w-full max-w-lg overflow-hidden rounded-2xl bg-[#fbfaf6] text-[#21352d] shadow-2xl"
+        className="w-full max-w-2xl overflow-hidden rounded-2xl bg-[#fbfaf6] text-[#21352d] shadow-2xl"
       >
         <header className="border-b border-[#d7ded8] px-6 py-5">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#6f7e75]">
@@ -124,24 +125,12 @@ export function SponsorModal({
               view.
             </p>
           ) : (
-            <section
-              aria-labelledby="sponsor-creative-title"
-              className="rounded-xl border border-[#d2a142] bg-[#fff6df] p-5"
-            >
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#87651f]">
-                A message from
-              </p>
-              <h3
-                id="sponsor-creative-title"
-                className="mt-1 text-xl font-bold"
-              >
-                Open Table Weekly
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-[#5d5138]">
-                Plan a calmer week of seasonal meals with one concise kitchen
-                note delivered every Sunday.
-              </p>
-            </section>
+            <SponsorCreative
+              remainingSeconds={remainingSeconds}
+              requiredSeconds={
+                state.type === "viewing" ? state.requiredMs / 1_000 : 8
+              }
+            />
           )}
 
           <p

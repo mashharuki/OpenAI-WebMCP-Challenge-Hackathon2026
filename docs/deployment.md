@@ -29,12 +29,15 @@ pnpm cloudflare:types
 pnpm cloudflare:dry-run
 ```
 
-The resource server's short-lived sponsor and idempotency registries are still
-in memory by design. Cloudflare routes every request to the same named Durable
-Object, preserving the existing single-coordinator invariant across Worker
-isolates. A Durable Object eviction or deployment resets those short-lived
-registries, just like restarting the former single-process deployment. Do not
-deploy during a demo recording.
+Cloudflare routes every resource-server request to the same named Durable
+Object, preserving the single-coordinator invariant across Worker isolates.
+Sponsor sessions, grants, consumption state, and grant-issue replay are
+snapshotted to Durable Object Storage after each request and restored when the
+object is recreated. The protected-analysis attempt/result replay registry is
+still bounded in-memory state inside that coordinator, so freeze deployments
+during a demo recording even though the persisted sponsor ledger survives
+eviction. If a final response is lost across recreation, begin a new access
+attempt rather than relying on the five-minute result replay.
 
 ## 2. Deploy the facilitator
 
@@ -139,7 +142,7 @@ pnpm smoke:public -- \
 warning and requires a same-release local payment recording; it does not block
 the public sponsor path. The probe never sends a payment signature, touches a
 wallet, or settles a transaction. To prove sponsor access, it creates one
-ephemeral process-local sponsor session, waits the required eight seconds,
+short-lived Durable Object-backed sponsor session, waits the required eight seconds,
 consumes its one-time grant, and verifies one canonical analysis. It prints only
 fixed check names and safe reasons—not credentials, challenges, response bodies,
 or full addresses.

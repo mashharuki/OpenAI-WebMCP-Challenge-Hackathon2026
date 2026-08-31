@@ -46,7 +46,10 @@ is never treated as server authorization.
 The Hono server owns sponsor-session creation, the independent eight-second
 wall-clock minimum, one-time grants, evidence consumption, bounded attempts,
 five-minute same-identity result replay, x402 challenges, and deterministic
-analysis. Its in-memory registries require a single running instance.
+analysis. Cloudflare routes it through one named Durable Object coordinator.
+Sponsor sessions, grants, consumption state, and grant-issue replay are stored
+in Durable Object Storage; only the protected-analysis attempt/result replay
+registry remains in memory within the active coordinator instance.
 
 ### Facilitator
 
@@ -75,7 +78,7 @@ advertising an unavailable settlement path.
 - Minimum sponsor time: eight seconds in both browser and server boundaries
 - Sponsor grant TTL: 60 seconds and one successful consumption
 - Same-identity successful result replay: five minutes
-- Runtime: one non-autoscaling resource-server instance
+- Runtime: one named Durable Object coordinator with a persisted sponsor ledger
 
 ## Provenance
 

@@ -8,8 +8,13 @@
       are maintained as original demo content in the repository.
 - [x] `apps/frontend/public/roasted-chickpea-quinoa-bowl.svg` is the
       self-contained repository hero illustration used by the page.
-- [x] The sponsor creative is rendered from owned copy and CSS; it loads no
-      third-party image, tracking pixel, or sponsor link.
+- [x] `apps/frontend/public/sponsor/open-table-weekly-poster.webp` is an
+      original AI-generated fictional product image created for this project
+      with OpenAI image generation. It uses no supplied third-party reference
+      image, logo, text, stock asset, tracking pixel, or sponsor link.
+- [x] Sponsor motion, labels, progress, and fallback behavior are implemented
+      with repository-owned HTML and CSS; the generated bitmap contains no
+      embedded brand copy or external mark.
 
 ## Third-party software and marks
 

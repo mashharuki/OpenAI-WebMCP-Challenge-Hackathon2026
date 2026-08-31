@@ -106,7 +106,11 @@ const installFakeHost = async (
               if (method === "eth_requestAccounts") {
                 return ["0x0000000000000000000000000000000000000002"];
               }
+              if (method === "eth_accounts") {
+                return ["0x0000000000000000000000000000000000000002"];
+              }
               if (method === "eth_chainId") return "0x14a34";
+              if (method === "eth_call") return "0x2710";
               if (method === "eth_signTypedData_v4") {
                 return `0x${"3".repeat(130)}`;
               }
@@ -232,6 +236,13 @@ const sponsorSuccess = (request: RequestBody) => ({
 const completeSponsorView = async (page: Page) => {
   await page.getByRole("button", { name: "Use sponsor access" }).click();
   await page.getByRole("button", { name: "Start sponsor view" }).click();
+  await expect(page.getByText("Sponsored message")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Seasonal Pantry Box" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: /seasonal pantry box/i }),
+  ).toBeVisible();
   const continueButton = page.getByRole("button", {
     name: "Continue to recipe analysis",
   });

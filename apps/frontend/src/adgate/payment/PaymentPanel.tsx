@@ -5,13 +5,20 @@ import {
   LockKeyIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react";
-import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { PremiumAnalysisRequest } from "../contracts.js";
 import type { PaymentRequirement } from "./challenge.js";
 import type {
   PaymentCoordinatorPort,
   PaymentFlowState,
 } from "./paymentCoordinator.js";
+import { WalletReadinessCard } from "./WalletReadinessCard.js";
 import type { Eip1193ProviderPort } from "./walletAdapter.js";
 
 export type PaymentPanelProps = {
@@ -132,6 +139,7 @@ function PaymentPanelView({
     coordinator.getSnapshot,
   );
   const lastRequirement = useRef<PaymentRequirement | undefined>(undefined);
+  const [walletReady, setWalletReady] = useState(false);
   const attempt = attemptFrom(state);
   if (attempt) lastRequirement.current = attempt.challenge.requirements[0];
   const requirement = lastRequirement.current;
@@ -165,7 +173,7 @@ function PaymentPanelView({
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-kumo-subtle">
             Premium access · payment review
           </p>
-          <Text variant="heading3" as="h2" id="payment-panel-title">
+          <Text variant="heading" size="lg" as="h2" id="payment-panel-title">
             Recipe analysis
           </Text>
         </div>
@@ -178,6 +186,15 @@ function PaymentPanelView({
         ) : (
           <div className="h-32 animate-pulse rounded-lg bg-kumo-elevated motion-reduce:animate-none" />
         )}
+
+        {state.type === "reviewing" && requirement ? (
+          <WalletReadinessCard
+            provider={provider}
+            requirement={requirement}
+            onReadyChange={setWalletReady}
+            onReturnToSponsor={onReturnToSponsor}
+          />
+        ) : null}
 
         <div className="flex items-center gap-2 text-sm text-kumo-default">
           {state.type === "succeeded" ? (
@@ -201,6 +218,7 @@ function PaymentPanelView({
               <Button
                 type="button"
                 variant="primary"
+                disabled={!walletReady}
                 onClick={() => void coordinator.confirm(provider)}
               >
                 Confirm {formatUsdc(requirement.amount)} payment

@@ -20,6 +20,7 @@ export const createMockEip1193Provider = (options: {
   chainId: Hex;
   signature?: Hex;
   switchChainId?: Hex;
+  tokenBalance?: Hex;
 }): MockEip1193Provider => {
   const calls: RecordedProviderCall[] = [];
   let chainId = options.chainId;
@@ -27,7 +28,9 @@ export const createMockEip1193Provider = (options: {
     calls.push({ method, params });
 
     if (method === "eth_requestAccounts") return [...options.accounts];
+    if (method === "eth_accounts") return [...options.accounts];
     if (method === "eth_chainId") return chainId;
+    if (method === "eth_call") return options.tokenBalance ?? "0x2710";
     if (method === "wallet_switchEthereumChain" && options.switchChainId) {
       chainId = options.switchChainId;
       return null;

@@ -11,7 +11,16 @@ const BASE_SEPOLIA_HEX_CHAIN_ID = "0x14a34";
 const addressPattern = /^0x[0-9a-fA-F]{40}$/;
 const hexPattern = /^0x[0-9a-fA-F]+$/;
 
-export type Eip1193ProviderPort = Pick<EIP1193Provider, "request">;
+export type Eip1193ProviderPort = Pick<EIP1193Provider, "request"> & {
+  on?: (
+    event: "accountsChanged" | "chainChanged",
+    listener: (...args: unknown[]) => void,
+  ) => void;
+  removeListener?: (
+    event: "accountsChanged" | "chainChanged",
+    listener: (...args: unknown[]) => void,
+  ) => void;
+};
 
 declare global {
   interface Window {

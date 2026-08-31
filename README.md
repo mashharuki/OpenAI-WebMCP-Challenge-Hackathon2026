@@ -45,8 +45,9 @@ then resume that same structured invocation.
   server-side eight-second minimum, a one-time 60-second grant, and safe cancellation.
 - A Base Sepolia x402 path with terms shown before wallet access, explicit user
   confirmation, and a normalized settlement receipt.
-- Bounded in-memory attempt, session, grant, consumption, and five-minute
-  same-identity success-replay registries.
+- A named Durable Object coordinator with sponsor sessions, grants,
+  consumption state, and grant-issue replay persisted in Durable Object
+  Storage, plus a bounded in-memory protected-attempt replay registry.
 - Safe unsupported-host, registration-failure, duplicate, abort, expired-access,
   wrong-network, and dependency-failure outcomes.
 - A read-only public smoke probe and a single local release command.
@@ -151,11 +152,12 @@ pnpm smoke:public -- \
 
 ## Deployment
 
-The intended judging topology is a Cloudflare-hosted frontend, one
-non-autoscaling Node resource-server instance, and an optional hosted
-facilitator. Public CORS must name the exact frontend origin. Frontend and
-server must carry the same full release SHA, and the Origin Trial token must be
-issued for the final frontend origin.
+The intended judging topology runs the frontend, resource server, and optional
+facilitator on Cloudflare. The resource server routes through one named Durable
+Object coordinator and persists sponsor authorization state in Durable Object
+Storage. Public CORS must name the exact frontend origin. Frontend and server
+must carry the same full release SHA, and the Origin Trial token must be issued
+for the final frontend origin.
 
 Follow the [deployment runbook](./docs/deployment.md). It identifies which
 values are public, which are secrets, and how to disable payment safely while
@@ -190,8 +192,12 @@ capturing or publishing submission media.
 - WebMCP and its browser exposure remain experimental; real-host checks are manual.
 - Sponsor verification proves elapsed visible/session time, not human attention
   or fraud-resistant advertising measurement.
-- Server registries are process-local. The public server must remain one instance;
-  a restart invalidates active attempts, grants, and cached results.
+- Sponsor sessions, grants, consumption state, and grant-issue replay survive
+  Worker isolate replacement through Durable Object Storage. The separate
+  protected-analysis attempt/result replay registry remains in memory inside
+  the named coordinator. An eviction or deployment therefore removes its
+  five-minute result replay; if a final response was lost after evidence was
+  consumed, the client must begin a new access attempt.
 - Payment is fixed to Base Sepolia (`eip155:84532`), x402 `exact`, and 0.01
   testnet USDC. It is not a mainnet payment product.
 - The self-hosted facilitator is a prototype without the authentication, rate

@@ -173,11 +173,21 @@ describe("PaymentPanel", () => {
     expect(screen.getByText("Base Sepolia")).toBeVisible();
     expect(screen.getByText(asset)).toBeVisible();
     expect(screen.getByText("0x0000…0001")).toBeVisible();
-    expect(provider.calls).toEqual([]);
+    expect(await screen.findByText("Wallet ready")).toBeVisible();
+    expect(screen.getByText(/0x0000…0002/)).toBeVisible();
+    expect(screen.getByText(/0.01 USDC available/)).toBeVisible();
+    expect(
+      provider.calls.some(({ method }) => method === "eth_requestAccounts"),
+    ).toBe(false);
+    expect(
+      provider.calls.some(({ method }) => method === "eth_signTypedData_v4"),
+    ).toBe(false);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Confirm 0.01 USDC payment" }),
-    );
+    const confirm = screen.getByRole("button", {
+      name: "Confirm 0.01 USDC payment",
+    });
+    await vi.waitFor(() => expect(confirm).toBeEnabled());
+    fireEvent.click(confirm);
 
     expect(await screen.findByText("Payment confirmed")).toBeVisible();
     expect(screen.getByText("0x1111…1111")).toBeVisible();
@@ -185,6 +195,9 @@ describe("PaymentPanel", () => {
       screen.getByRole("link", { name: "View Base Sepolia receipt" }),
     ).toHaveAttribute("href", `https://sepolia.basescan.org/tx/${transaction}`);
     expect(provider.calls.map(({ method }) => method)).toEqual([
+      "eth_accounts",
+      "eth_chainId",
+      "eth_call",
       "eth_requestAccounts",
       "eth_chainId",
       "eth_chainId",
@@ -207,7 +220,8 @@ describe("PaymentPanel", () => {
     const returnToSponsor = vi.fn();
     const { coordinator } = createHarness();
     const rejectingProvider = {
-      request: async () => {
+      request: async ({ method }: { method: string }) => {
+        if (method === "eth_accounts") return [];
         throw Object.assign(new Error("private provider details"), {
           code: 4001,
         });
@@ -224,7 +238,7 @@ describe("PaymentPanel", () => {
 
     fireEvent.click(
       await screen.findByRole("button", {
-        name: "Confirm 0.01 USDC payment",
+        name: "Connect MetaMask",
       }),
     );
 
@@ -234,7 +248,7 @@ describe("PaymentPanel", () => {
     expect(
       screen.queryByText("private provider details"),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Check again" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Use sponsor access" }));
     expect(returnToSponsor).toHaveBeenCalledOnce();
   });
@@ -245,12 +259,16 @@ describe("PaymentPanel", () => {
     const provider = {
       request: async ({ method }: { method: string }) => {
         providerCalls.push(method);
+        if (method === "eth_accounts") {
+          return ["0x0000000000000000000000000000000000000002"];
+        }
         if (method === "eth_requestAccounts") {
           return new Promise<readonly string[]>((resolve) => {
             resolveAccounts = resolve;
           });
         }
         if (method === "eth_chainId") return "0x14a34";
+        if (method === "eth_call") return "0x2710";
         return `0x${"3".repeat(130)}`;
       },
     } as never;
@@ -263,17 +281,23 @@ describe("PaymentPanel", () => {
       />,
     );
 
-    fireEvent.click(
-      await screen.findByRole("button", {
-        name: "Confirm 0.01 USDC payment",
-      }),
-    );
+    expect(await screen.findByText("Wallet ready")).toBeVisible();
+    const confirm = screen.getByRole("button", {
+      name: "Confirm 0.01 USDC payment",
+    });
+    await vi.waitFor(() => expect(confirm).toBeEnabled());
+    fireEvent.click(confirm);
     const connecting = await screen.findByRole("button", {
       name: "Connecting wallet…",
     });
     expect(connecting).toBeDisabled();
     fireEvent.click(connecting);
-    expect(providerCalls).toEqual(["eth_requestAccounts"]);
+    expect(providerCalls).toEqual([
+      "eth_accounts",
+      "eth_chainId",
+      "eth_call",
+      "eth_requestAccounts",
+    ]);
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     await act(async () => {
@@ -282,55 +306,80 @@ describe("PaymentPanel", () => {
     expect(await screen.findByText("Payment cancelled")).toBeVisible();
   });
 
-  it.each([
-    ["wallet absence", undefined, "An injected wallet is required."],
-    [
-      "network switch rejection",
-      {
-        request: async ({ method }: { method: string }) => {
-          if (method === "eth_requestAccounts") {
-            return ["0x0000000000000000000000000000000000000002"];
-          }
-          if (method === "eth_chainId") return "0x1";
-          throw Object.assign(new Error("private switch rejection"), {
-            code: 4001,
-          });
-        },
-      },
-      "The wallet request was rejected.",
-    ],
-    [
-      "insufficient funds",
-      {
-        request: async ({ method }: { method: string }) => {
-          if (method === "eth_requestAccounts") {
-            return ["0x0000000000000000000000000000000000000002"];
-          }
-          if (method === "eth_chainId") return "0x14a34";
-          throw new Error("insufficient funds; private balance response");
-        },
-      },
-      "The wallet has insufficient funds or allowance.",
-    ],
-  ])("recovers safely from %s", async (_name, unsafeProvider, message) => {
+  it("keeps sponsor recovery available when MetaMask is absent", async () => {
+    const returnToSponsor = vi.fn();
     const { coordinator } = createHarness();
     render(
       <PaymentPanel
         coordinator={coordinator}
-        provider={unsafeProvider as never}
+        onReturnToSponsor={returnToSponsor}
+        request={request}
+      />,
+    );
+
+    expect(await screen.findByText("MetaMask is not available")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Confirm 0.01 USDC payment" }),
+    ).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Use sponsor access" }));
+    expect(returnToSponsor).toHaveBeenCalledOnce();
+  });
+
+  it("offers an explicit Base Sepolia switch and sanitizes rejection", async () => {
+    const provider = {
+      request: async ({ method }: { method: string }) => {
+        if (method === "eth_accounts") {
+          return ["0x0000000000000000000000000000000000000002"];
+        }
+        if (method === "eth_chainId") return "0x1";
+        throw Object.assign(new Error("private switch rejection"), {
+          code: 4001,
+        });
+      },
+    } as never;
+    const { coordinator } = createHarness();
+    render(
+      <PaymentPanel
+        coordinator={coordinator}
+        provider={provider}
         request={request}
       />,
     );
 
     fireEvent.click(
-      await screen.findByRole("button", {
-        name: "Confirm 0.01 USDC payment",
-      }),
+      await screen.findByRole("button", { name: "Switch network" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The wallet request was rejected.",
+    );
+    expect(
+      screen.queryByText("private switch rejection"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Payment confirmed")).not.toBeInTheDocument();
+  });
+
+  it("shows the connected balance and blocks payment when USDC is insufficient", async () => {
+    const provider = createMockEip1193Provider({
+      accounts: ["0x0000000000000000000000000000000000000002"],
+      chainId: "0x14a34",
+      tokenBalance: "0x0",
+    });
+    const { coordinator } = createHarness();
+    render(
+      <PaymentPanel
+        coordinator={coordinator}
+        provider={provider}
+        request={request}
+      />,
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(message);
-    expect(screen.queryByText(/private/i)).not.toBeInTheDocument();
-    expect(screen.queryByText("Payment confirmed")).not.toBeInTheDocument();
+    expect(
+      await screen.findByText("Insufficient Base Sepolia USDC"),
+    ).toBeVisible();
+    expect(screen.getByText(/0 USDC available/)).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Confirm 0.01 USDC payment" }),
+    ).toBeDisabled();
   });
 
   it("keeps uncertain settlement recoverable without automatic re-signing", async () => {
@@ -344,11 +393,12 @@ describe("PaymentPanel", () => {
         request={request}
       />,
     );
-    fireEvent.click(
-      await screen.findByRole("button", {
-        name: "Confirm 0.01 USDC payment",
-      }),
-    );
+    expect(await screen.findByText("Wallet ready")).toBeVisible();
+    const confirm = screen.getByRole("button", {
+      name: "Confirm 0.01 USDC payment",
+    });
+    await vi.waitFor(() => expect(confirm).toBeEnabled());
+    fireEvent.click(confirm);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "The settlement result is uncertain.",

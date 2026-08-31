@@ -1,8 +1,9 @@
 # AdGate resource server
 
-Hono service that owns sponsor authorization, bounded process-local attempt
-state, and the protected deterministic recipe analysis. It also issues the
-single Base Sepolia x402 challenge used by the optional paid path.
+Hono service that owns sponsor authorization, bounded protected-attempt state,
+and the protected deterministic recipe analysis. In Cloudflare, sponsor state
+is persisted through Durable Object Storage. The service also issues the single
+Base Sepolia x402 challenge used by the optional paid path.
 
 ## Run locally
 
@@ -46,12 +47,14 @@ origin and required authorization/x402 headers.
 
 ## Cloudflare deployment invariant
 
-All attempt, sponsor, consumption, and five-minute success-replay registries are
-in memory. The Cloudflare entry point routes every request through the same
-named Durable Object coordinator so multiple Worker isolates cannot split that
-state. A deployment or Durable Object eviction invalidates active sessions,
-grants, attempts, and cached results; clients must begin a new attempt. Do not
-redeploy while recording or judging.
+The Cloudflare entry point routes every request through the same named Durable
+Object coordinator so multiple Worker isolates cannot split state. Sponsor
+sessions, grants, consumption state, and grant-issue replay are persisted to
+Durable Object Storage after each request and restored when the object is
+recreated. Protected-analysis attempt/result replay remains in memory within
+the coordinator. If a final response is lost across eviction or deployment,
+the client must begin a new access attempt. Do not redeploy while recording or
+judging.
 
 Validate and deploy with:
 

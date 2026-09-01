@@ -142,13 +142,13 @@ describe("GateCoordinator", () => {
     const first = coordinator.requestAnalysis(input, { source: "webmcp" });
     coordinator.cancel("user");
     await first;
-    expect(stateTypes).toEqual(["awaiting_choice", "cancelled"]);
+    expect(stateTypes).toEqual(["awaiting_payment", "cancelled"]);
 
     unsubscribe();
     const second = coordinator.requestAnalysis(input, { source: "webmcp" });
     coordinator.cancel("user");
     await second;
-    expect(stateTypes).toEqual(["awaiting_choice", "cancelled"]);
+    expect(stateTypes).toEqual(["awaiting_payment", "cancelled"]);
   });
 
   it("keeps one request pending, rejects a duplicate, and reopens after cancel", async () => {
@@ -165,7 +165,11 @@ describe("GateCoordinator", () => {
 
     expect(firstSettled).toBe(false);
     expect(coordinator.getSnapshot()).toMatchObject({
-      state: { type: "awaiting_choice", attemptId: "attempt-1", input },
+      state: {
+        type: "awaiting_payment",
+        attemptId: "attempt-1",
+        paymentRequestId: "request-1",
+      },
       source: "webmcp",
       paymentAvailable: true,
     });
@@ -177,7 +181,7 @@ describe("GateCoordinator", () => {
       error: {
         code: "REQUEST_IN_PROGRESS",
         message:
-          "An analysis is already waiting for your choice on the page. Complete or cancel it before starting another.",
+          "An analysis is already in progress on the page. Complete or cancel it before starting another.",
         retryable: false,
       },
     });
@@ -235,7 +239,7 @@ describe("GateCoordinator", () => {
     };
     let invocationSettled = false;
     const invocation = coordinator
-      .requestAnalysis(callerInput, { source: "webmcp" })
+      .requestAnalysis(callerInput, { source: "visible_ui" })
       .finally(() => {
         invocationSettled = true;
       });
@@ -317,7 +321,6 @@ describe("GateCoordinator", () => {
         invocationSettled = true;
       });
 
-    const paymentPath = coordinator.choosePayment();
     expect(coordinator.getSnapshot().state).toEqual({
       type: "awaiting_payment",
       attemptId: "attempt-1",
@@ -340,7 +343,6 @@ describe("GateCoordinator", () => {
       result: paymentSuccess,
       receipt: paymentReceipt,
     });
-    await paymentPath;
 
     const result = await invocation;
     expect(result).toEqual({
@@ -406,8 +408,6 @@ describe("GateCoordinator", () => {
         source: "webmcp",
       });
 
-      await coordinator.choosePayment();
-
       await expect(invocation).resolves.toMatchObject({
         ok: false,
         error: { code: expectedCode },
@@ -469,6 +469,47 @@ describe("GateCoordinator", () => {
     });
   });
 
+  it("stops an agent request when payment is unavailable without using sponsor access", async () => {
+    const requestSponsorAccess =
+      vi.fn<SponsorGatePort["requestSponsorAccess"]>(neverSponsorAccess);
+    const requestPaidAccess =
+      vi.fn<PaymentCoordinatorPort["requestPaidAccess"]>(neverPaymentAccess);
+    const coordinator = createGateCoordinator({
+      sponsorGate: { requestSponsorAccess },
+      paymentCoordinator: {
+        requestPaidAccess,
+        confirm: vi.fn(async () => undefined),
+        cancel: vi.fn(),
+        getSnapshot: () => ({ type: "idle" }),
+        subscribe: () => () => undefined,
+      },
+      protectedClient: { executeWithSponsor: neverProtectedAnalysis },
+      paymentAvailable: false,
+      createAttemptIdentity: () => identities[0],
+    });
+
+    await expect(
+      coordinator.requestAnalysis(input, { source: "webmcp" }),
+    ).resolves.toEqual({
+      ok: false,
+      error: {
+        code: "DEPENDENCY_UNAVAILABLE",
+        message:
+          "Base Sepolia payment is unavailable in this browser. No alternative access path was selected.",
+        retryable: false,
+      },
+    });
+    expect(requestPaidAccess).not.toHaveBeenCalled();
+    expect(requestSponsorAccess).not.toHaveBeenCalled();
+    expect(coordinator.getSnapshot()).toMatchObject({
+      source: "webmcp",
+      state: {
+        type: "failed",
+        error: { code: "DEPENDENCY_UNAVAILABLE" },
+      },
+    });
+  });
+
   it("settles host abort once and ignores a late payment success", async () => {
     const payment = deferred<PaymentTerminalResult>();
     const cancel = vi.fn();
@@ -497,7 +538,6 @@ describe("GateCoordinator", () => {
       source: "webmcp",
       signal: host.signal,
     });
-    const paymentPath = coordinator.choosePayment();
     const attemptSignal = requestPaidAccess.mock.calls[0]?.[1];
 
     host.abort("private host reason");
@@ -518,7 +558,7 @@ describe("GateCoordinator", () => {
       result: paymentSuccess,
       receipt: paymentReceipt,
     });
-    await paymentPath;
+    await Promise.resolve();
     expect(coordinator.getSnapshot()).not.toHaveProperty("receipt");
     expect(coordinator.getSnapshot().state.type).toBe("cancelled");
   });
@@ -546,7 +586,7 @@ describe("GateCoordinator", () => {
       createAttemptIdentity: () => identities[0],
     });
     const invocation = coordinator.requestAnalysis(input, {
-      source: "webmcp",
+      source: "visible_ui",
     });
     const sponsorPath = coordinator.chooseSponsor();
 
@@ -586,7 +626,9 @@ describe("GateCoordinator", () => {
       paymentAvailable: true,
       createAttemptIdentity: () => identities[0],
     });
-    const invocation = coordinator.requestAnalysis(input, { source: "webmcp" });
+    const invocation = coordinator.requestAnalysis(input, {
+      source: "visible_ui",
+    });
 
     await coordinator.chooseSponsor();
 
@@ -622,7 +664,7 @@ describe("GateCoordinator", () => {
         createAttemptIdentity: () => identities[0],
       });
       const invocation = coordinator.requestAnalysis(input, {
-        source: "webmcp",
+        source: "visible_ui",
       });
 
       await coordinator.chooseSponsor();

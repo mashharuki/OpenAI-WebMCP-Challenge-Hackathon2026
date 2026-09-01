@@ -59,6 +59,11 @@ export type GateEvent =
       input: RecipeAnalysisInput;
     }
   | {
+      type: "start_payment";
+      attemptId: string;
+      paymentRequestId: string;
+    }
+  | {
       type: "choose_sponsor";
       attemptId: string;
       sponsorId: string;
@@ -115,12 +120,22 @@ export const transitionGate = (
   event: GateEvent,
 ): GateTransitionResult => {
   if (
-    event.type === "start" &&
+    (event.type === "start" || event.type === "start_payment") &&
     (state.type === "idle" ||
       state.type === "succeeded" ||
       state.type === "failed" ||
       state.type === "cancelled")
   ) {
+    if (event.type === "start_payment") {
+      return {
+        ok: true,
+        state: {
+          type: "awaiting_payment",
+          attemptId: event.attemptId,
+          paymentRequestId: event.paymentRequestId,
+        },
+      };
+    }
     return {
       ok: true,
       state: {

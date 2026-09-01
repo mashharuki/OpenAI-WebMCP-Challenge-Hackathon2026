@@ -22,6 +22,26 @@ const evidence = {
 };
 
 describe("transitionGate", () => {
+  it("starts an agent payment attempt without exposing an access choice", () => {
+    expect(
+      transitionGate(
+        { type: "idle" },
+        {
+          type: "start_payment",
+          attemptId: "attempt-agent",
+          paymentRequestId: "request-agent",
+        },
+      ),
+    ).toEqual({
+      ok: true,
+      state: {
+        type: "awaiting_payment",
+        attemptId: "attempt-agent",
+        paymentRequestId: "request-agent",
+      },
+    });
+  });
+
   it("starts a new attempt and records a payment choice", () => {
     const started = transitionGate(
       { type: "idle" },

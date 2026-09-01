@@ -103,6 +103,29 @@ describe("GateExperience", () => {
     expect(experience).toHaveFocus();
   });
 
+  it("brings an agent-started payment review into view and focuses it", () => {
+    renderExperience(
+      createGate({
+        state: {
+          type: "awaiting_payment",
+          attemptId: "attempt-1",
+          paymentRequestId: "request-1",
+        },
+        source: "webmcp",
+        paymentAvailable: true,
+      }),
+    );
+
+    const experience = screen.getByRole("complementary", {
+      name: "Recipe analysis access",
+    });
+    expect(scrollIntoView).toHaveBeenCalledExactlyOnceWith({
+      behavior: "smooth",
+      block: "center",
+    });
+    expect(experience).toHaveFocus();
+  });
+
   it("offers explicit access choices and suppresses a second selection", () => {
     const gate = createGate(awaitingChoice());
     renderExperience(gate);

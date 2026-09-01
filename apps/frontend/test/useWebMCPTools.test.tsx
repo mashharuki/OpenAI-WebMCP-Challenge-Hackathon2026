@@ -61,7 +61,8 @@ describe("useWebMCPTools", () => {
         required: ["recipeId"],
       },
     });
-    expect(tool.description).toMatch(/human access choice/i);
+    expect(tool.description).toMatch(/automatically starts.*x402/i);
+    expect(tool.description).toMatch(/human.*approve.*0\.01 testnet USDC/i);
     expect(tool.description).toMatch(/nutritional insights/i);
     expect(tool.description).toMatch(/suggestions/i);
     expect(tool.description).toMatch(/disclaimer/i);
@@ -103,13 +104,10 @@ describe("useWebMCPTools", () => {
     const coordinator = createCoordinator();
     render(<HookHarness coordinator={coordinator} />);
     await waitFor(() => expect(tool).toBeDefined());
+    if (!tool) throw new Error("WebMCP tool was not registered.");
 
     await expect(
-      (
-        tool?.execute as (
-          input: unknown,
-        ) => Promise<unknown>
-      )({ recipeId: "roasted-chickpea-quinoa-bowl" }),
+      tool.execute({ recipeId: "roasted-chickpea-quinoa-bowl" }),
     ).resolves.toEqual({
       ok: true,
       resourceId: "recipe_analysis",

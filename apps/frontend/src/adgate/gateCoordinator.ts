@@ -79,7 +79,7 @@ const duplicateResult = (): AdGateErrorEnvelope => ({
   error: {
     code: "REQUEST_IN_PROGRESS",
     message:
-      "An analysis is already waiting for your choice on the page. Complete or cancel it before starting another.",
+      "An analysis is already in progress on the page. Complete or cancel it before starting another.",
     retryable: false,
   },
 });
@@ -99,6 +99,16 @@ const dependencyUnavailable = (): AdGateErrorEnvelope => ({
     code: "DEPENDENCY_UNAVAILABLE",
     message: "The selected access path is temporarily unavailable.",
     retryable: true,
+  },
+});
+
+const paymentUnavailable = (): AdGateErrorEnvelope => ({
+  ok: false,
+  error: {
+    code: "DEPENDENCY_UNAVAILABLE",
+    message:
+      "Base Sepolia payment is unavailable in this browser. No alternative access path was selected.",
+    retryable: false,
   },
 });
 
@@ -177,6 +187,59 @@ export const createGateCoordinator = ({
     settle(candidate, cancelledResult());
   };
 
+  const runPayment = async (candidate: ActiveAttempt): Promise<void> => {
+    try {
+      const terminal = await paymentCoordinator.requestPaidAccess(
+        candidate.request,
+        candidate.controller.signal,
+      );
+      if (!isCurrent(candidate)) return;
+
+      if (terminal.type === "cancelled") {
+        transition({
+          type: "cancel",
+          attemptId: candidate.identity.attemptId,
+          reason: terminal.reason,
+        });
+        settle(candidate, cancelledResult());
+        return;
+      }
+      if (terminal.type === "error") {
+        rejectAttempt(candidate, terminal.error);
+        return;
+      }
+      const access = terminal.result.access;
+      if (
+        terminal.result.requestId !== candidate.request.requestId ||
+        access.kind !== "x402_payment"
+      ) {
+        rejectAttempt(candidate, {
+          code: "IDEMPOTENCY_CONFLICT",
+          message: "The paid analysis result does not match this request.",
+          retryable: false,
+        });
+        return;
+      }
+
+      receipt = terminal.receipt;
+      transition({
+        type: "payment_succeeded",
+        attemptId: candidate.identity.attemptId,
+        result: terminal.result.data,
+        access: {
+          kind: "x402_payment",
+          referenceId: access.referenceId,
+        },
+      });
+      settle(candidate, normalizeWebMCPResult(terminal.result));
+    } catch {
+      if (isCurrent(candidate)) {
+        const failure = dependencyUnavailable();
+        rejectAttempt(candidate, failure.error);
+      }
+    }
+  };
+
   return {
     requestAnalysis(input, options) {
       if (active) return Promise.resolve(duplicateResult());
@@ -209,11 +272,19 @@ export const createGateCoordinator = ({
       active = candidate;
       source = candidate.source;
       receipt = undefined;
-      transition({
-        type: "start",
-        attemptId: identity.attemptId,
-        input: capturedInput,
-      });
+      if (candidate.source === "webmcp") {
+        transition({
+          type: "start_payment",
+          attemptId: identity.attemptId,
+          paymentRequestId: request.requestId,
+        });
+      } else {
+        transition({
+          type: "start",
+          attemptId: identity.attemptId,
+          input: capturedInput,
+        });
+      }
 
       if (options.signal) {
         const abort = () => cancelAttempt(candidate, "abort");
@@ -221,6 +292,11 @@ export const createGateCoordinator = ({
         candidate.removeHostAbort = () =>
           options.signal?.removeEventListener("abort", abort);
         if (options.signal.aborted) abort();
+      }
+
+      if (isCurrent(candidate) && candidate.source === "webmcp") {
+        if (paymentAvailable) void runPayment(candidate);
+        else rejectAttempt(candidate, paymentUnavailable().error);
       }
 
       return result;
@@ -328,56 +404,7 @@ export const createGateCoordinator = ({
         return;
       }
 
-      try {
-        const terminal = await paymentCoordinator.requestPaidAccess(
-          candidate.request,
-          candidate.controller.signal,
-        );
-        if (!isCurrent(candidate)) return;
-
-        if (terminal.type === "cancelled") {
-          transition({
-            type: "cancel",
-            attemptId: candidate.identity.attemptId,
-            reason: terminal.reason,
-          });
-          settle(candidate, cancelledResult());
-          return;
-        }
-        if (terminal.type === "error") {
-          rejectAttempt(candidate, terminal.error);
-          return;
-        }
-        const access = terminal.result.access;
-        if (
-          terminal.result.requestId !== candidate.request.requestId ||
-          access.kind !== "x402_payment"
-        ) {
-          rejectAttempt(candidate, {
-            code: "IDEMPOTENCY_CONFLICT",
-            message: "The paid analysis result does not match this request.",
-            retryable: false,
-          });
-          return;
-        }
-
-        receipt = terminal.receipt;
-        transition({
-          type: "payment_succeeded",
-          attemptId: candidate.identity.attemptId,
-          result: terminal.result.data,
-          access: {
-            kind: "x402_payment",
-            referenceId: access.referenceId,
-          },
-        });
-        settle(candidate, normalizeWebMCPResult(terminal.result));
-      } catch {
-        if (isCurrent(candidate)) {
-          const failure = dependencyUnavailable();
-          rejectAttempt(candidate, failure.error);
-        }
-      }
+      await runPayment(candidate);
     },
 
     cancel(reason) {

@@ -51,7 +51,8 @@ export function GateExperience({
   useEffect(() => {
     if (
       snapshot.source !== "webmcp" ||
-      snapshot.state.type !== "awaiting_choice" ||
+      (snapshot.state.type !== "awaiting_choice" &&
+        snapshot.state.type !== "awaiting_payment") ||
       !attemptId ||
       focusedAttempt.current === attemptId
     ) {

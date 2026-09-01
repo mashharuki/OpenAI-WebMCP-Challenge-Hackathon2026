@@ -29,6 +29,21 @@ const sponsorToken = "t".repeat(43);
 const asset = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
 const payTo = "0x0000000000000000000000000000000000000001";
 const transaction = `0x${"1".repeat(64)}`;
+const paymentChallenge = {
+  x402Version: 2,
+  resource: { url: "recipe_analysis" },
+  accepts: [
+    {
+      scheme: "exact",
+      network: "eip155:84532",
+      asset,
+      amount: "10000",
+      payTo,
+      maxTimeoutSeconds: 60,
+      extra: { name: "USDC", version: "2" },
+    },
+  ],
+} satisfies PaymentRequired;
 
 const installFakeHost = async (
   page: Page,
@@ -304,34 +319,50 @@ test.describe("fake-host browser journeys", () => {
     await page.clock.install();
   });
 
-  test("holds one host invocation through eight visible seconds and settles once", async ({
+  test("holds one host invocation through human payment approval and settles once", async ({
     page,
   }) => {
-    let grantNonce = "unknown";
-    let analysisCalls = 0;
-    await installFakeHost(page, "document-first");
-    await page.route("**/api/sponsor-sessions", async (route) => {
-      grantNonce = (route.request().postDataJSON() as { nonce: string }).nonce;
-      await fulfillSponsorSession(route);
-    });
-    await page.route("**/api/sponsor-grants", (route) =>
-      fulfillSponsorGrant(route, grantNonce),
-    );
+    let paidRetries = 0;
+    await installFakeHost(page, "document-first", { wallet: true });
     await page.route("**/api/recipe-analysis", async (route) => {
       const request = readRequest(route);
-      analysisCalls += 1;
+      if (!route.request().headers()["payment-signature"]) {
+        await route.fulfill({
+          status: 402,
+          headers: {
+            "Payment-Required": encodePaymentRequiredHeader(paymentChallenge),
+          },
+        });
+        return;
+      }
+      paidRetries += 1;
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(sponsorSuccess(request)),
+        headers: {
+          "Payment-Response": encodePaymentResponseHeader({
+            success: true,
+            transaction,
+            network: "eip155:84532",
+            amount: "10000",
+          }),
+        },
+        body: JSON.stringify({
+          ok: true,
+          requestId: request.requestId,
+          resourceId: "recipe_analysis",
+          access: { kind: "x402_payment", referenceId: transaction },
+          data: analysis,
+        }),
       });
     });
     await page.goto("/");
     await callFakeState(page, "startInvocation");
 
+    await expect(page.getByText("0.01 USDC").first()).toBeVisible();
     await expect(
-      page.getByText("Choose how to unlock recipe analysis."),
-    ).toBeVisible();
+      page.getByRole("button", { name: "Use sponsor access" }),
+    ).toHaveCount(0);
     expect(await fakeState(page, "invocationSettled")).toBe(false);
     await callFakeState(page, "invokeDuplicate");
     await expect
@@ -340,14 +371,18 @@ test.describe("fake-host browser journeys", () => {
         ok: false,
         error: {
           code: "REQUEST_IN_PROGRESS",
-          message: expect.stringContaining("choice on the page"),
+          message: expect.stringContaining("in progress on the page"),
         },
       });
     await expect(
       page.getByRole("button", { name: "Analyze this recipe" }),
     ).toBeDisabled();
 
-    await completeSponsorView(page);
+    const confirmPayment = page.getByRole("button", {
+      name: "Confirm 0.01 USDC payment",
+    });
+    await expect(confirmPayment).toBeEnabled();
+    await confirmPayment.click();
     await expect.poll(() => fakeState(page, "invocationSettled")).toBe(true);
     expect(await fakeState(page, "invocationResult")).toEqual({
       ok: true,
@@ -355,27 +390,27 @@ test.describe("fake-host browser journeys", () => {
       data: analysis,
     });
     expect(await fakeState(page, "settleCount")).toBe(1);
-    expect(analysisCalls).toBe(1);
+    expect(paidRetries).toBe(1);
     expect(
       JSON.stringify(await fakeState(page, "invocationResult")),
-    ).not.toContain(sponsorToken);
+    ).not.toContain(transaction);
   });
 
-  test("host abort cancels once and isolates a late sponsor-session result", async ({
+  test("host abort cancels automatic payment before human confirmation", async ({
     page,
   }) => {
-    let releaseSession: (() => void) | undefined;
-    const sessionReleased = new Promise<void>((resolve) => {
-      releaseSession = resolve;
-    });
-    await installFakeHost(page, "document-first");
-    await page.route("**/api/sponsor-sessions", async (route) => {
-      await sessionReleased;
-      await fulfillSponsorSession(route);
+    await installFakeHost(page, "document-first", { wallet: true });
+    await page.route("**/api/recipe-analysis", async (route) => {
+      await route.fulfill({
+        status: 402,
+        headers: {
+          "Payment-Required": encodePaymentRequiredHeader(paymentChallenge),
+        },
+      });
     });
     await page.goto("/");
     await callFakeState(page, "startInvocation");
-    await page.getByRole("button", { name: "Use sponsor access" }).click();
+    await expect(page.getByText("0.01 USDC").first()).toBeVisible();
     await callFakeState(page, "abortInvocation");
 
     await expect
@@ -385,8 +420,6 @@ test.describe("fake-host browser journeys", () => {
         error: { code: "CANCELLED" },
       });
     expect(await fakeState(page, "settleCount")).toBe(1);
-    releaseSession?.();
-    await page.clock.fastForward(1_000);
     await expect(
       page.getByText("Recipe analysis was cancelled."),
     ).toBeVisible();
@@ -429,7 +462,7 @@ test.describe("fake-host browser journeys", () => {
     await expect(page.getByText(analysis.summary)).toHaveCount(0);
   });
 
-  test("replays a same identity success within five minutes", async ({
+  test("visible sponsor access replays a same identity success within five minutes", async ({
     page,
   }) => {
     const cached = new Map<string, { expiresAt: number; response: object }>();
@@ -465,11 +498,11 @@ test.describe("fake-host browser journeys", () => {
     await page.goto("/");
 
     for (let run = 0; run < 2; run += 1) {
-      if (run === 0) await callFakeState(page, "startInvocation");
-      else {
+      if (run === 1) {
         logicalNow = 299_999;
-        await page.getByRole("button", { name: "Analyze this recipe" }).click();
+        await page.reload();
       }
+      await page.getByRole("button", { name: "Analyze this recipe" }).click();
       await completeSponsorView(page);
       await expect(page.getByText("Recipe analysis completed.")).toBeVisible();
     }
@@ -480,21 +513,6 @@ test.describe("fake-host browser journeys", () => {
   test("shows fake payment terms and receipt without a private key or transaction", async ({
     page,
   }) => {
-    const challenge = {
-      x402Version: 2,
-      resource: { url: "recipe_analysis" },
-      accepts: [
-        {
-          scheme: "exact",
-          network: "eip155:84532",
-          asset,
-          amount: "10000",
-          payTo,
-          maxTimeoutSeconds: 60,
-          extra: { name: "USDC", version: "2" },
-        },
-      ],
-    } satisfies PaymentRequired;
     let paidRetries = 0;
     await installFakeHost(page, "document-first", { wallet: true });
     await page.route("**/api/recipe-analysis", async (route) => {
@@ -503,7 +521,7 @@ test.describe("fake-host browser journeys", () => {
         await route.fulfill({
           status: 402,
           headers: {
-            "Payment-Required": encodePaymentRequiredHeader(challenge),
+            "Payment-Required": encodePaymentRequiredHeader(paymentChallenge),
           },
         });
         return;
@@ -531,7 +549,6 @@ test.describe("fake-host browser journeys", () => {
     });
     await page.goto("/");
     await callFakeState(page, "startInvocation");
-    await page.getByRole("button", { name: "Pay with Base Sepolia" }).click();
 
     await expect(page.getByText("Base Sepolia").first()).toBeVisible();
     await expect(page.getByText("0.01 USDC").first()).toBeVisible();
@@ -546,7 +563,7 @@ test.describe("fake-host browser journeys", () => {
     ).toHaveAttribute("href", `https://sepolia.basescan.org/tx/${transaction}`);
   });
 
-  test("keeps sponsor access available when no wallet is injected", async ({
+  test("stops agent payment without sponsor fallback when no wallet is injected", async ({
     page,
   }) => {
     await installFakeHost(page, "document-first");
@@ -554,22 +571,18 @@ test.describe("fake-host browser journeys", () => {
     await callFakeState(page, "startInvocation");
 
     await expect(
-      page.getByRole("button", { name: "Pay with Base Sepolia" }),
-    ).toBeDisabled();
-    await expect(
       page.getByText(
-        "Payment is unavailable right now. Sponsor access is still available.",
+        "Base Sepolia payment is unavailable in this browser. No alternative access path was selected.",
       ),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Use sponsor access" }),
-    ).toBeEnabled();
-    await page.getByRole("button", { name: "Cancel analysis" }).click();
+    ).toHaveCount(0);
     await expect
       .poll(() => fakeState(page, "invocationResult"))
       .toMatchObject({
         ok: false,
-        error: { code: "CANCELLED" },
+        error: { code: "DEPENDENCY_UNAVAILABLE" },
       });
   });
 });

@@ -50,7 +50,7 @@ describe("publisher root composition", () => {
     expect(screen.getByText(/WebMCP is not available/i)).toBeVisible();
   });
 
-  it("routes a WebMCP invocation and the publisher through one gate", async () => {
+  it("stops a WebMCP payment safely when no wallet is available", async () => {
     let tool: WebMCPTool | undefined;
     Object.defineProperty(document, "modelContext", {
       configurable: true,
@@ -76,17 +76,18 @@ describe("publisher root composition", () => {
     });
 
     expect(
-      screen.getByText("Choose how to unlock recipe analysis."),
+      screen.getByText(
+        "Base Sepolia payment is unavailable in this browser. No alternative access path was selected.",
+      ),
     ).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Analyze this recipe" }),
-    ).toBeDisabled();
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Cancel analysis" }));
-    });
+      screen.queryByRole("button", { name: "Use sponsor access" }),
+    ).not.toBeInTheDocument();
     await waitFor(() =>
-      expect(result).toMatchObject({ ok: false, error: { code: "CANCELLED" } }),
+      expect(result).toMatchObject({
+        ok: false,
+        error: { code: "DEPENDENCY_UNAVAILABLE" },
+      }),
     );
   });
 

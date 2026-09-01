@@ -8,7 +8,6 @@ import {
 import { useMemo } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type {
-  AdGateErrorEnvelope,
   PaymentReceipt,
   PremiumAnalysisSuccess,
 } from "../../src/adgate/contracts";
@@ -33,18 +32,6 @@ const analysis = {
   nutritionalInsights: ["Chickpeas provide fiber."],
   suggestions: ["Add pumpkin seeds for crunch."],
   disclaimer: "This is general information, not medical advice.",
-};
-const sponsorGrant = {
-  ok: true as const,
-  token: "sponsor_token_private_value_1234567890",
-  evidence: {
-    kind: "sponsor_grant" as const,
-    grantId: "grant-1",
-    resourceId: "recipe_analysis" as const,
-    issuedAt: "2026-08-30T00:00:00.000Z",
-    expiresAt: "2026-08-30T00:01:00.000Z",
-    nonce: "request-1",
-  },
 };
 const sponsorSuccess: PremiumAnalysisSuccess = {
   ok: true,
@@ -179,21 +166,18 @@ const renderIntegration = (
 };
 
 describe("WebMCP gate integration", () => {
-  it("keeps one tool invocation pending through sponsor access and rejects both duplicate entry points", async () => {
-    const sponsor = deferred<typeof sponsorGrant | AdGateErrorEnvelope>();
-    const protectedResult = deferred<
-      PremiumAnalysisSuccess | AdGateErrorEnvelope
-    >();
+  it("keeps one automatic payment invocation pending and rejects both duplicate entry points", async () => {
+    const paid = deferred<PaymentTerminalResult>();
     const requestSponsorAccess = vi.fn<SponsorGatePort["requestSponsorAccess"]>(
-      () => sponsor.promise,
+      () => new Promise(() => undefined),
     );
-    const executeWithSponsor = vi.fn<
-      ProtectedAnalysisClientPort["executeWithSponsor"]
-    >(() => protectedResult.promise);
-    const payment = createPaymentPort();
+    const requestPaidAccess = vi.fn<
+      PaymentCoordinatorPort["requestPaidAccess"]
+    >(() => paid.promise);
+    const payment = createPaymentPort(requestPaidAccess);
     const coordinator = createCoordinator({
       sponsor: requestSponsorAccess,
-      protectedAnalysis: executeWithSponsor,
+      protectedAnalysis: () => new Promise(() => undefined),
       payment,
     });
     const onVisibleResult = vi.fn();
@@ -210,8 +194,13 @@ describe("WebMCP gate integration", () => {
       .finally(() => {
         settled = true;
       });
-    await screen.findByText("Choose how to unlock recipe analysis.");
+    await screen.findByText("Review and confirm the Base Sepolia payment.");
     expect(settled).toBe(false);
+    expect(requestPaidAccess).toHaveBeenCalledOnce();
+    expect(requestSponsorAccess).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", { name: "Use sponsor access" }),
+    ).not.toBeInTheDocument();
 
     await expect(
       tool.execute(input, { signal: new AbortController().signal }),
@@ -219,7 +208,7 @@ describe("WebMCP gate integration", () => {
       ok: false,
       error: {
         code: "REQUEST_IN_PROGRESS",
-        message: expect.stringContaining("choice on the page"),
+        message: expect.stringContaining("in progress on the page"),
       },
     });
     fireEvent.click(screen.getByRole("button", { name: "Analyze visibly" }));
@@ -230,24 +219,28 @@ describe("WebMCP gate integration", () => {
     );
     expect(coordinator.getSnapshot()).toMatchObject({
       source: "webmcp",
-      state: { type: "awaiting_choice", attemptId: "attempt-1" },
+      state: {
+        type: "awaiting_payment",
+        attemptId: "attempt-1",
+        paymentRequestId: "request-1",
+      },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Use sponsor access" }));
-    expect(settled).toBe(false);
-    expect(requestSponsorAccess).toHaveBeenCalledOnce();
-
-    await act(async () => sponsor.resolve(sponsorGrant));
-    expect(executeWithSponsor).toHaveBeenCalledOnce();
-    expect(settled).toBe(false);
-
-    await act(async () => protectedResult.resolve(sponsorSuccess));
+    await act(async () =>
+      paid.resolve({
+        type: "success",
+        result: paymentSuccess,
+        receipt: paymentReceipt,
+      }),
+    );
     await expect(invocation).resolves.toEqual({
       ok: true,
       resourceId: "recipe_analysis",
       data: analysis,
     });
-    expect(JSON.stringify(await invocation)).not.toContain(sponsorGrant.token);
+    expect(JSON.stringify(await invocation)).not.toContain(
+      paymentReceipt.transactionHash,
+    );
   });
 
   it("uses the same request and signal once until the human payment result completes", async () => {
@@ -270,10 +263,10 @@ describe("WebMCP gate integration", () => {
         settled = true;
       });
 
-    await screen.findByText("Choose how to unlock recipe analysis.");
-    fireEvent.click(
-      screen.getByRole("button", { name: "Pay with Base Sepolia" }),
-    );
+    await screen.findByText("Review and confirm the Base Sepolia payment.");
+    expect(
+      screen.queryByRole("button", { name: "Pay with Base Sepolia" }),
+    ).not.toBeInTheDocument();
 
     expect(requestPaidAccess).toHaveBeenCalledOnce();
     const [request, attemptSignal] = requestPaidAccess.mock.calls[0];
@@ -329,11 +322,6 @@ describe("WebMCP gate integration", () => {
       signal: new AbortController().signal,
     });
 
-    await screen.findByText("Choose how to unlock recipe analysis.");
-    fireEvent.click(
-      screen.getByRole("button", { name: "Pay with Base Sepolia" }),
-    );
-
     await expect(invocation).resolves.toEqual({
       ok: false,
       error: {
@@ -363,10 +351,7 @@ describe("WebMCP gate integration", () => {
     const invocation = tool.execute(input, {
       signal: new AbortController().signal,
     });
-    await screen.findByText("Choose how to unlock recipe analysis.");
-    fireEvent.click(
-      screen.getByRole("button", { name: "Pay with Base Sepolia" }),
-    );
+    await screen.findByText("Review and confirm the Base Sepolia payment.");
 
     unmount();
     await expect(invocation).resolves.toMatchObject({

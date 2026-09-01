@@ -158,7 +158,7 @@ function PublisherPage({
           </fieldset>
           {webMCPAttemptActive ? (
             <p className="mt-4 text-sm font-medium text-[#637069]">
-              An agent-started analysis is waiting for your access choice.
+              An agent-started analysis is waiting for your payment review.
             </p>
           ) : null}
           <GateExperience

@@ -28,7 +28,7 @@ const createAnalyzeRecipeTool = (
   name: "analyze_recipe",
   title: "Analyze this recipe",
   description:
-    "Request premium analysis for the published recipe. A human access choice is required before completion. Returns a summary, nutritional insights, practical suggestions, and a general-information disclaimer.",
+    "Request premium analysis for the published recipe. Automatically starts the Base Sepolia x402 route; a human must review and approve the 0.01 testnet USDC payment before completion. Returns a summary, nutritional insights, practical suggestions, and a general-information disclaimer.",
   inputSchema,
   annotations: {
     readOnlyHint: false,

@@ -10,9 +10,13 @@ const privateKey = process.env.EVM_PRIVATE_KEY;
 if (!privateKey) {
   throw new Error("EVM_PRIVATE_KEY environment variable is required");
 }
+const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL;
+if (!rpcUrl) {
+  throw new Error("BASE_SEPOLIA_RPC_URL environment variable is required");
+}
 
 const port = Number(process.env.PORT ?? 4022);
-const signer = createBaseSepoliaFacilitatorSigner(privateKey);
+const signer = createBaseSepoliaFacilitatorSigner(privateKey, rpcUrl);
 const facilitator = createBaseSepoliaFacilitator(signer);
 const app = createFacilitatorApp(facilitator);
 

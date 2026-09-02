@@ -10,12 +10,16 @@ import { sampleRecipe } from "./sampleRecipe";
 
 export interface PublisherDemoProps {
   readonly analysisClient?: AnalysisClientPort;
+  readonly analysisState?: AnalysisViewState;
 }
 
 const createDefaultClient = (): AnalysisClientPort =>
   createAnalysisClient({ baseUrl: globalThis.location.origin });
 
-export function PublisherDemo({ analysisClient }: PublisherDemoProps) {
+export function PublisherDemo({
+  analysisClient,
+  analysisState: externalAnalysisState,
+}: PublisherDemoProps) {
   const client = useMemo(
     () => analysisClient ?? createDefaultClient(),
     [analysisClient],
@@ -71,7 +75,7 @@ export function PublisherDemo({ analysisClient }: PublisherDemoProps) {
       <RecipeArticle recipe={sampleRecipe} />
       <div className="min-w-0 xl:sticky xl:top-6">
         <AnalysisPanel
-          state={analysisState}
+          state={externalAnalysisState ?? analysisState}
           onStart={startAnalysis}
           onRetry={startAnalysis}
         />

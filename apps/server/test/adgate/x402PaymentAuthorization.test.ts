@@ -110,4 +110,63 @@ describe("x402 payment authorization adapter", () => {
       responseHeaders: { "payment-response": "opaque-settlement" },
     });
   });
+
+  it("logs a bounded settlement reason before returning dependency unavailable", async () => {
+    const warnings: string[] = [];
+    const requirements = {
+      scheme: "exact",
+      network: "eip155:84532" as const,
+      asset: "0x2222222222222222222222222222222222222222",
+      amount: "10000",
+      payTo: "0x3333333333333333333333333333333333333333",
+      maxTimeoutSeconds: 60,
+      extra: { name: "USDC", version: "2" },
+    };
+    const httpServer = {
+      initialize: async () => undefined,
+      processHTTPRequest: async () => ({
+        type: "payment-verified" as const,
+        paymentPayload: {
+          x402Version: 2,
+          accepted: requirements,
+          payload: { authorization: "opaque" },
+        },
+        paymentRequirements: requirements,
+      }),
+      processSettlement: async () => ({
+        success: false as const,
+        errorReason: "settlement_pending",
+        transaction:
+          "0x1111111111111111111111111111111111111111111111111111111111111111",
+        network: "eip155:84532" as const,
+      }),
+    } as unknown as x402HTTPResourceServer;
+    const authorization = createX402PaymentAuthorization({
+      httpServer,
+      logger: { warn: (event) => warnings.push(event) },
+    });
+
+    const result = await authorization.authorize(
+      new Request("https://api.example/api/recipe-analysis", {
+        method: "POST",
+        headers: { "payment-signature": "opaque-signed-payment" },
+      }),
+      { paymentRequestId: "request-123", resourceId: "recipe_analysis" },
+    );
+
+    expect(result).toEqual({
+      type: "error",
+      error: {
+        ok: false,
+        error: {
+          code: "DEPENDENCY_UNAVAILABLE",
+          message: "Payment settlement is temporarily unavailable.",
+          retryable: true,
+        },
+      },
+    });
+    expect(warnings).toEqual([
+      "resource.payment.settlement.failed.settlement_pending",
+    ]);
+  });
 });

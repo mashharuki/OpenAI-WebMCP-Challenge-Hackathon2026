@@ -10,7 +10,7 @@ pnpm --filter facilitator run dev
 ```
 
 To use the Cloudflare runtime, copy `.env.example` to the ignored `.dev.vars`,
-set `EVM_PRIVATE_KEY`, then run:
+set `EVM_PRIVATE_KEY` and `BASE_SEPOLIA_RPC_URL`, then run:
 
 ```bash
 pnpm --filter facilitator run types
@@ -32,6 +32,8 @@ pnpm --filter facilitator run start
 - Asset: testnet USDC
 - Amount: 10,000 base units (0.01 USDC)
 - Signer: injected as `EVM_PRIVATE_KEY` only through the host secret store
+- RPC: dedicated Base Sepolia endpoint injected as `BASE_SEPOLIA_RPC_URL`;
+  provider API keys must remain in the host secret store
 
 Never place the signer in Git, frontend variables, logs, screenshots, terminal
 recordings, or browser storage. The hosted service must be health/capability

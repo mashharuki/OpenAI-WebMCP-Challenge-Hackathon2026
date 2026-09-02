@@ -103,6 +103,10 @@ function PublisherPage({
   );
   const webMCPAttemptActive =
     snapshot.source === "webmcp" && isGateActive(snapshot.state.type);
+  const webMCPAnalysisState =
+    snapshot.source === "webmcp" && snapshot.state.type === "succeeded"
+      ? ({ type: "success", result: snapshot.state.result } as const)
+      : undefined;
 
   return (
     <div className="publisher-page min-h-screen min-w-0 overflow-x-clip text-[#21352d]">
@@ -154,7 +158,10 @@ function PublisherPage({
           </section>
 
           <fieldset disabled={webMCPAttemptActive} className="contents">
-            <PublisherDemo analysisClient={analysisClient} />
+            <PublisherDemo
+              analysisClient={analysisClient}
+              analysisState={webMCPAnalysisState}
+            />
           </fieldset>
           {webMCPAttemptActive ? (
             <p className="mt-4 text-sm font-medium text-[#637069]">

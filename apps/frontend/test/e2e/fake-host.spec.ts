@@ -389,6 +389,10 @@ test.describe("fake-host browser journeys", () => {
       resourceId: "recipe_analysis",
       data: analysis,
     });
+    await expect(page.getByText(analysis.summary)).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Nutritional insights" }),
+    ).toBeVisible();
     expect(await fakeState(page, "settleCount")).toBe(1);
     expect(paidRetries).toBe(1);
     expect(

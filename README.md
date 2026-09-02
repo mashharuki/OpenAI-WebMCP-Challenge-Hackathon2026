@@ -16,7 +16,7 @@ button, so the browser UI and an agent do not create separate product flows.
 
 ## Live demo
 
-- **Public app:** `TODO: add the final HTTPS frontend URL`
+- **Public app:** <https://adgate-frontend.avp-104-106-107-a78.workers.dev/>
 - **Public source:** <https://github.com/mashharuki/OpenAI-WebMCP-Challenge-Hackathon2026>
 - **Demo video:** `TODO: add the public YouTube URL`
 - **License:** [MIT](./LICENSE)

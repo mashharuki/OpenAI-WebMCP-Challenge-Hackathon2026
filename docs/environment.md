@@ -30,6 +30,7 @@ Network, scheme, asset, and amount are fixed in code: Base Sepolia
 | Variable | Required | Exposure | Purpose |
 | --- | --- | --- | --- |
 | `EVM_PRIVATE_KEY` | When facilitator runs | **Secret** | Gas-funded Base Sepolia test signer; host secret store only |
+| `BASE_SEPOLIA_RPC_URL` | When facilitator runs | **Secret** | Dedicated Base Sepolia JSON-RPC endpoint, including any provider API key; host secret store only |
 | `PORT` | Optional | Public configuration | Local or host-provided listening port |
 
 ## Never store or publish

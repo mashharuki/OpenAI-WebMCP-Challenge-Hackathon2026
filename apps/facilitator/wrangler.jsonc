@@ -5,7 +5,7 @@
   "compatibility_date": "2026-08-31",
   "compatibility_flags": ["nodejs_compat"],
   "secrets": {
-    "required": ["EVM_PRIVATE_KEY"]
+    "required": ["EVM_PRIVATE_KEY", "BASE_SEPOLIA_RPC_URL"]
   },
   "observability": {
     "enabled": true,

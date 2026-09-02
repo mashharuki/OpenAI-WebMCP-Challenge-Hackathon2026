@@ -45,6 +45,7 @@ Create an uncommitted `apps/facilitator/.env.production` containing only:
 
 ```dotenv
 EVM_PRIVATE_KEY=0x...
+BASE_SEPOLIA_RPC_URL=https://base-sepolia.g.alchemy.com/v2/...
 ```
 
 Deploy the code and encrypted secret together on the first release:
@@ -98,9 +99,9 @@ payment-disabled state and keep the sponsor path working; do not advertise a
 payment path that cannot settle.
 
 When hosting `apps/facilitator`, copy its `.env.example`. Store
-`EVM_PRIVATE_KEY` only in the hosting provider's secret store. Never place a
-private key in a frontend variable, committed file, log, screenshot, or build
-artifact.
+`EVM_PRIVATE_KEY` and `BASE_SEPOLIA_RPC_URL` only in the hosting provider's
+secret store. Never place a private key or provider credential in a frontend
+variable, committed file, log, screenshot, or build artifact.
 
 ## 5. Frontend
 

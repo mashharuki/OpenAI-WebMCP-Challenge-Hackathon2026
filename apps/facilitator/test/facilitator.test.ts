@@ -6,6 +6,7 @@ import {
   BASE_SEPOLIA_NETWORK,
   createBaseSepoliaFacilitator,
   safeVerificationFailureEvent,
+  settlementLifecycleEvent,
 } from "../src/facilitator.js";
 
 const facilitatorAddress = "0x0000000000000000000000000000000000000001";
@@ -21,6 +22,35 @@ const createTestSigner = (): FacilitatorEvmSigner => ({
 });
 
 describe("local facilitator HTTP contract", () => {
+  it("distinguishes successful and failed settlement results safely", () => {
+    expect(
+      settlementLifecycleEvent({
+        success: true,
+        transaction: "0x01",
+        network: BASE_SEPOLIA_NETWORK,
+      }),
+    ).toEqual({ level: "info", event: "facilitator.settle.succeeded" });
+    expect(
+      settlementLifecycleEvent({
+        success: false,
+        errorReason: "settlement_pending",
+        transaction: "0x01",
+        network: BASE_SEPOLIA_NETWORK,
+      }),
+    ).toEqual({
+      level: "warn",
+      event: "facilitator.settle.failed.settlement_pending",
+    });
+    expect(
+      settlementLifecycleEvent({
+        success: false,
+        errorReason: "RPC rejected 0xprivate-payment-signature",
+        transaction: "",
+        network: BASE_SEPOLIA_NETWORK,
+      }),
+    ).toEqual({ level: "warn", event: "facilitator.settle.failed" });
+  });
+
   it("logs only a bounded SDK reason code for verification failures", () => {
     expect(
       safeVerificationFailureEvent(

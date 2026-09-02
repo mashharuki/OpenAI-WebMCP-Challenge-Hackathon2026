@@ -5,12 +5,22 @@ import { baseSepolia } from "viem/chains";
 
 export const createBaseSepoliaFacilitatorSigner = (
   privateKey: string,
+  rpcUrl: string,
 ): FacilitatorEvmSigner => {
+  let parsedRpcUrl: URL;
+  try {
+    parsedRpcUrl = new URL(rpcUrl);
+  } catch {
+    throw new Error("BASE_SEPOLIA_RPC_URL must be a valid http or https URL");
+  }
+  if (!["http:", "https:"].includes(parsedRpcUrl.protocol)) {
+    throw new Error("BASE_SEPOLIA_RPC_URL must be a valid http or https URL");
+  }
   const account = privateKeyToAccount(privateKey as `0x${string}`);
   const client = createWalletClient({
     account,
     chain: baseSepolia,
-    transport: http(),
+    transport: http(parsedRpcUrl.toString()),
   }).extend(publicActions);
 
   return toFacilitatorEvmSigner({

@@ -32,11 +32,24 @@ const responseFromInstructions = (
 type X402PaymentAuthorizationDependencies = {
   httpServer: x402HTTPResourceServer;
   now?: () => Date;
+  logger?: { warn(event: string): void };
 };
+
+const defaultLogger = {
+  warn: (event: string) => console.warn(event),
+};
+
+const safeReasonPattern = /^[a-z][a-z0-9_]{2,80}$/;
+
+export const settlementFailureEvent = (reason?: string): string =>
+  reason && safeReasonPattern.test(reason)
+    ? `resource.payment.settlement.failed.${reason}`
+    : "resource.payment.settlement.failed";
 
 export const createX402PaymentAuthorization = ({
   httpServer,
   now = () => new Date(),
+  logger = defaultLogger,
 }: X402PaymentAuthorizationDependencies): PaymentAuthorizationPort => {
   let initialization: Promise<void> | undefined;
   const initialize = async (): Promise<void> => {
@@ -81,6 +94,7 @@ export const createX402PaymentAuthorization = ({
           "after-handler",
         );
         if (!settlement.success) {
+          logger.warn(settlementFailureEvent(settlement.errorReason));
           return {
             type: "error",
             error: {

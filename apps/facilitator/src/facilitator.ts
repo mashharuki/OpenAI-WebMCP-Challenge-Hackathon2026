@@ -1,4 +1,5 @@
 import { x402Facilitator } from "@x402/core/facilitator";
+import type { SettleResponse } from "@x402/core/types";
 import type { FacilitatorEvmSigner } from "@x402/evm";
 import { ExactEvmScheme } from "@x402/evm/exact/facilitator";
 
@@ -15,6 +16,27 @@ const defaultLifecycleLogger: FacilitatorLifecycleLogger = {
 };
 
 const safeReasonPattern = /^[a-z][a-z0-9_]{2,80}$/;
+
+type SettlementLifecycleEvent = {
+  level: "info" | "warn";
+  event: string;
+};
+
+export const settlementLifecycleEvent = (
+  result: SettleResponse,
+): SettlementLifecycleEvent => {
+  if (result.success) {
+    return { level: "info", event: "facilitator.settle.succeeded" };
+  }
+  const reason = result.errorReason;
+  return {
+    level: "warn",
+    event:
+      reason && safeReasonPattern.test(reason)
+        ? `facilitator.settle.failed.${reason}`
+        : "facilitator.settle.failed",
+  };
+};
 
 export const safeVerificationFailureEvent = (error: unknown): string => {
   if (!(error instanceof Error)) return "facilitator.verify.failed";
@@ -42,8 +64,9 @@ export const createBaseSepoliaFacilitator = (
     .onBeforeSettle(async () => {
       logger.info("facilitator.settle.started");
     })
-    .onAfterSettle(async () => {
-      logger.info("facilitator.settle.succeeded");
+    .onAfterSettle(async ({ result }) => {
+      const lifecycle = settlementLifecycleEvent(result);
+      logger[lifecycle.level](lifecycle.event);
     })
     .onSettleFailure(async () => {
       logger.warn("facilitator.settle.failed");

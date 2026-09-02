@@ -1,75 +1,96 @@
 # Demo video script and shot list
 
-**Target runtime: 2:45. Maximum allowed by this plan: 2:59.** Use English
-voice-over or accurate English narration. Do not add music or media whose rights
-have not been verified.
+**Target runtime: 2:45. Maximum allowed by this plan: 2:59.** The English
+voice-over uses short sentences and simple words so that it is easier to speak
+clearly. A slash (`/`) marks a short pause. Do not add music or media whose
+rights have not been verified.
 
 ## 0:00–0:20 — Problem
 
 **Shot:** Open on the Open Table Journal recipe page, with the publisher name
 and full recipe visible.
 
-**Voice-over:** “The open web is funded by human attention. But when agents
-consume the web for us, publishers can lose the visits that fund free content.
-AdGate asks whether WebMCP can keep structured access open without removing
-human choice.”
+**Voice-over:** “Many free websites depend on visits and ads. / But when AI
+reads the web for us, / websites may lose those visits. / AdGate shows a new
+way for AI to use web content, / while people stay in control.”
 
-## 0:20–0:45 — WebMCP invocation
+## 0:20–0:40 — Product
+
+**Shot:** Scroll briefly through the published recipe and show the premium
+analysis section and its visible action.
+
+**Voice-over:** “This is a recipe website called Open Table Journal. / It
+offers a premium recipe analysis. / A person can use the page directly, / and
+an AI agent can use the same service through Web M-C-P.”
+
+## 0:40–1:05 — WebMCP invocation
 
 **Shot:** Ask the supported agent to analyze the published recipe. Show it
-selecting `analyze_recipe`, then keep both the host invocation and page visible.
+finding and invoking `analyze_recipe`, while keeping the agent and page visible.
 
-**Voice-over:** “The page exposes a strict WebMCP tool. The call does not scrape
-buttons or bypass the publisher. It stays pending while the page asks me how to
-unlock the same protected analysis.”
+**Voice-over:** “I ask the agent to analyze this recipe. / The agent finds a
+tool called ‘Analyze Recipe.’ / It uses the tool directly. / It does not copy
+the page, / and it does not press the visible button.”
 
-## 0:45–1:20 — Sponsor golden path
+## 1:05–1:45 — x402 payment
 
-**Shot:** Show the gate choice, select **Use sponsor access**, start the owned
-Open Table Weekly message, show the countdown, continue, then show the tool result.
+**Shot:** Show the WebMCP request automatically opening the Base Sepolia payment
+route. Keep the 0.01 testnet USDC terms visible before wallet access. Connect
+the wallet, review the terms, and approve the payment and signature yourself.
 
-**Voice-over:** “The wallet-free path uses an owned sponsor message. The browser
-counts eight visible seconds, while the server independently enforces elapsed
-session time. A short-lived one-time grant unlocks the result, and the original
-WebMCP invocation resolves without a second prompt.”
+**Voice-over:** “The tool now starts an X-four-oh-two payment on Base Sepolia. /
+The request stays open while I check the payment. / The price is zero point zero
+one test U-S-D-C. / I connect my wallet, / confirm the payment, / and approve
+the signature myself. / The AI never controls my wallet.”
 
-## 1:20–1:50 — Payment evidence
+## 1:45–2:05 — Original result
 
-**Shot:** Start a new attempt, choose Base Sepolia, show 0.01 USDC terms before
-the wallet prompt, click the confirmation yourself, then show the normalized receipt.
+**Shot:** Keep the original WebMCP invocation visible as it resumes. Show the
+returned recipe summary, nutritional insights, practical suggestions, and
+disclaimer.
 
-**Voice-over:** “The alternative is an explicit x402 payment on Base Sepolia.
-Terms appear before wallet access, the human confirms, and the same request
-returns a settlement receipt. No browser private key is used.”
+**Voice-over:** “After the payment is complete, / the first tool request
+continues. / There is no reload, / and the agent does not send a second request.
+/ The result includes a recipe summary, / nutrition notes, / and useful
+meal-prep ideas.”
 
-If hosted settlement is not verified, use a same-release local clip with a
-persistent on-screen caption: **recorded local prototype**. Do not imply it is
-the live public environment.
-
-## 1:50–2:20 — Architecture and safety
+## 2:05–2:30 — Architecture and safety
 
 **Shot:** Show the architecture section of the README, then briefly show the
-release command ending in `GO`.
+successful automated test or release output.
 
-**Voice-over:** “One React coordinator joins the visible UI and WebMCP host. A
-Hono server owns sponsor and payment evidence, and an optional facilitator
-settles only the fixed testnet policy. Abort, duplicate, expiry, replay, CORS,
-and secret-redaction boundaries are covered by automated tests.”
+**Voice-over:** “The app has three main parts. / React connects the page and the
+Web M-C-P tool. / A Hono server checks the payment proof. / A separate service
+completes the test payment. / Our tests also check repeated requests, time
+limits, errors, and secret data.”
 
-## 2:20–2:45 — Impact and close
+## 2:30–2:45 — Closing
 
-**Shot:** Return to the successful publisher result and finish on the two access choices.
+**Shot:** Return to the successful publisher result and finish on the AdGate
+name and access experience.
 
-**Voice-over:** “The pattern can extend to news, research, recipes, and creator
-tools: publishers keep a free path, people keep control, and agents receive a
-reliable structured result. AdGate is a small prototype for a large question:
-how does the open web stay open in an agent-native world?”
+**Voice-over:** “This idea can work for news, research, recipes, and creator
+tools. / People keep control. / Websites can still earn money. / And AI agents
+receive clear, trusted results. / This is AdGate.”
+
+## Pronunciation guide
+
+- **WebMCP:** “Web M-C-P”
+- **x402:** “X four-oh-two”
+- **Base Sepolia:** “Base seh-POH-lee-uh”
+- **USDC:** “U-S-D-C”
+- **Hono:** “HO-no”
+- **AdGate:** “Ad Gate”
 
 ## Recording checks
 
+- Warm up the public resource server and facilitator before recording.
 - Show the full release SHA once without exposing environment values.
-- Keep the sponsor countdown legible and do not cut around the completion boundary.
-- Show Base Sepolia, 0.01 testnet USDC, explicit click, and receipt in one sequence.
-- Show that the WebMCP result belongs to the invocation started before the gate.
+- Keep the agent invocation and the payment panel visible in the same sequence.
+- Show Base Sepolia and 0.01 testnet USDC before opening the wallet.
+- Perform the payment confirmation and wallet signature manually.
+- Do not reload, navigate away, cancel, or invoke `analyze_recipe` a second time
+  while the original call is pending.
+- Show that the returned result belongs to the invocation started before payment.
 - Keep all captions and voice-over in English.
-- Export below three minutes and verify duration after upload.
+- Export below three minutes and verify the duration after upload.

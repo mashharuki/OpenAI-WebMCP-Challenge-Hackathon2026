@@ -25,6 +25,19 @@ The sponsor path is the required live judging path and needs no wallet. The
 payment path is testnet-only and may be presented as a same-release recording
 when the hosted facilitator is unavailable.
 
+## See the flow
+
+| WebMCP tool discovery | Human-controlled sponsor access |
+| --- | --- |
+| ![The Open Table Journal publisher page with the analyze_recipe WebMCP tool visible in the tool inspector.](./docs/img/0.jpg) | ![The sponsor-access gate over the publisher page, with its visible countdown and the analyze_recipe tool still pending.](./docs/img/3.jpg) |
+
+| x402 payment receipt | Canonical recipe-analysis result |
+| --- | --- |
+| ![The completed Base Sepolia 0.01 testnet USDC receipt.](./docs/img/6.jpg) | ![The returned recipe-analysis summary, nutritional insights, and practical suggestions.](./docs/img/2.jpg) |
+
+The full end-to-end interaction, including the original invocation resuming
+after human approval, is shown in the [demo video](https://youtu.be/FKDXyClLxJY).
+
 ## The problem
 
 Publishers often fund free content with human attention. Agent-driven browsing
@@ -203,14 +216,3 @@ capturing or publishing submission media.
 - The self-hosted facilitator is a prototype without the authentication, rate
   limits, monitoring, and treasury controls required for production.
 - Recipe analysis is deterministic demo output, not medical advice or a live LLM call.
-
-## Submission materials
-
-- [Devpost draft](./devpost-submission.md)
-- [Judging evidence map](./docs/judging-evidence.md)
-- [Video script and shot list](./docs/demo-video.md)
-- [Screenshot checklist](./docs/screenshots.md)
-- [Submission checklist](./docs/submission-checklist.md)
-
-No script in this repository uploads to Devpost, YouTube, GitHub, or any other
-third-party service. Publication remains a human action.

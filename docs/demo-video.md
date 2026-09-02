@@ -41,9 +41,9 @@ the page, / and it does not press the visible button.”
 route. Keep the 0.01 testnet USDC terms visible before wallet access. Connect
 the wallet, review the terms, and approve the payment and signature yourself.
 
-**Voice-over:** “The tool now starts an X-four-oh-two payment on Base Sepolia. /
+**Voice-over:** “The tool now starts an X-four-zero-two payment on Base Sepolia. /
 The request stays open while I check the payment. / The price is zero point zero
-one test U-S-D-C. / I connect my wallet, / confirm the payment, / and approve
+one(0.0.1) U-S-D-C. / I connect my wallet, / confirm the payment, / and approve
 the signature myself. / The AI never controls my wallet.”
 
 ## 1:45–2:05 — Original result
@@ -97,3 +97,18 @@ receive clear, trusted results. / This is AdGate.”
 - Show that the returned result belongs to the invocation started before payment.
 - Keep all captions and voice-over in English.
 - Export below three minutes and verify the duration after upload.
+
+Human-Controlled AI Access with WebMCP & x402 | AdGate Demo
+
+AdGate is a hackathon prototype that helps publishers keep premium tools accessible to AI agents—without removing human choice.
+
+In this demo, an AI agent invokes the analyze_recipe WebMCP tool. The original request remains open while the user chooses an access path:
+- Watch a sponsor message for access
+- Approve an x402 payment of 0.01 test USDC on Base Sepolia
+
+The AI never controls the wallet. Payment review, confirmation, and signing remain with the user. Once access is authorized, the original WebMCP request resumes and returns structured recipe analysis—without a reload or a second agent request.
+
+Built for the OpenAI WebMCP Challenge Hackathon 2026.
+https://webmcp.devpost.com/
+
+#WebMCP #x402 #AIAgents #Base #Ethereum #HumanInTheLoop #Hackathon

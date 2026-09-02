@@ -18,7 +18,7 @@ button, so the browser UI and an agent do not create separate product flows.
 
 - **Public app:** <https://adgate-frontend.avp-104-106-107-a78.workers.dev/>
 - **Public source:** <https://github.com/mashharuki/OpenAI-WebMCP-Challenge-Hackathon2026>
-- **Demo video:** `TODO: add the public YouTube URL`
+- **Demo video:** <https://youtu.be/FKDXyClLxJY>
 - **License:** [MIT](./LICENSE)
 
 The sponsor path is the required live judging path and needs no wallet. The

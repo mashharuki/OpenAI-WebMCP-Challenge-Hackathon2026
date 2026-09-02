@@ -28,7 +28,7 @@ describe("PublisherDemo", () => {
     const client: AnalysisClientPort = { analyze };
     render(<PublisherDemo analysisClient={client} />);
 
-    const start = screen.getByRole("button", { name: "Analyze this recipe" });
+    const start = screen.getByRole("button", { name: "Use sponsor access" });
     fireEvent.click(start);
     fireEvent.click(start);
 
@@ -57,16 +57,14 @@ describe("PublisherDemo", () => {
       .mockResolvedValue(analysisResult);
     render(<PublisherDemo analysisClient={{ analyze }} />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Analyze this recipe" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Use sponsor access" }));
     await screen.findByText(analysisResult.summary);
     expect(screen.getByRole("status")).toHaveTextContent(
       analysisResult.summary,
     );
 
     const analyzeAgain = screen.getByRole("button", {
-      name: "Analyze again",
+      name: "Use sponsor access again",
     });
     fireEvent.click(analyzeAgain);
     fireEvent.click(analyzeAgain);
@@ -91,9 +89,7 @@ describe("PublisherDemo", () => {
       .mockReturnValueOnce(secondRequest.promise);
     render(<PublisherDemo analysisClient={{ analyze }} />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Analyze this recipe" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Use sponsor access" }));
     await act(async () =>
       firstRequest.reject({
         code: "DEPENDENCY_UNAVAILABLE",
@@ -105,7 +101,9 @@ describe("PublisherDemo", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Analysis is temporarily unavailable. Try again.",
     );
-    const retry = screen.getByRole("button", { name: "Retry analysis" });
+    const retry = screen.getByRole("button", {
+      name: "Retry sponsor access",
+    });
     fireEvent.click(retry);
     fireEvent.click(retry);
     expect(analyze).toHaveBeenCalledTimes(2);
@@ -122,9 +120,7 @@ describe("PublisherDemo", () => {
     });
     render(<PublisherDemo analysisClient={{ analyze }} />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Analyze this recipe" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Use sponsor access" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(
@@ -146,9 +142,7 @@ describe("PublisherDemo", () => {
     });
     const { unmount } = render(<PublisherDemo analysisClient={{ analyze }} />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Analyze this recipe" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Use sponsor access" }));
     expect(receivedSignal?.aborted).toBe(false);
 
     unmount();

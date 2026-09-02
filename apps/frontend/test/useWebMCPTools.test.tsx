@@ -16,8 +16,6 @@ const createCoordinator = (): GateCoordinatorPort => ({
     resourceId: "recipe_analysis" as const,
     data: analysis,
   })),
-  chooseSponsor: vi.fn(async () => undefined),
-  choosePayment: vi.fn(async () => undefined),
   cancel: vi.fn(),
   getSnapshot: () => ({
     state: { type: "idle" },

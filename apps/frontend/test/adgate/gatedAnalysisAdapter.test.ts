@@ -14,8 +14,6 @@ const coordinatorWith = (
   result: Awaited<ReturnType<GateCoordinatorPort["requestAnalysis"]>>,
 ): GateCoordinatorPort => ({
   requestAnalysis: vi.fn(async () => result),
-  chooseSponsor: vi.fn(async () => undefined),
-  choosePayment: vi.fn(async () => undefined),
   cancel: vi.fn(),
   getSnapshot: () => ({ state: { type: "idle" }, paymentAvailable: true }),
   subscribe: () => () => undefined,

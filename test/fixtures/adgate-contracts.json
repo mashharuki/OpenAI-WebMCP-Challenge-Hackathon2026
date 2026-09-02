@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "caseCounts": { "valid": 17, "invalid": 16, "total": 33 },
+  "caseCounts": { "valid": 16, "invalid": 16, "total": 32 },
   "cases": [
     {
       "name": "valid-analysis-result",
@@ -330,37 +330,14 @@
       }
     },
     {
-      "name": "valid-gate-start",
+      "name": "valid-gate-start-sponsor",
       "contract": "GateTransition",
       "expect": "valid",
       "targets": ["frontend"],
       "value": {
         "state": { "type": "idle" },
         "event": {
-          "type": "start",
-          "attemptId": "attempt-gate",
-          "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
-        },
-        "expectedState": {
-          "type": "awaiting_choice",
-          "attemptId": "attempt-gate",
-          "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
-        }
-      }
-    },
-    {
-      "name": "valid-gate-choose-sponsor",
-      "contract": "GateTransition",
-      "expect": "valid",
-      "targets": ["frontend"],
-      "value": {
-        "state": {
-          "type": "awaiting_choice",
-          "attemptId": "attempt-gate",
-          "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
-        },
-        "event": {
-          "type": "choose_sponsor",
+          "type": "start_sponsor",
           "attemptId": "attempt-gate",
           "sponsorId": "open-table-weekly"
         },
@@ -483,18 +460,14 @@
       }
     },
     {
-      "name": "valid-gate-choose-payment",
+      "name": "valid-gate-start-payment",
       "contract": "GateTransition",
       "expect": "valid",
       "targets": ["frontend"],
       "value": {
-        "state": {
-          "type": "awaiting_choice",
-          "attemptId": "attempt-gate",
-          "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
-        },
+        "state": { "type": "idle" },
         "event": {
-          "type": "choose_payment",
+          "type": "start_payment",
           "attemptId": "attempt-gate",
           "paymentRequestId": "payment-gate"
         },
@@ -547,9 +520,9 @@
       "targets": ["frontend"],
       "value": {
         "state": {
-          "type": "awaiting_choice",
+          "type": "awaiting_payment",
           "attemptId": "attempt-gate",
-          "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
+          "paymentRequestId": "payment-gate"
         },
         "event": {
           "type": "reject",
@@ -602,14 +575,14 @@
       "targets": ["frontend"],
       "value": {
         "state": {
-          "type": "awaiting_choice",
+          "type": "awaiting_payment",
           "attemptId": "attempt-current",
-          "input": { "recipeId": "roasted-chickpea-quinoa-bowl" }
+          "paymentRequestId": "payment-current"
         },
         "event": {
-          "type": "choose_payment",
+          "type": "cancel",
           "attemptId": "attempt-stale",
-          "paymentRequestId": "payment-stale"
+          "reason": "user"
         }
       }
     },
@@ -626,9 +599,8 @@
           "reason": "user"
         },
         "event": {
-          "type": "choose_payment",
-          "attemptId": "attempt-gate",
-          "paymentRequestId": "payment-gate"
+          "type": "execute",
+          "attemptId": "attempt-gate"
         }
       }
     }

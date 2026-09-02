@@ -5,8 +5,19 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import fixture from "../../../test/fixtures/sponsor-access.json";
 import App from "../src/App";
+
+const stubSponsorStart = () =>
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () =>
+      Response.json(fixture.valid.startResponse, { status: 201 }),
+    ),
+  );
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("publisher root composition", () => {
   it("introduces the publisher, recipe, premium value, and analysis action", () => {
@@ -20,7 +31,7 @@ describe("publisher root composition", () => {
       screen.getByText(/practical nutrition and ingredient insights/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Analyze this recipe" }),
+      screen.getByRole("button", { name: "Use sponsor access" }),
     ).toBeEnabled();
   });
 
@@ -34,19 +45,18 @@ describe("publisher root composition", () => {
     expect(screen.queryByText(/todo app/i)).not.toBeInTheDocument();
   });
 
-  it("keeps visible gated analysis available without a WebMCP host", () => {
+  it("opens sponsor access directly without a WebMCP host", async () => {
+    stubSponsorStart();
     render(<App />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Analyze this recipe" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Use sponsor access" }));
 
     expect(
-      screen.getByText("Choose how to unlock recipe analysis."),
+      await screen.findByRole("heading", { name: "Sponsor access" }),
     ).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Use sponsor access" }),
-    ).toBeEnabled();
+      screen.queryByRole("button", { name: "Pay with Base Sepolia" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText(/WebMCP is not available/i)).toBeVisible();
   });
 
@@ -81,7 +91,10 @@ describe("publisher root composition", () => {
       ),
     ).toBeVisible();
     expect(
-      screen.queryByRole("button", { name: "Use sponsor access" }),
+      screen.getByRole("button", { name: "Use sponsor access" }),
+    ).toBeEnabled();
+    expect(
+      screen.queryByRole("button", { name: "Pay with Base Sepolia" }),
     ).not.toBeInTheDocument();
     await waitFor(() =>
       expect(result).toMatchObject({
@@ -113,10 +126,11 @@ describe("publisher root composition", () => {
         "delete_todo",
       ]),
     );
-    expect(screen.getByText(/ready via navigator/i)).toBeVisible();
+    expect(await screen.findByText(/ready via navigator/i)).toBeVisible();
   });
 
   it("keeps the visible gate usable after registration failure", async () => {
+    stubSponsorStart();
     Object.defineProperty(document, "modelContext", {
       configurable: true,
       value: {
@@ -134,11 +148,9 @@ describe("publisher root composition", () => {
       screen.queryByText(/private browser failure/i),
     ).not.toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Analyze this recipe" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Use sponsor access" }));
     expect(
-      screen.getByText("Choose how to unlock recipe analysis."),
+      await screen.findByRole("heading", { name: "Sponsor access" }),
     ).toBeVisible();
   });
 });

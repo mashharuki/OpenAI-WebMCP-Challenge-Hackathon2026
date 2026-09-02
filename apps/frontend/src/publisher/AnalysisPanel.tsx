@@ -31,15 +31,15 @@ export function AnalysisPanel({ state, onStart, onRetry }: AnalysisPanelProps) {
       {state.type === "idle" ? (
         <div className="mt-6 grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           <p className="max-w-2xl text-sm leading-6 text-[#d7e1da] sm:text-base">
-            Explore the recipe’s nutritional shape, ingredient strengths, and
-            practical ways to adapt it to your table.
+            View a short sponsor message to unlock nutritional insights and
+            practical ways to adapt this recipe.
           </p>
           <button
             type="button"
             onClick={onStart}
             className="min-h-11 rounded-full bg-[#e2a93b] px-5 py-3 text-sm font-bold text-[#21352d] transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#fbfaf6]"
           >
-            Analyze this recipe
+            Use sponsor access
           </button>
         </div>
       ) : null}
@@ -126,14 +126,14 @@ export function AnalysisPanel({ state, onStart, onRetry }: AnalysisPanelProps) {
 
           <div className="flex items-center justify-between gap-4 bg-[#213d32] p-5 sm:col-span-2 sm:p-6">
             <p className="text-sm text-[#d7e1da]">
-              Run the same fixed recipe through the analysis once more.
+              View the sponsor message again to refresh this analysis.
             </p>
             <button
               type="button"
               onClick={onStart}
               className="min-h-11 shrink-0 rounded-full border border-[#e2a93b] px-5 py-3 text-sm font-bold text-[#f6cd7c] hover:bg-[#315843] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#fbfaf6]"
             >
-              Analyze again
+              Use sponsor access again
             </button>
           </div>
         </div>
@@ -158,7 +158,7 @@ export function AnalysisPanel({ state, onStart, onRetry }: AnalysisPanelProps) {
               onClick={onRetry}
               className="min-h-11 rounded-full border border-[#ffd8cd] px-5 py-3 text-sm font-bold text-[#fff7f4] hover:bg-[#593b34] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#fbfaf6]"
             >
-              Retry analysis
+              Retry sponsor access
             </button>
           ) : null}
         </div>

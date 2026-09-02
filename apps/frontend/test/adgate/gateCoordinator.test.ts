@@ -199,7 +199,7 @@ describe("GateCoordinator", () => {
       source: "visible_ui",
     });
     expect(coordinator.getSnapshot()).toMatchObject({
-      state: { type: "awaiting_choice", attemptId: "attempt-2" },
+      state: { type: "viewing_sponsor", attemptId: "attempt-2" },
       source: "visible_ui",
     });
     coordinator.cancel("unmounted");
@@ -245,7 +245,6 @@ describe("GateCoordinator", () => {
       });
     callerInput.dietaryGoals?.push("caller mutation");
 
-    const sponsorPath = coordinator.chooseSponsor();
     expect(coordinator.getSnapshot().state.type).toBe("viewing_sponsor");
     expect(requestSponsorAccess).toHaveBeenCalledOnce();
     const sponsorRequest = requestSponsorAccess.mock.calls[0]?.[0];
@@ -278,7 +277,6 @@ describe("GateCoordinator", () => {
     expect(invocationSettled).toBe(false);
 
     protectedResult.resolve(sponsorSuccess);
-    await sponsorPath;
     await expect(invocation).resolves.toEqual({
       ok: true,
       resourceId: "recipe_analysis",
@@ -419,7 +417,7 @@ describe("GateCoordinator", () => {
     },
   );
 
-  it("keeps sponsor available when payment is unavailable", async () => {
+  it("starts sponsor access when payment is unavailable", async () => {
     const sponsor = deferred<typeof sponsorGrant | AdGateErrorEnvelope>();
     const requestSponsorAccess = vi.fn<SponsorGatePort["requestSponsorAccess"]>(
       () => sponsor.promise,
@@ -445,15 +443,13 @@ describe("GateCoordinator", () => {
       source: "visible_ui",
     });
 
-    await coordinator.choosePayment();
     expect(requestPaidAccess).not.toHaveBeenCalled();
+    expect(requestSponsorAccess).toHaveBeenCalledOnce();
     expect(coordinator.getSnapshot()).toMatchObject({
-      state: { type: "awaiting_choice" },
+      state: { type: "viewing_sponsor" },
       paymentAvailable: false,
     });
 
-    const sponsorPath = coordinator.chooseSponsor();
-    expect(requestSponsorAccess).toHaveBeenCalledOnce();
     sponsor.resolve({
       ok: false,
       error: {
@@ -462,7 +458,6 @@ describe("GateCoordinator", () => {
         retryable: true,
       },
     });
-    await sponsorPath;
     await expect(invocation).resolves.toMatchObject({
       ok: false,
       error: { code: "DEPENDENCY_UNAVAILABLE" },
@@ -588,7 +583,6 @@ describe("GateCoordinator", () => {
     const invocation = coordinator.requestAnalysis(input, {
       source: "visible_ui",
     });
-    const sponsorPath = coordinator.chooseSponsor();
 
     coordinator.cancel("user");
     await expect(invocation).resolves.toMatchObject({
@@ -596,7 +590,7 @@ describe("GateCoordinator", () => {
       error: { code: "CANCELLED" },
     });
     sponsor.resolve(sponsorGrant);
-    await sponsorPath;
+    await Promise.resolve();
 
     expect(executeWithSponsor).not.toHaveBeenCalled();
     expect(coordinator.getSnapshot().state.type).toBe("cancelled");
@@ -629,8 +623,6 @@ describe("GateCoordinator", () => {
     const invocation = coordinator.requestAnalysis(input, {
       source: "visible_ui",
     });
-
-    await coordinator.chooseSponsor();
 
     await expect(invocation).resolves.toMatchObject({
       ok: false,
@@ -666,8 +658,6 @@ describe("GateCoordinator", () => {
       const invocation = coordinator.requestAnalysis(input, {
         source: "visible_ui",
       });
-
-      await coordinator.chooseSponsor();
 
       await expect(invocation).resolves.toMatchObject({
         ok: false,

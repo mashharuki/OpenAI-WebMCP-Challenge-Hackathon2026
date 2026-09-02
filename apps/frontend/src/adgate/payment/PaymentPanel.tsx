@@ -25,7 +25,6 @@ export type PaymentPanelProps = {
   readonly coordinator: PaymentCoordinatorPort;
   readonly provider?: Eip1193ProviderPort;
   readonly request: PremiumAnalysisRequest;
-  readonly onReturnToSponsor?: () => void;
 };
 
 export type ActivePaymentPanelProps = Omit<PaymentPanelProps, "request">;
@@ -70,23 +69,12 @@ const progressLabel = (state: PaymentFlowState): string => {
   }
 };
 
-function RecoveryActions({
-  onRetry,
-  onReturnToSponsor,
-}: {
-  readonly onRetry: () => void;
-  readonly onReturnToSponsor?: () => void;
-}) {
+function RecoveryActions({ onRetry }: { readonly onRetry: () => void }) {
   return (
     <div className="flex flex-wrap gap-2">
       <Button type="button" variant="primary" onClick={onRetry}>
         Try again
       </Button>
-      {onReturnToSponsor && (
-        <Button type="button" variant="secondary" onClick={onReturnToSponsor}>
-          Use sponsor access
-        </Button>
-      )}
     </div>
   );
 }
@@ -131,7 +119,6 @@ function PaymentPanelView({
   coordinator,
   provider,
   request,
-  onReturnToSponsor,
 }: PaymentPanelViewProps) {
   const state = useSyncExternalStore(
     coordinator.subscribe,
@@ -192,7 +179,6 @@ function PaymentPanelView({
             provider={provider}
             requirement={requirement}
             onReadyChange={setWalletReady}
-            onReturnToSponsor={onReturnToSponsor}
           />
         ) : null}
 
@@ -221,7 +207,7 @@ function PaymentPanelView({
                 disabled={!walletReady}
                 onClick={() => void coordinator.confirm(provider)}
               >
-                Confirm {formatUsdc(requirement.amount)} payment
+                Pay with Base Sepolia
               </Button>
               <Button
                 type="button"
@@ -266,18 +252,12 @@ function PaymentPanelView({
                 be created automatically.
               </p>
             )}
-            <RecoveryActions
-              onRetry={startAttempt}
-              onReturnToSponsor={onReturnToSponsor}
-            />
+            <RecoveryActions onRetry={startAttempt} />
           </div>
         )}
 
         {state.type === "cancelled" && request && (
-          <RecoveryActions
-            onRetry={startAttempt}
-            onReturnToSponsor={onReturnToSponsor}
-          />
+          <RecoveryActions onRetry={startAttempt} />
         )}
 
         {state.type === "succeeded" && (

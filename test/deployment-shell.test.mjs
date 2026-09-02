@@ -21,10 +21,10 @@ describe("deployable public shell", () => {
       JSON.stringify(packageJson),
       /webmcp starter|todo app/i,
     );
-    assert.equal(wrangler.name, "adgate-open-table-journal");
-    assert.match(deployConfig.configPath, /adgate_open_table_journal/);
+    assert.equal(wrangler.name, "adgate-frontend");
+    assert.match(deployConfig.configPath, /adgate_frontend/);
     assert.doesNotMatch(deployConfig.configPath, /starter/i);
-    assert.equal(wrangler.compatibility_date, "2026-08-30");
+    assert.equal(wrangler.compatibility_date, "2026-08-31");
     assert.match(html, /%VITE_ORIGIN_TRIAL_TOKEN%/);
     assert.match(html, /%VITE_RELEASE_SHA%/);
     assert.match(envExample, /^VITE_API_BASE_URL=https:\/\//m);
@@ -77,7 +77,7 @@ describe("deployable public shell", () => {
     assert.match(envExample, /Base Sepolia/);
   });
 
-  it("documents the public-origin and process-local deployment invariants", async () => {
+  it("documents the public-origin and Durable Object deployment invariants", async () => {
     const runbook = await read("docs/deployment.md");
 
     assert.match(runbook, /ALLOWED_ORIGINS/);
@@ -88,8 +88,9 @@ describe("deployable public shell", () => {
     assert.match(runbook, /FACILITATOR_URL/);
     assert.match(runbook, /eip155:84532/);
     assert.match(runbook, /10,000 base units/);
-    assert.match(runbook, /one instance/i);
-    assert.match(runbook, /autoscaling.*disabled/i);
-    assert.match(runbook, /restart.*active attempts.*invalid/is);
+    assert.match(runbook, /same named Durable\s+Object/i);
+    assert.match(runbook, /single-coordinator invariant/i);
+    assert.match(runbook, /freeze deployments.*demo recording/is);
+    assert.match(runbook, /final response.*lost.*new access\s+attempt/is);
   });
 });

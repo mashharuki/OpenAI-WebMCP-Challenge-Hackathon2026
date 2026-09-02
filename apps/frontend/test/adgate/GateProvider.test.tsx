@@ -17,8 +17,6 @@ const createCoordinator = () => {
     requestAnalysis: vi.fn<GateCoordinatorPort["requestAnalysis"]>(
       () => new Promise(() => undefined),
     ),
-    chooseSponsor: vi.fn(async () => undefined),
-    choosePayment: vi.fn(async () => undefined),
     cancel,
     getSnapshot: () => snapshot,
     subscribe(listener) {
@@ -63,16 +61,16 @@ describe("GateProvider", () => {
     act(() => {
       harness.publish({
         state: {
-          type: "awaiting_choice",
+          type: "awaiting_payment",
           attemptId: "attempt-1",
-          input: { recipeId: "roasted-chickpea-quinoa-bowl" },
+          paymentRequestId: "request-1",
         },
         source: "webmcp",
         paymentAvailable: true,
       });
     });
     expect(
-      screen.getByRole("button", { name: "awaiting_choice" }),
+      screen.getByRole("button", { name: "awaiting_payment" }),
     ).toBeVisible();
 
     unmount();

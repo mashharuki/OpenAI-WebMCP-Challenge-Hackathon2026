@@ -1,17 +1,11 @@
 import type {
   AdGateError,
-  RecipeAnalysisInput,
   RecipeAnalysisResult,
   SponsorAccessEvidence,
 } from "./contracts";
 
 export type GateState =
   | { type: "idle" }
-  | {
-      type: "awaiting_choice";
-      attemptId: string;
-      input: RecipeAnalysisInput;
-    }
   | {
       type: "viewing_sponsor";
       attemptId: string;
@@ -54,19 +48,14 @@ export type GateState =
 
 export type GateEvent =
   | {
-      type: "start";
+      type: "start_sponsor";
       attemptId: string;
-      input: RecipeAnalysisInput;
+      sponsorId: string;
     }
   | {
       type: "start_payment";
       attemptId: string;
       paymentRequestId: string;
-    }
-  | {
-      type: "choose_sponsor";
-      attemptId: string;
-      sponsorId: string;
     }
   | {
       type: "sponsor_granted";
@@ -78,11 +67,6 @@ export type GateEvent =
       type: "resolve";
       attemptId: string;
       result: RecipeAnalysisResult;
-    }
-  | {
-      type: "choose_payment";
-      attemptId: string;
-      paymentRequestId: string;
     }
   | {
       type: "payment_succeeded";
@@ -120,56 +104,41 @@ export const transitionGate = (
   event: GateEvent,
 ): GateTransitionResult => {
   if (
-    (event.type === "start" || event.type === "start_payment") &&
+    event.type === "start_sponsor" &&
     (state.type === "idle" ||
       state.type === "succeeded" ||
       state.type === "failed" ||
       state.type === "cancelled")
   ) {
-    if (event.type === "start_payment") {
-      return {
-        ok: true,
-        state: {
-          type: "awaiting_payment",
-          attemptId: event.attemptId,
-          paymentRequestId: event.paymentRequestId,
-        },
-      };
-    }
     return {
       ok: true,
       state: {
-        type: "awaiting_choice",
+        type: "viewing_sponsor",
         attemptId: event.attemptId,
-        input: event.input,
+        sponsorId: event.sponsorId,
+      },
+    };
+  }
+
+  if (
+    event.type === "start_payment" &&
+    (state.type === "idle" ||
+      state.type === "succeeded" ||
+      state.type === "failed" ||
+      state.type === "cancelled")
+  ) {
+    return {
+      ok: true,
+      state: {
+        type: "awaiting_payment",
+        attemptId: event.attemptId,
+        paymentRequestId: event.paymentRequestId,
       },
     };
   }
 
   if (!("attemptId" in state) || state.attemptId !== event.attemptId) {
     return invalidTransition(state);
-  }
-
-  if (state.type === "awaiting_choice" && event.type === "choose_sponsor") {
-    return {
-      ok: true,
-      state: {
-        type: "viewing_sponsor",
-        attemptId: state.attemptId,
-        sponsorId: event.sponsorId,
-      },
-    };
-  }
-
-  if (state.type === "awaiting_choice" && event.type === "choose_payment") {
-    return {
-      ok: true,
-      state: {
-        type: "awaiting_payment",
-        attemptId: state.attemptId,
-        paymentRequestId: event.paymentRequestId,
-      },
-    };
   }
 
   if (state.type === "viewing_sponsor" && event.type === "sponsor_granted") {

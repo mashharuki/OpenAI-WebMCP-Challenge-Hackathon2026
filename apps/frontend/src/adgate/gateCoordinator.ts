@@ -38,8 +38,6 @@ export interface GateCoordinatorPort {
       readonly signal?: AbortSignal;
     },
   ): Promise<WebMCPToolResult>;
-  chooseSponsor(): Promise<void>;
-  choosePayment(): Promise<void>;
   cancel(reason: GateCancellationReason): void;
   getSnapshot(): GateSnapshot;
   subscribe(listener: (snapshot: GateSnapshot) => void): () => void;
@@ -187,6 +185,81 @@ export const createGateCoordinator = ({
     settle(candidate, cancelledResult());
   };
 
+  const runSponsor = async (candidate: ActiveAttempt): Promise<void> => {
+    try {
+      const sponsorResult = await sponsorGate.requestSponsorAccess({
+        attemptId: candidate.identity.attemptId,
+        resourceId: RECIPE_ANALYSIS_RESOURCE_ID,
+        nonce: candidate.request.requestId,
+        signal: candidate.controller.signal,
+      });
+      if (!isCurrent(candidate)) return;
+      if (!sponsorResult.ok) {
+        if (sponsorResult.error.code === "CANCELLED") {
+          cancelAttempt(candidate, "user");
+        } else {
+          rejectAttempt(candidate, sponsorResult.error);
+        }
+        return;
+      }
+      if (
+        sponsorResult.evidence.nonce !== candidate.request.requestId ||
+        sponsorResult.evidence.resourceId !== candidate.request.resourceId
+      ) {
+        rejectAttempt(candidate, {
+          code: "INVALID_EVIDENCE",
+          message: "Sponsor access does not match this analysis request.",
+          retryable: false,
+        });
+        return;
+      }
+
+      transition({
+        type: "sponsor_granted",
+        attemptId: candidate.identity.attemptId,
+        evidence: sponsorResult.evidence,
+      });
+      transition({
+        type: "execute",
+        attemptId: candidate.identity.attemptId,
+      });
+      const protectedResult = await protectedClient.executeWithSponsor({
+        request: candidate.request,
+        token: sponsorResult.token,
+        signal: candidate.controller.signal,
+      });
+      if (!isCurrent(candidate)) return;
+      if (!protectedResult.ok) {
+        rejectAttempt(candidate, protectedResult.error);
+        return;
+      }
+      if (
+        protectedResult.requestId !== candidate.request.requestId ||
+        protectedResult.access.kind !== "sponsor_grant" ||
+        protectedResult.access.referenceId !== sponsorResult.evidence.grantId
+      ) {
+        rejectAttempt(candidate, {
+          code: "INVALID_EVIDENCE",
+          message: "The analysis result does not match this sponsor grant.",
+          retryable: false,
+        });
+        return;
+      }
+
+      transition({
+        type: "resolve",
+        attemptId: candidate.identity.attemptId,
+        result: protectedResult.data,
+      });
+      settle(candidate, normalizeWebMCPResult(protectedResult));
+    } catch {
+      if (isCurrent(candidate)) {
+        const failure = dependencyUnavailable();
+        rejectAttempt(candidate, failure.error);
+      }
+    }
+  };
+
   const runPayment = async (candidate: ActiveAttempt): Promise<void> => {
     try {
       const terminal = await paymentCoordinator.requestPaidAccess(
@@ -280,9 +353,9 @@ export const createGateCoordinator = ({
         });
       } else {
         transition({
-          type: "start",
+          type: "start_sponsor",
           attemptId: identity.attemptId,
-          input: capturedInput,
+          sponsorId,
         });
       }
 
@@ -298,113 +371,11 @@ export const createGateCoordinator = ({
         if (paymentAvailable) void runPayment(candidate);
         else rejectAttempt(candidate, paymentUnavailable().error);
       }
+      if (isCurrent(candidate) && candidate.source === "visible_ui") {
+        void runSponsor(candidate);
+      }
 
       return result;
-    },
-
-    async chooseSponsor() {
-      const candidate = active;
-      if (!candidate || state.type !== "awaiting_choice") return;
-      if (
-        !transition({
-          type: "choose_sponsor",
-          attemptId: candidate.identity.attemptId,
-          sponsorId,
-        })
-      ) {
-        return;
-      }
-
-      try {
-        const sponsorResult = await sponsorGate.requestSponsorAccess({
-          attemptId: candidate.identity.attemptId,
-          resourceId: RECIPE_ANALYSIS_RESOURCE_ID,
-          nonce: candidate.request.requestId,
-          signal: candidate.controller.signal,
-        });
-        if (!isCurrent(candidate)) return;
-        if (!sponsorResult.ok) {
-          if (sponsorResult.error.code === "CANCELLED") {
-            cancelAttempt(candidate, "user");
-          } else {
-            rejectAttempt(candidate, sponsorResult.error);
-          }
-          return;
-        }
-        if (
-          sponsorResult.evidence.nonce !== candidate.request.requestId ||
-          sponsorResult.evidence.resourceId !== candidate.request.resourceId
-        ) {
-          rejectAttempt(candidate, {
-            code: "INVALID_EVIDENCE",
-            message: "Sponsor access does not match this analysis request.",
-            retryable: false,
-          });
-          return;
-        }
-
-        transition({
-          type: "sponsor_granted",
-          attemptId: candidate.identity.attemptId,
-          evidence: sponsorResult.evidence,
-        });
-        transition({
-          type: "execute",
-          attemptId: candidate.identity.attemptId,
-        });
-        const protectedResult = await protectedClient.executeWithSponsor({
-          request: candidate.request,
-          token: sponsorResult.token,
-          signal: candidate.controller.signal,
-        });
-        if (!isCurrent(candidate)) return;
-        if (!protectedResult.ok) {
-          rejectAttempt(candidate, protectedResult.error);
-          return;
-        }
-        if (
-          protectedResult.requestId !== candidate.request.requestId ||
-          protectedResult.access.kind !== "sponsor_grant" ||
-          protectedResult.access.referenceId !== sponsorResult.evidence.grantId
-        ) {
-          rejectAttempt(candidate, {
-            code: "INVALID_EVIDENCE",
-            message: "The analysis result does not match this sponsor grant.",
-            retryable: false,
-          });
-          return;
-        }
-
-        transition({
-          type: "resolve",
-          attemptId: candidate.identity.attemptId,
-          result: protectedResult.data,
-        });
-        settle(candidate, normalizeWebMCPResult(protectedResult));
-      } catch {
-        if (isCurrent(candidate)) {
-          const failure = dependencyUnavailable();
-          rejectAttempt(candidate, failure.error);
-        }
-      }
-    },
-
-    async choosePayment() {
-      const candidate = active;
-      if (!candidate || state.type !== "awaiting_choice" || !paymentAvailable) {
-        return;
-      }
-      if (
-        !transition({
-          type: "choose_payment",
-          attemptId: candidate.identity.attemptId,
-          paymentRequestId: candidate.request.requestId,
-        })
-      ) {
-        return;
-      }
-
-      await runPayment(candidate);
     },
 
     cancel(reason) {

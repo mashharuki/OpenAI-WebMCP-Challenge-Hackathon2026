@@ -42,47 +42,34 @@ describe("transitionGate", () => {
     });
   });
 
-  it("starts a new attempt and records a payment choice", () => {
-    const started = transitionGate(
-      { type: "idle" },
-      {
-        type: "start",
-        attemptId: "attempt-0",
-        input: { recipeId: "roasted-chickpea-quinoa-bowl" },
-      },
-    );
-    expect(started.ok && started.state.type).toBe("awaiting_choice");
-
-    const payment = transitionGate(started.state, {
-      type: "choose_payment",
-      attemptId: "attempt-0",
-      paymentRequestId: "payment-0",
-    });
-    expect(payment).toEqual({
+  it("starts a visible UI sponsor attempt without exposing an access choice", () => {
+    expect(
+      transitionGate(
+        { type: "idle" },
+        {
+          type: "start_sponsor",
+          attemptId: "attempt-0",
+          sponsorId: "open-table-weekly",
+        },
+      ),
+    ).toEqual({
       ok: true,
       state: {
-        type: "awaiting_payment",
+        type: "viewing_sponsor",
         attemptId: "attempt-0",
-        paymentRequestId: "payment-0",
+        sponsorId: "open-table-weekly",
       },
     });
   });
 
   it("moves a sponsor attempt through granted access and execution", () => {
-    const awaitingChoice: GateState = {
-      type: "awaiting_choice",
-      attemptId: "attempt-1",
-      input: { recipeId: "roasted-chickpea-quinoa-bowl" },
-    };
-
-    const viewing = transitionGate(awaitingChoice, {
-      type: "choose_sponsor",
+    const viewingState: GateState = {
+      type: "viewing_sponsor",
       attemptId: "attempt-1",
       sponsorId: "open-table-weekly",
-    });
-    expect(viewing.ok && viewing.state.type).toBe("viewing_sponsor");
+    };
 
-    const granted = transitionGate(viewing.state, {
+    const granted = transitionGate(viewingState, {
       type: "sponsor_granted",
       attemptId: "attempt-1",
       evidence: {
@@ -151,13 +138,13 @@ describe("transitionGate", () => {
   });
 
   it("keeps cancellation terminal and preserves the original attempt", () => {
-    const awaitingChoice: GateState = {
-      type: "awaiting_choice",
+    const sponsorView: GateState = {
+      type: "viewing_sponsor",
       attemptId: "attempt-3",
-      input: { recipeId: "roasted-chickpea-quinoa-bowl" },
+      sponsorId: "open-table-weekly",
     };
 
-    const cancelled = transitionGate(awaitingChoice, {
+    const cancelled = transitionGate(sponsorView, {
       type: "cancel",
       attemptId: "attempt-3",
       reason: "user",
@@ -196,9 +183,10 @@ describe("transitionGate", () => {
 
     expect(failed.ok && failed.state.type).toBe("failed");
     const reopen = transitionGate(failed.state, {
-      type: "choose_payment",
+      type: "payment_succeeded",
       attemptId: "attempt-4",
-      paymentRequestId: "payment-5",
+      result,
+      access: { kind: "x402_payment", referenceId: "payment-5" },
     });
     expect(reopen.ok).toBe(false);
     expect(reopen.state).toEqual(failed.state);
@@ -206,14 +194,14 @@ describe("transitionGate", () => {
 
   it("rejects events from another attempt and preserves deterministic state", () => {
     const state: GateState = {
-      type: "awaiting_choice",
+      type: "viewing_sponsor",
       attemptId: "attempt-current",
-      input: { recipeId: "roasted-chickpea-quinoa-bowl" },
+      sponsorId: "open-table-weekly",
     };
     const event = {
-      type: "choose_payment" as const,
+      type: "sponsor_granted" as const,
       attemptId: "attempt-stale",
-      paymentRequestId: "payment-stale",
+      evidence,
     };
 
     const first = transitionGate(state, event);
@@ -237,23 +225,11 @@ describe("transitionGate", () => {
     },
     {
       state: {
-        type: "awaiting_choice",
-        attemptId: "attempt-invalid",
-        input: { recipeId: "roasted-chickpea-quinoa-bowl" },
-      },
-      event: { type: "execute", attemptId: "attempt-invalid" },
-    },
-    {
-      state: {
         type: "viewing_sponsor",
         attemptId: "attempt-invalid",
         sponsorId: "open-table-weekly",
       },
-      event: {
-        type: "choose_payment",
-        attemptId: "attempt-invalid",
-        paymentRequestId: "payment-invalid",
-      },
+      event: { type: "execute", attemptId: "attempt-invalid" },
     },
     {
       state: {
@@ -270,7 +246,7 @@ describe("transitionGate", () => {
         evidence,
       },
       event: {
-        type: "choose_sponsor",
+        type: "start_sponsor",
         attemptId: "attempt-invalid",
         sponsorId: "open-table-weekly",
       },

@@ -21,7 +21,6 @@ export interface WalletReadinessCardProps {
   readonly provider?: Eip1193ProviderPort;
   readonly requirement: PaymentRequirement;
   readonly onReadyChange: (ready: boolean) => void;
-  readonly onReturnToSponsor?: () => void;
 }
 
 const shortenAddress = (value: string): string =>
@@ -38,7 +37,6 @@ export function WalletReadinessCard({
   provider,
   requirement,
   onReadyChange,
-  onReturnToSponsor,
 }: WalletReadinessCardProps) {
   const [readiness, setReadiness] = useState<WalletReadinessView>({
     type: "checking",
@@ -103,18 +101,9 @@ export function WalletReadinessCard({
               MetaMask is not available
             </p>
             <p className="text-xs text-kumo-subtle">
-              Install MetaMask or use sponsor access instead.
+              Install MetaMask to continue with this payment.
             </p>
           </div>
-          {onReturnToSponsor ? (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onReturnToSponsor}
-            >
-              Use sponsor access
-            </Button>
-          ) : null}
         </div>
       )}
 
@@ -174,15 +163,6 @@ export function WalletReadinessCard({
               {formatUsdcBalance(readiness.balance)} available
             </p>
           </div>
-          {onReturnToSponsor ? (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onReturnToSponsor}
-            >
-              Use sponsor access
-            </Button>
-          ) : null}
         </div>
       )}
 
@@ -216,11 +196,6 @@ export function WalletReadinessCard({
             >
               Check again
             </Button>
-            {onReturnToSponsor ? (
-              <Button type="button" variant="ghost" onClick={onReturnToSponsor}>
-                Use sponsor access
-              </Button>
-            ) : null}
           </div>
         </div>
       )}

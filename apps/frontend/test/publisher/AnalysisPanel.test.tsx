@@ -3,14 +3,15 @@ import { describe, expect, it, vi } from "vitest";
 import { AnalysisPanel } from "../../src/publisher/AnalysisPanel";
 
 describe("AnalysisPanel", () => {
-  it("offers a clearly named analysis action while idle", () => {
+  it("offers one clearly named sponsor access action while idle", () => {
     const onStart = vi.fn();
     render(<AnalysisPanel state={{ type: "idle" }} onStart={onStart} />);
 
     const action = screen.getByRole("button", {
-      name: "Analyze this recipe",
+      name: "Use sponsor access",
     });
     expect(action).toBeEnabled();
+    expect(screen.getByText(/sponsor message/i)).toBeVisible();
     fireEvent.click(action);
     expect(onStart).toHaveBeenCalledOnce();
   });
@@ -84,7 +85,9 @@ describe("AnalysisPanel", () => {
 
     const alert = screen.getByRole("alert");
     expect(alert).toHaveTextContent("Analysis is temporarily unavailable.");
-    const retry = screen.getByRole("button", { name: "Retry analysis" });
+    const retry = screen.getByRole("button", {
+      name: "Retry sponsor access",
+    });
     fireEvent.click(retry);
     expect(onRetry).toHaveBeenCalledOnce();
   });
@@ -109,7 +112,7 @@ describe("AnalysisPanel", () => {
       "The recipe analysis request is invalid.",
     );
     expect(
-      screen.queryByRole("button", { name: "Retry analysis" }),
+      screen.queryByRole("button", { name: "Retry sponsor access" }),
     ).not.toBeInTheDocument();
   });
 });

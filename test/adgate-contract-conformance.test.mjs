@@ -58,14 +58,13 @@ test("the shared fixture covers gate events without making them server contracts
 
   assert.deepEqual([...eventTypes].sort(), [
     "cancel",
-    "choose_payment",
-    "choose_sponsor",
     "execute",
     "payment_succeeded",
     "reject",
     "resolve",
     "sponsor_granted",
-    "start",
+    "start_payment",
+    "start_sponsor",
   ]);
   assert.ok(gateCases.every(({ targets }) => targets.join() === "frontend"));
   assert.ok(

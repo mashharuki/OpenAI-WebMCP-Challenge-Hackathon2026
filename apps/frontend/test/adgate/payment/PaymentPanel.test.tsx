@@ -184,7 +184,7 @@ describe("PaymentPanel", () => {
     ).toBe(false);
 
     const confirm = screen.getByRole("button", {
-      name: "Confirm 0.01 USDC payment",
+      name: "Pay with Base Sepolia",
     });
     await vi.waitFor(() => expect(confirm).toBeEnabled());
     fireEvent.click(confirm);
@@ -217,7 +217,6 @@ describe("PaymentPanel", () => {
   });
 
   it("shows safe recovery actions after wallet rejection", async () => {
-    const returnToSponsor = vi.fn();
     const { coordinator } = createHarness();
     const rejectingProvider = {
       request: async ({ method }: { method: string }) => {
@@ -230,7 +229,6 @@ describe("PaymentPanel", () => {
     render(
       <PaymentPanel
         coordinator={coordinator}
-        onReturnToSponsor={returnToSponsor}
         provider={rejectingProvider}
         request={request}
       />,
@@ -249,8 +247,9 @@ describe("PaymentPanel", () => {
       screen.queryByText("private provider details"),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Check again" })).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Use sponsor access" }));
-    expect(returnToSponsor).toHaveBeenCalledOnce();
+    expect(
+      screen.queryByRole("button", { name: "Use sponsor access" }),
+    ).not.toBeInTheDocument();
   });
 
   it("disables duplicate confirmation while the wallet is connecting", async () => {
@@ -283,7 +282,7 @@ describe("PaymentPanel", () => {
 
     expect(await screen.findByText("Wallet ready")).toBeVisible();
     const confirm = screen.getByRole("button", {
-      name: "Confirm 0.01 USDC payment",
+      name: "Pay with Base Sepolia",
     });
     await vi.waitFor(() => expect(confirm).toBeEnabled());
     fireEvent.click(confirm);
@@ -306,23 +305,17 @@ describe("PaymentPanel", () => {
     expect(await screen.findByText("Payment cancelled")).toBeVisible();
   });
 
-  it("keeps sponsor recovery available when MetaMask is absent", async () => {
-    const returnToSponsor = vi.fn();
+  it("keeps the WebMCP route payment-only when MetaMask is absent", async () => {
     const { coordinator } = createHarness();
-    render(
-      <PaymentPanel
-        coordinator={coordinator}
-        onReturnToSponsor={returnToSponsor}
-        request={request}
-      />,
-    );
+    render(<PaymentPanel coordinator={coordinator} request={request} />);
 
     expect(await screen.findByText("MetaMask is not available")).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Confirm 0.01 USDC payment" }),
+      screen.getByRole("button", { name: "Pay with Base Sepolia" }),
     ).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "Use sponsor access" }));
-    expect(returnToSponsor).toHaveBeenCalledOnce();
+    expect(
+      screen.queryByRole("button", { name: "Use sponsor access" }),
+    ).not.toBeInTheDocument();
   });
 
   it("offers an explicit Base Sepolia switch and sanitizes rejection", async () => {
@@ -378,7 +371,7 @@ describe("PaymentPanel", () => {
     ).toBeVisible();
     expect(screen.getByText(/0 USDC available/)).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Confirm 0.01 USDC payment" }),
+      screen.getByRole("button", { name: "Pay with Base Sepolia" }),
     ).toBeDisabled();
   });
 
@@ -395,7 +388,7 @@ describe("PaymentPanel", () => {
     );
     expect(await screen.findByText("Wallet ready")).toBeVisible();
     const confirm = screen.getByRole("button", {
-      name: "Confirm 0.01 USDC payment",
+      name: "Pay with Base Sepolia",
     });
     await vi.waitFor(() => expect(confirm).toBeEnabled());
     fireEvent.click(confirm);
@@ -409,7 +402,7 @@ describe("PaymentPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(
       await screen.findByRole("button", {
-        name: "Confirm 0.01 USDC payment",
+        name: "Pay with Base Sepolia",
       }),
     ).toBeVisible();
     expect(

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GateExperience } from "../../src/adgate/GateExperience";
 import { GateProvider } from "../../src/adgate/GateProvider";
@@ -11,16 +11,6 @@ import type {
   PaymentFlowState,
 } from "../../src/adgate/payment/paymentCoordinator";
 
-const awaitingChoice = (paymentAvailable = true): GateSnapshot => ({
-  state: {
-    type: "awaiting_choice",
-    attemptId: "attempt-1",
-    input: { recipeId: "roasted-chickpea-quinoa-bowl" },
-  },
-  source: "webmcp",
-  paymentAvailable,
-});
-
 const scrollIntoView = vi.fn();
 Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
   configurable: true,
@@ -31,8 +21,6 @@ const createGate = (snapshot: GateSnapshot): GateCoordinatorPort => ({
   requestAnalysis: vi.fn<GateCoordinatorPort["requestAnalysis"]>(
     () => new Promise(() => undefined),
   ),
-  chooseSponsor: vi.fn(async () => undefined),
-  choosePayment: vi.fn(async () => undefined),
   cancel: vi.fn(),
   getSnapshot: () => snapshot,
   subscribe: () => () => undefined,
@@ -90,19 +78,6 @@ describe("GateExperience", () => {
     scrollIntoView.mockClear();
   });
 
-  it("brings an agent-started access choice into view and focuses it", () => {
-    renderExperience(createGate(awaitingChoice()));
-
-    const experience = screen.getByRole("complementary", {
-      name: "Recipe analysis access",
-    });
-    expect(scrollIntoView).toHaveBeenCalledExactlyOnceWith({
-      behavior: "smooth",
-      block: "center",
-    });
-    expect(experience).toHaveFocus();
-  });
-
   it("brings an agent-started payment review into view and focuses it", () => {
     renderExperience(
       createGate({
@@ -126,48 +101,25 @@ describe("GateExperience", () => {
     expect(experience).toHaveFocus();
   });
 
-  it("offers explicit access choices and suppresses a second selection", () => {
-    const gate = createGate(awaitingChoice());
-    renderExperience(gate);
-
-    const sponsor = screen.getByRole("button", { name: "Use sponsor access" });
-    const payment = screen.getByRole("button", {
-      name: "Pay with Base Sepolia",
-    });
-    expect(sponsor).toBeEnabled();
-    expect(payment).toBeEnabled();
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Choose how to unlock recipe analysis.",
+  it("does not render an access choice for a visible sponsor attempt", () => {
+    renderExperience(
+      createGate({
+        state: {
+          type: "viewing_sponsor",
+          attemptId: "attempt-1",
+          sponsorId: "open-table-weekly",
+        },
+        source: "visible_ui",
+        paymentAvailable: true,
+      }),
     );
 
-    fireEvent.click(sponsor);
-    fireEvent.click(payment);
-
-    expect(gate.chooseSponsor).toHaveBeenCalledTimes(1);
-    expect(gate.choosePayment).not.toHaveBeenCalled();
-    expect(sponsor).toBeDisabled();
-    expect(payment).toBeDisabled();
-  });
-
-  it("keeps sponsor access available when payment is unavailable", () => {
-    const gate = createGate(awaitingChoice(false));
-    renderExperience(gate);
-
     expect(
-      screen.getByRole("button", { name: "Use sponsor access" }),
-    ).toBeEnabled();
+      screen.queryByRole("complementary", { name: "Recipe analysis access" }),
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Pay with Base Sepolia" }),
-    ).toBeDisabled();
-    expect(screen.getByText(/payment is unavailable/i)).toBeVisible();
-  });
-
-  it("exposes cancellation as an explicit keyboard-accessible action", () => {
-    const gate = createGate(awaitingChoice());
-    renderExperience(gate);
-
-    fireEvent.click(screen.getByRole("button", { name: "Cancel analysis" }));
-    expect(gate.cancel).toHaveBeenCalledWith("user");
+      screen.queryByRole("button", { name: "Pay with Base Sepolia" }),
+    ).not.toBeInTheDocument();
   });
 
   it("places the upstream payment panel without starting a second payment", () => {
@@ -177,7 +129,7 @@ describe("GateExperience", () => {
         attemptId: "attempt-1",
         paymentRequestId: "request-1",
       },
-      source: "visible_ui",
+      source: "webmcp",
       paymentAvailable: true,
     });
     const payment = createPayment({

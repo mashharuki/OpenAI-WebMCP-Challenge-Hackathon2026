@@ -15,7 +15,7 @@ All three applications deploy with Wrangler:
 
 | Application | Cloudflare runtime | Worker name |
 | --- | --- | --- |
-| `apps/frontend` | Workers Static Assets + the Vite plugin | `adgate-open-table-journal` |
+| `apps/frontend` | Workers Static Assets + the Vite plugin | `adgate-frontend` |
 | `apps/server` | Worker routed through one Durable Object coordinator | `adgate-resource-server` |
 | `apps/facilitator` | Worker | `adgate-facilitator` |
 

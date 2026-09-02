@@ -5,6 +5,9 @@ voice-over uses short sentences and simple words so that it is easier to speak
 clearly. A slash (`/`) marks a short pause. Do not add music or media whose
 rights have not been verified.
 
+Label any footage that is not captured from the public deployment as
+`recorded local prototype`.
+
 ## 0:00–0:20 — Problem
 
 **Shot:** Open on the Open Table Journal recipe page, with the publisher name

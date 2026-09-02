@@ -249,7 +249,6 @@ const sponsorSuccess = (request: RequestBody) => ({
 });
 
 const completeSponsorView = async (page: Page) => {
-  await page.getByRole("button", { name: "Use sponsor access" }).click();
   await page.getByRole("button", { name: "Start sponsor view" }).click();
   await expect(page.getByText("Sponsored message")).toBeVisible();
   await expect(
@@ -299,7 +298,7 @@ test.describe("fake WebMCP host modes", () => {
       ),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Analyze this recipe" }),
+      page.getByRole("button", { name: "Use sponsor access" }),
     ).toBeEnabled();
   });
 
@@ -362,7 +361,7 @@ test.describe("fake-host browser journeys", () => {
     await expect(page.getByText("0.01 USDC").first()).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Use sponsor access" }),
-    ).toHaveCount(0);
+    ).toBeDisabled();
     expect(await fakeState(page, "invocationSettled")).toBe(false);
     await callFakeState(page, "invokeDuplicate");
     await expect
@@ -375,11 +374,11 @@ test.describe("fake-host browser journeys", () => {
         },
       });
     await expect(
-      page.getByRole("button", { name: "Analyze this recipe" }),
+      page.getByRole("button", { name: "Use sponsor access" }),
     ).toBeDisabled();
 
     const confirmPayment = page.getByRole("button", {
-      name: "Confirm 0.01 USDC payment",
+      name: "Pay with Base Sepolia",
     });
     await expect(confirmPayment).toBeEnabled();
     await confirmPayment.click();
@@ -457,7 +456,7 @@ test.describe("fake-host browser journeys", () => {
       });
     });
     await page.goto("/");
-    await page.getByRole("button", { name: "Analyze this recipe" }).click();
+    await page.getByRole("button", { name: "Use sponsor access" }).click();
     await completeSponsorView(page);
 
     await expect(
@@ -506,9 +505,9 @@ test.describe("fake-host browser journeys", () => {
         logicalNow = 299_999;
         await page.reload();
       }
-      await page.getByRole("button", { name: "Analyze this recipe" }).click();
+      await page.getByRole("button", { name: "Use sponsor access" }).click();
       await completeSponsorView(page);
-      await expect(page.getByText("Recipe analysis completed.")).toBeVisible();
+      await expect(page.getByText(analysis.summary)).toBeVisible();
     }
     expect(protectedExecutions).toBe(1);
     await expect(page.getByText(analysis.summary)).toBeVisible();
@@ -556,9 +555,7 @@ test.describe("fake-host browser journeys", () => {
 
     await expect(page.getByText("Base Sepolia").first()).toBeVisible();
     await expect(page.getByText("0.01 USDC").first()).toBeVisible();
-    await page
-      .getByRole("button", { name: "Confirm 0.01 USDC payment" })
-      .click();
+    await page.getByRole("button", { name: "Pay with Base Sepolia" }).click();
     await expect.poll(() => fakeState(page, "invocationSettled")).toBe(true);
     expect(paidRetries).toBe(1);
     await expect(page.getByText("Payment confirmed")).toBeVisible();
@@ -567,7 +564,7 @@ test.describe("fake-host browser journeys", () => {
     ).toHaveAttribute("href", `https://sepolia.basescan.org/tx/${transaction}`);
   });
 
-  test("stops agent payment without sponsor fallback when no wallet is injected", async ({
+  test("fails agent payment without automatically entering sponsor access", async ({
     page,
   }) => {
     await installFakeHost(page, "document-first");
@@ -581,6 +578,9 @@ test.describe("fake-host browser journeys", () => {
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Use sponsor access" }),
+    ).toBeEnabled();
+    await expect(
+      page.getByRole("heading", { name: "Sponsor access" }),
     ).toHaveCount(0);
     await expect
       .poll(() => fakeState(page, "invocationResult"))

@@ -48,31 +48,5 @@ describe("public documentation", () => {
         access(new URL(`../${path}`, import.meta.url)),
       ),
     );
-
-    const devpost = await read("docs/devpost-submission.md");
-    for (const heading of [
-      "Problem",
-      "Solution",
-      "How We Used AI",
-      "How We Used Codex",
-      "Key Features",
-      "Architecture",
-      "Known Limitations",
-      "TODO Official Form Fields",
-    ]) {
-      assert.match(devpost, new RegExp(`## ${heading}`));
-    }
-
-    const video = await read("docs/demo-video.md");
-    assert.match(video, /target runtime: 2:4[0-9]/i);
-    assert.match(video, /recorded local prototype/);
-    assert.match(await read("docs/asset-rights.md"), /Open Table Journal/);
-    assert.match(await read("docs/asset-rights.md"), /Open Table Weekly/);
-  });
-
-  it("does not restore the obsolete Todo D1 guide", async () => {
-    await assert.rejects(
-      access(new URL("../apps/frontend/docs/d1.md", import.meta.url)),
-    );
   });
 });

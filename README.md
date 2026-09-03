@@ -1,22 +1,5 @@
 # AdGate for WebMCP
 
-**Give agent requests an explicit payment path while keeping a sponsor-supported path available to people.**
-
-AdGate is a hackathon prototype built around a fictional food publisher, **Open
-Table Journal**. Its `analyze_recipe` WebMCP tool pauses the original agent
-invocation and opens the explicit Base Sepolia payment review. The visible
-publisher UI separately offers a wallet-free sponsor-supported analysis path:
-
-1. **WebMCP / agent access** — explicitly approve an x402 `exact` payment of
-   0.01 testnet USDC on Base Sepolia.
-2. **Publisher UI access** — view an owned sponsor message for eight visible
-   seconds to start a separate sponsor-supported analysis request.
-
-Both paths authorize the same protected recipe-analysis endpoint and return the
-same result contract. They intentionally begin from different entry points:
-the agent invocation remains associated with payment, while sponsor access is a
-new request started by the person in the publisher UI.
-
 ## Live demo
 
 - **Public app:** <https://adgate-frontend.avp-104-106-107-a78.workers.dev/>
@@ -42,33 +25,52 @@ The demo video shows the payment-approved WebMCP invocation and the separate
 sponsor-supported publisher journey. A sponsor completion does not resume a
 previously declined or cancelled WebMCP invocation.
 
-## The problem
+## Inspiration
 
-Publishers often fund free content with human attention. Agent-driven browsing
-can deliver useful answers without a person visiting the page or seeing the
-funding experience. A publisher then faces a poor choice: block agents, give
-premium work away, or remove the free path.
+The arrival of AI agents is dramatically changing how people consume web content. In the past, people would visit and read websites one by one. Today, AI can collect information on their behalf by scraping sources such as technical blogs.
 
-AdGate demonstrates two transparent routes. An agent-invoked WebMCP tool can
-remain pending while the person reviews payment terms and explicitly approves
-the payment. People who prefer free, sponsor-supported access can instead
-start that route directly from the publisher page.
+This is a great user experience for end users. However, it can also mean that website operators and the businesses that advertise on those sites lose their opportunity to reach users.
 
-## What works today
+This product was inspired by that problem. I wanted agents to be able to use a publisher’s structured capabilities while keeping people clearly in control of how access is granted. By combining WebMCP with x402, I wanted to explore a model where users who value convenience can make a micropayment for a nearly automated experience, while users who do not want to pay can access premium content by viewing a short advertisement.
 
-- One strict imperative WebMCP tool, `analyze_recipe`, registered against
-  `document.modelContext` with a `navigator.modelContext` compatibility fallback.
-- One visible publisher action backed by the same coordinator and Zod contracts.
-- A wallet-free sponsor flow with page-visibility accounting, an independent
-  server-side eight-second minimum, a one-time 60-second grant, and safe cancellation.
-- A Base Sepolia x402 path with terms shown before wallet access, explicit user
-  confirmation, and a normalized settlement receipt.
-- A named Durable Object coordinator with sponsor sessions, grants,
-  consumption state, and grant-issue replay persisted in Durable Object
-  Storage, plus a bounded in-memory protected-attempt replay registry.
-- Safe unsupported-host, registration-failure, duplicate, abort, expired-access,
-  wrong-network, and dependency-failure outcomes.
-- A read-only public smoke probe and a single local release command.
+## What it does
+
+For this project, I created a fictional recipe website. It includes a WebMCP-compatible tool called `analyze_recipe`, which provides more detailed analysis as a premium feature.
+
+There are two ways to access the premium feature:
+
+1. View an owned sponsor message (advertisement) for eight seconds.
+2. Explicitly approve a 0.01 testnet USDC x402 payment on Base Sepolia.
+
+Both paths authorize the same protected analysis endpoint. The original tool invocation then resumes with one structured result containing a recipe summary, nutrition notes, practical suggestions, and a general-information disclaimer.
+
+The same gate is also used by the visible **Analyze this recipe** button, so people and agents use one coherent product flow rather than separate experiences.
+
+I felt WebMCP was a good fit because agents can discover and invoke typed, page-owned capabilities instead of scraping a page or guessing which buttons to click. Users can make an important decision in the middle of the same invocation without losing the shared context.
+
+## How we built it
+
+The React/Vite frontend registers `analyze_recipe` with
+`document.modelContext.registerTool`, with a `navigator.modelContext`
+compatibility fallback. A shared `GateCoordinator` keeps one request alive while
+the page renders the sponsor or payment experience, propagates cancellation,
+and resolves the result exactly once.
+
+The x402-enabled resource server, built with Hono, manages authorization and
+canonical deterministic analysis. Sponsor sessions, single-use grants, and
+their consumption state are stored in a named Cloudflare Durable Object. For
+the payment path, the app displays Base Sepolia terms before wallet access and
+then uses x402 exact-payment authorization. An optional Hono/viem facilitator
+verifies and settles the testnet payment. The browser never holds a private key,
+and the AI never controls the wallet.
+
+I used Codex to turn product decisions into executable specifications, build
+the frontend/server/facilitator boundaries, write focused tests, diagnose
+lifecycle and payment-receipt issues, create fake-host browser journeys, and
+run the final release checks. Human decisions remained explicit for product
+scope, payment policy, security constraints, deployment, and publication.
+
+Both the frontend and backend are deployed on Cloudflare.
 
 ## Architecture
 
@@ -103,6 +105,60 @@ signed x402 payload                   one-time sponsor grant
 
 See [architecture and provenance](./docs/architecture-and-provenance.md) for
 the detailed data flow, trust boundaries, and before/after project history.
+
+## Challenges we ran into
+
+One challenge was deciding how to combine WebMCP and x402, as well as who
+should manage the wallet and where it should be managed.
+
+For the smoothest user experience, a server-managed wallet such as Privy could
+be a good option. However, this project focuses on WebMCP, where people and AI
+work together in a visible browser environment. For that reason, I deliberately
+chose a conventional MetaMask wallet for this demo.
+
+This is only a choice for the current demo. In the future, I believe the
+product should support WalletConnect and allow users to choose flexibly between
+wallet options such as MetaMask and Privy.
+
+With this architecture, I separated the responsibilities of AI and human
+interaction. The AI handles the process automatically up to the payment step.
+As the human-in-the-loop, the person reviews the payment details. If they
+decide not to pay, they can view an advertisement and be guided to premium
+access instead.
+
+Designing this architecture was the most difficult part of the project.
+
+## Accomplishments that we're proud of
+
+Although the development period was short, I am proud that I was able to learn
+WebMCP and combine it with x402 and Cloudflare technologies to turn this idea
+into a working product. I spent more time than usual thinking through the idea
+and designing the architecture.
+
+It is a very simple demo, but I am proud that I was able to build it as a new
+advertising model for the AI-native era.
+
+## What we learned
+
+The biggest lesson was gaining a practical understanding of WebMCP. Building
+with it helped me understand how it differs from MCP.
+
+Because WebMCP is based in a visible browser environment, I think it makes it
+easier to build products with a clear separation of responsibilities between
+people and AI. I also found this to be highly compatible with x402.
+
+## What's next for AdGate
+
+Next, I would like to expand this gate to other structured publisher resources,
+such as news, research, and creator tools. To make it more broadly useful, I
+would like to build a dashboard for sponsors and make the supported blockchains
+and assets more flexible.
+
+For production, the payment path would need authentication, rate limits,
+monitoring, treasury controls, stronger key management, and evaluation of
+production payment rails. I would also like to explore privacy-preserving
+sponsor measurement and observability while maintaining a clear boundary for
+explicit human choice.
 
 ## Local setup
 
@@ -167,57 +223,3 @@ pnpm smoke:public -- \
   --server-url https://api.example.com \
   --facilitator-url https://facilitator.example.com
 ```
-
-## Deployment
-
-The intended judging topology runs the frontend, resource server, and optional
-facilitator on Cloudflare. The resource server routes through one named Durable
-Object coordinator and persists sponsor authorization state in Durable Object
-Storage. Public CORS must name the exact frontend origin. Frontend and server
-must carry the same full release SHA, and the Origin Trial token must be issued
-for the final frontend origin.
-
-Follow the [deployment runbook](./docs/deployment.md). It identifies which
-values are public, which are secrets, and how to disable payment safely while
-keeping sponsor access live.
-
-## Hackathon provenance
-
-The repository began from a small React/WebMCP Todo starter. That prior work
-provided the workspace shell, frontend tool-registration experiment, and basic
-Cloudflare setup. During the hackathon, the product-facing Todo experience was
-replaced with the Open Table Journal publisher demo and the AdGate system was
-built: shared gate orchestration, sponsor credentials, protected analysis,
-x402 payment, facilitator boundaries, fake-host E2E, release checks, deployment
-controls, and submission materials.
-
-The obsolete Todo/D1 guide has been removed from the working tree; Git history
-retains the original reference. Some unused Todo starter modules remain only
-as provenance and are not imported by the shipped publisher application.
-Details and ownership boundaries are recorded in
-[architecture and provenance](./docs/architecture-and-provenance.md).
-
-## Owned demo assets
-
-**Open Table Journal**, **Open Table Weekly**, the recipe copy, sponsor copy,
-CSS presentation, and `roasted-chickpea-quinoa-bowl.svg` are original fictional
-demo assets in this repository. The sponsor creative uses no tracking pixel or
-external media. See the [asset-rights checklist](./docs/asset-rights.md) before
-capturing or publishing submission media.
-
-## Known limitations
-
-- WebMCP and its browser exposure remain experimental; real-host checks are manual.
-- Sponsor verification proves elapsed visible/session time, not human attention
-  or fraud-resistant advertising measurement.
-- Sponsor sessions, grants, consumption state, and grant-issue replay survive
-  Worker isolate replacement through Durable Object Storage. The separate
-  protected-analysis attempt/result replay registry remains in memory inside
-  the named coordinator. An eviction or deployment therefore removes its
-  five-minute result replay; if a final response was lost after evidence was
-  consumed, the client must begin a new access attempt.
-- Payment is fixed to Base Sepolia (`eip155:84532`), x402 `exact`, and 0.01
-  testnet USDC. It is not a mainnet payment product.
-- The self-hosted facilitator is a prototype without the authentication, rate
-  limits, monitoring, and treasury controls required for production.
-- Recipe analysis is deterministic demo output, not medical advice or a live LLM call.

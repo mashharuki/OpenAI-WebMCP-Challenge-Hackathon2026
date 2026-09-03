@@ -51,8 +51,11 @@ For a compatible Chrome test environment:
 2. Enable remote debugging at `chrome://inspect/#remote-debugging`.
 3. Use the checked-in `.mcp.json` from this app directory with a compatible agent.
 4. Open the app and ask: “Analyze the published recipe on this page.”
-5. Verify that the same tool invocation remains pending while the page waits for
-   the sponsor or payment decision.
+5. Verify that the same tool invocation remains pending while the page shows
+   Base Sepolia payment terms and waits for explicit payment approval.
+6. Separately, use **Use sponsor access** in the publisher UI to verify the
+   wallet-free sponsor-supported analysis journey. This starts a new request;
+   it does not resume a WebMCP invocation.
 
 Browser and agent approvals remain manual. A cross-origin iframe embedding the
 app must explicitly allow the experimental `tools` permission.
@@ -64,7 +67,9 @@ app must explicitly allow the experimental `tools` permission.
 - `VITE_RELEASE_SHA` is public release provenance.
 - No wallet private key, sponsor token, or facilitator credential belongs in a
   `VITE_` variable.
-- The paid path is Base Sepolia testnet only; sponsor access is the wallet-free fallback.
+- The paid WebMCP path is Base Sepolia testnet only. Sponsor access is a
+  wallet-free publisher-UI alternative, not an automatic fallback from a
+  declined or unavailable wallet payment.
 
 See the root [environment reference](../../docs/environment.md) and
 [deployment runbook](../../docs/deployment.md).

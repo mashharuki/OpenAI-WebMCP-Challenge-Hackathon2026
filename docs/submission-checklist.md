@@ -46,9 +46,12 @@ replacement.
 
 - [ ] Open the public publisher and confirm `analyze_recipe` is discoverable.
 - [ ] Invoke it once and confirm the original invocation remains pending while
-      the page shows the access choice.
-- [ ] Choose sponsor access, keep the sponsor visible for eight seconds, and
-      confirm the original invocation returns exactly one canonical result.
+      the page shows Base Sepolia payment terms.
+- [ ] Approve the payment only from the explicit payment control and confirm
+      the original invocation returns exactly one canonical result.
+- [ ] In a separate publisher-UI journey, choose sponsor access, keep the
+      sponsor visible for eight seconds, and confirm its new request returns
+      one canonical result.
 - [ ] Repeat cancellation once and confirm it does not display success.
 - Evidence note or screenshot path: `TODO`
 - Browser/host version and UTC verification time: `TODO`
@@ -56,7 +59,7 @@ replacement.
 ### WebMCP-enabled Chrome
 
 - [ ] Confirm the Origin Trial is active for the exact public origin.
-- [ ] Repeat the pending → sponsor → original-result journey.
+- [ ] Repeat the pending → payment approval → original-result journey.
 - [ ] Confirm refreshing or aborting an active invocation ends safely and a new
       attempt can start.
 - Evidence note or screenshot path: `TODO`
@@ -69,8 +72,8 @@ replacement.
       control after cancel or completion.
 - [ ] Confirm status/countdown/result changes are announced by the live region
       without repeatedly interrupting the user.
-- [ ] Confirm sponsor and payment choices expose understandable accessible names,
-      disabled states, and error text.
+- [ ] Confirm the sponsor-start and payment controls expose understandable
+      accessible names, disabled states, and error text.
 - [ ] Check the final UI at 200% zoom without losing the primary actions.
 - Evidence note and tested browser/assistive technology: `TODO`
 

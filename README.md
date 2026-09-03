@@ -1,18 +1,21 @@
 # AdGate for WebMCP
 
-**Keep premium publisher tools accessible to agents without removing human choice.**
+**Give agent requests an explicit payment path while keeping a sponsor-supported path available to people.**
 
 AdGate is a hackathon prototype built around a fictional food publisher, **Open
 Table Journal**. Its `analyze_recipe` WebMCP tool pauses the original agent
-invocation while the page asks a person to choose one of two access paths:
+invocation and opens the explicit Base Sepolia payment review. The visible
+publisher UI separately offers a wallet-free sponsor-supported analysis path:
 
-1. **Sponsor access** — view an owned sponsor message for eight visible seconds.
-2. **Pay with Base Sepolia** — explicitly approve an x402 `exact` payment of
-   0.01 testnet USDC.
+1. **WebMCP / agent access** — explicitly approve an x402 `exact` payment of
+   0.01 testnet USDC on Base Sepolia.
+2. **Publisher UI access** — view an owned sponsor message for eight visible
+   seconds to start a separate sponsor-supported analysis request.
 
-Both paths authorize the same protected recipe-analysis endpoint. The same
-gate and result contract are also used by the visible **Analyze this recipe**
-button, so the browser UI and an agent do not create separate product flows.
+Both paths authorize the same protected recipe-analysis endpoint and return the
+same result contract. They intentionally begin from different entry points:
+the agent invocation remains associated with payment, while sponsor access is a
+new request started by the person in the publisher UI.
 
 ## Live demo
 
@@ -27,16 +30,17 @@ when the hosted facilitator is unavailable.
 
 ## See the flow
 
-| WebMCP tool discovery | Human-controlled sponsor access |
+| WebMCP payment review | Human-controlled sponsor access |
 | --- | --- |
-| ![The Open Table Journal publisher page with the analyze_recipe WebMCP tool visible in the tool inspector.](./docs/img/0.jpg) | ![The sponsor-access gate over the publisher page, with its visible countdown and the analyze_recipe tool still pending.](./docs/img/3.jpg) |
+| ![The Open Table Journal publisher page with the analyze_recipe WebMCP tool visible in the tool inspector.](./docs/img/0.jpg) | ![The sponsor-access gate over the publisher page, with its visible countdown for a publisher-initiated analysis.](./docs/img/3.jpg) |
 
 | x402 payment receipt | Canonical recipe-analysis result |
 | --- | --- |
 | ![The completed Base Sepolia 0.01 testnet USDC receipt.](./docs/img/6.jpg) | ![The returned recipe-analysis summary, nutritional insights, and practical suggestions.](./docs/img/2.jpg) |
 
-The full end-to-end interaction, including the original invocation resuming
-after human approval, is shown in the [demo video](https://youtu.be/FKDXyClLxJY).
+The demo video shows the payment-approved WebMCP invocation and the separate
+sponsor-supported publisher journey. A sponsor completion does not resume a
+previously declined or cancelled WebMCP invocation.
 
 ## The problem
 
@@ -45,9 +49,10 @@ can deliver useful answers without a person visiting the page or seeing the
 funding experience. A publisher then faces a poor choice: block agents, give
 premium work away, or remove the free path.
 
-AdGate demonstrates a fourth option. A WebMCP tool can remain pending while the
-publisher brings the human into the loop for a transparent access decision,
-then resume that same structured invocation.
+AdGate demonstrates two transparent routes. An agent-invoked WebMCP tool can
+remain pending while the person reviews payment terms and explicitly approves
+the payment. People who prefer free, sponsor-supported access can instead
+start that route directly from the publisher page.
 
 ## What works today
 
@@ -68,17 +73,17 @@ then resume that same structured invocation.
 ## Architecture
 
 ```text
-WebMCP host or visible UI
+WebMCP host                         Visible publisher UI
           |
           v
 React publisher + GateCoordinator
           |
-          +---------- human chooses ----------+
+          +---------------+-------------------+
           |                                   |
           v                                   v
-8-second sponsor view                 injected wallet approval
+injected wallet approval              8-second sponsor view
           |                                   |
-one-time sponsor grant                 signed x402 payload
+signed x402 payload                   one-time sponsor grant
           |                                   |
           +----------------+------------------+
                            v
@@ -87,7 +92,7 @@ one-time sponsor grant                 signed x402 payload
                   protected analysis
                            |
                            v
-               original invocation resolves
+       payment invocation resolves / UI renders result
 ```
 
 | App | Responsibility | Trust boundary |

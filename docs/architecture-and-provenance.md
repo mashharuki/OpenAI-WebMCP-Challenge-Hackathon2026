@@ -10,18 +10,18 @@ evidence authorizes the canonical analysis.
 ```text
 Agent host                              Person in publisher page
     |                                             |
-    | analyze_recipe(input, invocation signal)    | Analyze this recipe
+    | analyze_recipe(input, invocation signal)    | Use sponsor access
     +-----------------------+---------------------+
                             v
                     frontend GateCoordinator
                             |
              +--------------+---------------+
              |                              |
-       sponsor session                 payment challenge
-       + visible timer                 + displayed terms
-       + server minimum                + explicit wallet click
+       payment challenge                  sponsor session
+       + displayed terms                   + visible timer
+       + explicit wallet click             + server minimum
              |                              |
-       one-time grant                   x402 signature
+       x402 signature                      one-time grant
              |                              |
              +--------------+---------------+
                             v
@@ -29,7 +29,7 @@ Agent host                              Person in publisher page
                             |
                 canonical protected result
                             |
-              original caller resolves once
+       payment caller resolves / UI renders result
 ```
 
 ## App ownership
@@ -63,7 +63,8 @@ advertising an unavailable settlement path.
 | Boundary | Untrusted input | Enforcement |
 | --- | --- | --- |
 | WebMCP host → frontend | Tool arguments and abort signal | Strict recipe schema, one active attempt, safe normalized result |
-| Person → frontend | Access choice and wallet confirmation | Explicit buttons, locked duplicate choice, no automatic signature |
+| WebMCP host → frontend | Agent invocation | Starts payment review only; the original invocation remains pending until payment approval or cancellation |
+| Person → frontend | Publisher-UI sponsor start and wallet confirmation | Explicit buttons, locked duplicate choice, no automatic signature; sponsor access starts a separate request |
 | Frontend → server | IDs, timing claim, sponsor token, payment header | Exact-origin CORS, server clock, evidence binding, digest/idempotency checks |
 | Server → facilitator | Payment payload and fixed requirements | Base Sepolia/exact/asset/amount validation |
 | Facilitator → chain | Testnet settlement | Server-held signer; no browser private key |

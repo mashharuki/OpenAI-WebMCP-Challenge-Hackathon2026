@@ -2,26 +2,26 @@
 
 ## 1. Mission
 
-Win on all four equally weighted criteria by proving one memorable thesis: **when agents use the web, publishers can preserve free access without removing human choice**.
+Win on all four equally weighted criteria by proving one memorable thesis: **when agents use the web, publishers can require explicit payment while preserving a sponsor-supported route for people who prefer free access**.
 
-- **WebMCP Leverage**: a WebMCP invocation visibly pauses and resumes around a human decision in the same page.
+- **WebMCP Leverage**: a WebMCP invocation visibly pauses for explicit payment review and resumes after approval in the same page.
 - **Execution**: one coherent recipe experience, two working unlock paths, safe failure states, and a public deployment.
 - **Potential Impact**: publishers need a monetization path as agent traffic bypasses conventional page-view advertising.
-- **Creativity & Ambition**: sponsor attention and x402 payment become interchangeable access evidence for an agent-invoked browser tool.
+- **Creativity & Ambition**: sponsor access and x402 payment authorize one protected resource through intentionally distinct publisher-UI and agent entry points.
 
 The official deadline is September 3, 2026 at 1:00 PM PDT, or September 4 at 5:00 AM JST.
 
 ## 2. Idea
 
-> As agents consume web services, publishers lose the human attention that funds free content. AdGate for WebMCP lets a premium browser tool pause for a human choice: view a short sponsor message for free access, or approve a tiny x402 payment to continue immediately.
+> As agents consume web services, publishers lose the human attention that funds free content. AdGate for WebMCP sends an agent-invoked premium tool to explicit x402 payment review, while the publisher page offers a separate short sponsor-message route for people who prefer free access.
 
 ### Golden demo
 
 1. Open the recipe page and ask ChatGPT to analyze the recipe for nutrition and substitutions.
 2. ChatGPT selects `analyze_recipe`; the site opens a gate while that exact invocation waits.
-3. Choose **Watch sponsor**. Show the short countdown, then show the agent receiving the analysis without a second prompt.
-4. Repeat briefly with **Pay to skip**, show explicit wallet approval and x402 settlement receipt.
-5. End on the architecture view: one tool, one protected resource, two human-approved access paths.
+3. Review and approve the displayed Base Sepolia payment terms. Show the agent receiving the analysis without a second prompt.
+4. Separately use **Watch sponsor** in the publisher UI, show the short countdown, then show its canonical result.
+5. End on the architecture view: one protected resource, two entry-point-specific human-approved access paths.
 
 The sponsor path is the judge-safe live path. The paid path is demonstrated live when possible and backed by a pre-recorded clip.
 
@@ -62,8 +62,8 @@ GateCoordinator.requestAccess(resource, nonce) ----> React gate modal
 ### MVP
 
 1. One polished `Open Table Journal` recipe page for `Roasted Chickpea Quinoa Bowl` and one deterministic premium analysis.
-2. One shared gate modal with sponsor and x402 choices.
-3. One WebMCP tool whose execution waits for and resumes after the human decision.
+2. A payment-review experience for WebMCP and a sponsor gate for the publisher UI.
+3. One WebMCP tool whose execution waits for and resumes after explicit payment approval.
 
 The tool accepts only the canonical recipe ID plus optional dietary goals. Recipe title, ingredients, and instructions come from the publisher-owned canonical recipe rather than agent-supplied content.
 
@@ -102,11 +102,11 @@ See `.kiro/steering/roadmap.md` for spec dependency waves and the JST delivery c
 
 “I’ll ask my agent to analyze this recipe. The site exposes a real WebMCP tool, so the agent does not scrape buttons or guess the UI. But before premium work runs, AdGate brings the human back into the loop.”
 
-Show sponsor choice, countdown, automatic resume and result. Then show the paid choice and the short settlement receipt clip.
+Show the WebMCP payment review, approval, automatic resume, and result. Then show the separate sponsor countdown and publisher-UI result.
 
 ### 1:30–2:20 — How
 
-“The WebMCP execution stays pending while the page asks for consent. A sponsor grant or x402 payment authorizes the same protected Hono resource. The original tool call then resolves, so the page and agent never lose shared context.”
+“The WebMCP execution stays pending while the page asks for payment consent. An x402 payment authorizes the original tool call. Sponsor access authorizes the same protected Hono resource from the publisher UI as a separate, free request.”
 
 Mention `document.modelContext`, schema validation, abort handling, Base Sepolia, and facilitator verify/settle.
 

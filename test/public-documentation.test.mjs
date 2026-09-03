@@ -41,7 +41,7 @@ describe("public documentation", () => {
     const requiredFiles = [
       "docs/architecture-and-provenance.md",
       "docs/environment.md",
-      "docs/submission-checklist.md"
+      "docs/submission-checklist.md",
     ];
     await Promise.all(
       requiredFiles.map((path) =>

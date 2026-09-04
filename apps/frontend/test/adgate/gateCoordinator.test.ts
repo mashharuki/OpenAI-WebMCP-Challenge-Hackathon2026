@@ -490,7 +490,7 @@ describe("GateCoordinator", () => {
       error: {
         code: "DEPENDENCY_UNAVAILABLE",
         message:
-          "Base Sepolia payment is unavailable in this browser. No alternative access path was selected.",
+          "This browser does not have a compatible injected wallet for Base Sepolia payment. Use sponsor access to preview the protected analysis.",
         retryable: false,
       },
     });

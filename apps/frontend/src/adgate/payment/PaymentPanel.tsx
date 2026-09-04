@@ -2,6 +2,7 @@ import { Badge, Button, Surface, Text } from "@cloudflare/kumo";
 import {
   ArrowSquareOutIcon,
   CheckCircleIcon,
+  CopyIcon,
   LockKeyIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react";
@@ -24,6 +25,13 @@ import type { Eip1193ProviderPort } from "./walletAdapter.js";
 export type PaymentPanelProps = {
   readonly coordinator: PaymentCoordinatorPort;
   readonly provider?: Eip1193ProviderPort;
+  readonly walletLabel?: string;
+  readonly walletAddress?: string;
+  readonly browserWalletAvailable?: boolean;
+  readonly privyAvailable?: boolean;
+  readonly privyReady?: boolean;
+  readonly connectBrowserWallet?: () => void;
+  readonly continueWithPasskey?: () => Promise<void>;
   readonly request: PremiumAnalysisRequest;
 };
 
@@ -115,9 +123,66 @@ function PaymentTerms({ requirement }: { requirement: PaymentRequirement }) {
   );
 }
 
+function PrivyFundingCard({ address }: { readonly address: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const copyAddress = async () => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <section
+      aria-label="Fund Privy wallet"
+      className="border-l-2 border-orange-500 bg-orange-500/5 px-4 py-3"
+    >
+      <p className="text-sm font-medium text-kumo-default">
+        Fund your Privy wallet with testnet USDC
+      </p>
+      <p className="mt-1 text-xs leading-5 text-kumo-subtle">
+        Copy this Base Sepolia wallet address, then request testnet USDC from
+        Circle Faucet before confirming the payment.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <code className="max-w-full break-all rounded bg-kumo-base px-2 py-1 font-mono text-xs text-kumo-default ring ring-kumo-line">
+          {address}
+        </code>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => void copyAddress()}
+        >
+          <CopyIcon aria-hidden="true" />
+          {copied ? "Address copied" : "Copy wallet address"}
+        </Button>
+      </div>
+      <a
+        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-kumo-accent underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kumo-accent"
+        href="https://faucet.circle.com/"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Open Circle Faucet for testnet USDC
+        <ArrowSquareOutIcon aria-hidden="true" />
+      </a>
+    </section>
+  );
+}
+
 function PaymentPanelView({
   coordinator,
   provider,
+  walletLabel = "MetaMask",
+  walletAddress,
+  browserWalletAvailable = false,
+  privyAvailable = false,
+  privyReady = false,
+  connectBrowserWallet,
+  continueWithPasskey,
   request,
 }: PaymentPanelViewProps) {
   const state = useSyncExternalStore(
@@ -179,7 +244,12 @@ function PaymentPanelView({
             provider={provider}
             requirement={requirement}
             onReadyChange={setWalletReady}
+            walletLabel={walletLabel}
           />
+        ) : null}
+
+        {state.type === "reviewing" && walletAddress ? (
+          <PrivyFundingCard address={walletAddress} />
         ) : null}
 
         <div className="flex items-center gap-2 text-sm text-kumo-default">
@@ -195,6 +265,38 @@ function PaymentPanelView({
 
         {state.type === "reviewing" && requirement && (
           <div className="space-y-3">
+            {(browserWalletAvailable || privyAvailable) && (
+              <div className="rounded-lg border border-kumo-line bg-kumo-elevated p-3">
+                <p className="text-sm font-medium text-kumo-default">
+                  Choose a payment wallet
+                </p>
+                <p className="mt-1 text-xs text-kumo-subtle">
+                  A passkey creates or restores a Privy embedded wallet. It does
+                  not authorize payment by itself.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {browserWalletAvailable ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={connectBrowserWallet}
+                    >
+                      Use browser wallet
+                    </Button>
+                  ) : null}
+                  {privyAvailable ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={!privyReady}
+                      onClick={() => void continueWithPasskey?.()}
+                    >
+                      Continue with passkey
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            )}
             <ol className="grid gap-2 text-xs text-kumo-subtle sm:grid-cols-3">
               <li>1. Connect wallet</li>
               <li>2. Review signature</li>

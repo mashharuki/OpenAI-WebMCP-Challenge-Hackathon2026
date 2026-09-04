@@ -60,9 +60,10 @@ The x402-enabled resource server, built with Hono, manages authorization and
 canonical deterministic analysis. Sponsor sessions, single-use grants, and
 their consumption state are stored in a named Cloudflare Durable Object. For
 the payment path, the app displays Base Sepolia terms before wallet access and
-then uses x402 exact-payment authorization. An optional Hono/viem facilitator
-verifies and settles the testnet payment. The browser never holds a private key,
-and the AI never controls the wallet.
+then uses x402 exact-payment authorization. A person can use a browser wallet
+or authenticate with a passkey to create or restore a Privy embedded wallet.
+An optional Hono/viem facilitator verifies and settles the testnet payment. The
+application never receives a private key, and the AI never controls the wallet.
 
 I used Codex to turn product decisions into executable specifications, build
 the frontend/server/facilitator boundaries, write focused tests, diagnose
@@ -76,22 +77,30 @@ Both the frontend and backend are deployed on Cloudflare.
 
 ```text
 WebMCP host                         Visible publisher UI
-          |
-          v
-React publisher + GateCoordinator
-          |
-          +---------------+-------------------+
-          |                                   |
-          v                                   v
-injected wallet approval              8-second sponsor view
-          |                                   |
-signed x402 payload                   one-time sponsor grant
-          |                                   |
-          +----------------+------------------+
+          |                                  |
+          +----------------+-----------------+
+                           v
+             React publisher + GateCoordinator
+                           |
+              +------------+------------+
+              |                         |
+              v                         v
+       x402 payment review       8-second sponsor view
+              |                         |
+      +-------+--------+        one-time sponsor grant
+      |                |                 |
+      v                v                 |
+Browser wallet    Passkey → Privy         |
+(MetaMask etc.)   embedded wallet          |
+      |                |                 |
+      |        Copy address → Circle      |
+      |        Faucet → testnet USDC      |
+      +------ signed x402 payload --------+
+                           |
                            v
                  Hono resource server
                            |
-                  protected analysis
+        x402 verification / protected analysis
                            |
                            v
        payment invocation resolves / UI renders result
@@ -99,7 +108,7 @@ signed x402 payload                   one-time sponsor grant
 
 | App | Responsibility | Trust boundary |
 | --- | --- | --- |
-| [`apps/frontend`](./apps/frontend/) | Publisher UI, WebMCP registration, human gate, sponsor timer, injected-wallet adapter | Treats tool input, HTTP responses, and wallet responses as untrusted |
+| [`apps/frontend`](./apps/frontend/) | Publisher UI, WebMCP registration, human gate, sponsor timer, browser-wallet and Privy embedded-wallet adapters | Treats tool input, HTTP responses, and wallet responses as untrusted |
 | [`apps/server`](./apps/server/) | Sponsor sessions/grants, bounded attempt state, protected analysis, x402 challenge | Owns authorization and never trusts browser elapsed-time claims |
 | [`apps/facilitator`](./apps/facilitator/) | Optional x402 verification and settlement | Holds the testnet signer only in its secret store |
 
@@ -111,14 +120,16 @@ the detailed data flow, trust boundaries, and before/after project history.
 One challenge was deciding how to combine WebMCP and x402, as well as who
 should manage the wallet and where it should be managed.
 
-For the smoothest user experience, a server-managed wallet such as Privy could
-be a good option. However, this project focuses on WebMCP, where people and AI
-work together in a visible browser environment. For that reason, I deliberately
-chose a conventional MetaMask wallet for this demo.
+The first version used only an injected wallet, which made the payment path
+hard to demonstrate in an in-app browser. The current demo keeps browser-wallet
+support and adds Privy passkey authentication with an embedded wallet. A person
+can copy that wallet address, request Base Sepolia testnet USDC from Circle
+Faucet, and return to the same explicit x402 review.
 
-This is only a choice for the current demo. In the future, I believe the
-product should support WalletConnect and allow users to choose flexibly between
-wallet options such as MetaMask and Privy.
+This keeps the important property of the demo: passkey authentication does not
+authorize a payment. The person still reviews the amount and explicitly signs
+the x402 payment. WalletConnect and additional wallet providers remain useful
+future extensions.
 
 With this architecture, I separated the responsibilities of AI and human
 interaction. The AI handles the process automatically up to the payment step.
@@ -182,9 +193,11 @@ pnpm --filter frontend run start
 ```
 
 Open <http://localhost:5173>. The Vite development proxy sends `/api` to the
-local server. Sponsor access works without an injected wallet. For the optional
-local payment path, start the facilitator separately and provide only testnet
-configuration through uncommitted environment files.
+local server. Sponsor access works without a wallet. The optional local payment
+path supports either a browser wallet or Privy passkey authentication with an
+embedded wallet; configure `VITE_PRIVY_APP_ID` and allow
+`http://localhost:5173` in the Privy Dashboard. Start the facilitator separately
+and provide only testnet configuration through uncommitted environment files.
 
 The app-specific runbooks provide focused instructions:
 

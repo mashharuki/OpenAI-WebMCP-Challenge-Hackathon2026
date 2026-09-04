@@ -66,6 +66,28 @@ describe("AnalysisPanel", () => {
     );
   });
 
+  it("shows the actual sponsor authorization used to unlock an analysis", () => {
+    render(
+      <AnalysisPanel
+        state={{
+          type: "success",
+          result: {
+            summary: "A balanced plant-forward bowl.",
+            nutritionalInsights: ["Chickpeas provide fiber."],
+            suggestions: ["Add pumpkin seeds for crunch."],
+            disclaimer: "This is general information, not medical advice.",
+          },
+        }}
+        access={{ kind: "sponsor_grant", referenceId: "grant-1" }}
+        onStart={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText("Unlocked via sponsor access · One-time grant"),
+    ).toBeVisible();
+  });
+
   it("announces a safe retryable error and offers one retry action", () => {
     const onRetry = vi.fn();
     render(

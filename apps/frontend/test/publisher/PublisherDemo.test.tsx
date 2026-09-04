@@ -51,6 +51,25 @@ describe("PublisherDemo", () => {
     );
   });
 
+  it("includes the reader's selected dietary goals in the sponsor analysis", () => {
+    const analyze = vi.fn<AnalysisClientPort["analyze"]>(
+      () => new Promise(() => undefined),
+    );
+    render(<PublisherDemo analysisClient={{ analyze }} />);
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Higher protein" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Lower sodium" }));
+    fireEvent.click(screen.getByRole("button", { name: "Use sponsor access" }));
+
+    expect(analyze).toHaveBeenCalledWith(
+      {
+        recipeId: "roasted-chickpea-quinoa-bowl",
+        dietaryGoals: ["higher protein", "lower sodium"],
+      },
+      expect.any(AbortSignal),
+    );
+  });
+
   it("analyzes the unchanged recipe again and returns the same result", async () => {
     const analyze = vi
       .fn<AnalysisClientPort["analyze"]>()

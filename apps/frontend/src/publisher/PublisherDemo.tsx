@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { normalizeContractError } from "../adgate/contracts";
+import {
+  normalizeContractError,
+  type RecipeAnalysisInput,
+} from "../adgate/contracts";
+import type { AnalysisAccess } from "./AnalysisPanel";
 import { AnalysisPanel, type AnalysisViewState } from "./AnalysisPanel";
 import {
   type AnalysisClientPort,
@@ -11,6 +15,7 @@ import { sampleRecipe } from "./sampleRecipe";
 export interface PublisherDemoProps {
   readonly analysisClient?: AnalysisClientPort;
   readonly analysisState?: AnalysisViewState;
+  readonly access?: AnalysisAccess;
 }
 
 const createDefaultClient = (): AnalysisClientPort =>
@@ -19,6 +24,7 @@ const createDefaultClient = (): AnalysisClientPort =>
 export function PublisherDemo({
   analysisClient,
   analysisState: externalAnalysisState,
+  access,
 }: PublisherDemoProps) {
   const client = useMemo(
     () => analysisClient ?? createDefaultClient(),
@@ -27,6 +33,7 @@ export function PublisherDemo({
   const [analysisState, setAnalysisState] = useState<AnalysisViewState>({
     type: "idle",
   });
+  const [dietaryGoals, setDietaryGoals] = useState<readonly string[]>([]);
   const activeRequest = useRef<AbortController | null>(null);
   const isMounted = useRef(false);
 
@@ -47,12 +54,13 @@ export function PublisherDemo({
     const controller = new AbortController();
     activeRequest.current = controller;
     setAnalysisState({ type: "loading" });
+    const input: RecipeAnalysisInput = {
+      recipeId: sampleRecipe.analysisInput.recipeId,
+      ...(dietaryGoals.length > 0 ? { dietaryGoals: [...dietaryGoals] } : {}),
+    };
 
     try {
-      const result = await client.analyze(
-        sampleRecipe.analysisInput,
-        controller.signal,
-      );
+      const result = await client.analyze(input, controller.signal);
       if (isMounted.current && !controller.signal.aborted) {
         setAnalysisState({ type: "success", result });
       }
@@ -68,7 +76,7 @@ export function PublisherDemo({
         activeRequest.current = null;
       }
     }
-  }, [client]);
+  }, [client, dietaryGoals]);
 
   return (
     <div className="grid min-w-0 gap-8 xl:grid-cols-[minmax(0,1.55fr)_minmax(21rem,0.8fr)] xl:items-start xl:gap-10">
@@ -78,6 +86,9 @@ export function PublisherDemo({
           state={externalAnalysisState ?? analysisState}
           onStart={startAnalysis}
           onRetry={startAnalysis}
+          dietaryGoals={dietaryGoals}
+          onDietaryGoalsChange={setDietaryGoals}
+          access={access}
         />
       </div>
     </div>

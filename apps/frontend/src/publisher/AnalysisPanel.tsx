@@ -1,5 +1,10 @@
 import type { AdGateError, RecipeAnalysisResult } from "../adgate/contracts";
 
+export type AnalysisAccess = {
+  readonly kind: "sponsor_grant" | "x402_payment";
+  readonly referenceId: string;
+};
+
 export type AnalysisViewState =
   | { readonly type: "idle" }
   | { readonly type: "loading" }
@@ -10,9 +15,35 @@ export interface AnalysisPanelProps {
   readonly state: AnalysisViewState;
   readonly onStart: () => void;
   readonly onRetry?: () => void;
+  readonly dietaryGoals?: readonly string[];
+  readonly onDietaryGoalsChange?: (goals: readonly string[]) => void;
+  readonly access?: AnalysisAccess;
 }
 
-export function AnalysisPanel({ state, onStart, onRetry }: AnalysisPanelProps) {
+const dietaryGoalOptions = [
+  { label: "Higher protein", value: "higher protein" },
+  { label: "Lower sodium", value: "lower sodium" },
+  { label: "Meal prep", value: "meal prep" },
+  { label: "Budget-friendly", value: "budget-friendly" },
+] as const;
+
+export function AnalysisPanel({
+  state,
+  onStart,
+  onRetry,
+  dietaryGoals = [],
+  onDietaryGoalsChange,
+  access,
+}: AnalysisPanelProps) {
+  const toggleDietaryGoal = (goal: string) => {
+    if (!onDietaryGoalsChange) return;
+    onDietaryGoalsChange(
+      dietaryGoals.includes(goal)
+        ? dietaryGoals.filter((selectedGoal) => selectedGoal !== goal)
+        : [...dietaryGoals, goal],
+    );
+  };
+
   return (
     <section
       aria-labelledby="premium-analysis-title"
@@ -29,18 +60,44 @@ export function AnalysisPanel({ state, onStart, onRetry }: AnalysisPanelProps) {
       </h2>
 
       {state.type === "idle" ? (
-        <div className="mt-6 grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <div className="mt-6 space-y-5">
           <p className="max-w-2xl text-sm leading-6 text-[#d7e1da] sm:text-base">
             View a short sponsor message to unlock nutritional insights and
             practical ways to adapt this recipe.
           </p>
-          <button
-            type="button"
-            onClick={onStart}
-            className="min-h-11 rounded-full bg-[#e2a93b] px-5 py-3 text-sm font-bold text-[#21352d] transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#fbfaf6]"
-          >
-            Use sponsor access
-          </button>
+          {onDietaryGoalsChange ? (
+            <fieldset>
+              <legend className="text-sm font-bold text-[#f1f4f1]">
+                Tailor the read{" "}
+                <span className="font-normal text-[#d7e1da]">(optional)</span>
+              </legend>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {dietaryGoalOptions.map((goal) => (
+                  <label
+                    key={goal.value}
+                    className="flex min-h-10 cursor-pointer items-center gap-2 rounded-full border border-[#708078] px-3 text-sm text-[#eef2ef] transition-colors hover:border-[#e2a93b]"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={dietaryGoals.includes(goal.value)}
+                      onChange={() => toggleDietaryGoal(goal.value)}
+                      className="size-4 accent-[#e2a93b]"
+                    />
+                    {goal.label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={onStart}
+              className="min-h-11 rounded-full bg-[#e2a93b] px-5 py-3 text-sm font-bold text-[#21352d] transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#fbfaf6]"
+            >
+              Use sponsor access
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -74,6 +131,13 @@ export function AnalysisPanel({ state, onStart, onRetry }: AnalysisPanelProps) {
           aria-live="polite"
           className="mt-8 grid min-w-0 gap-px overflow-hidden rounded-2xl bg-[#587064] sm:grid-cols-2"
         >
+          {access ? (
+            <div className="bg-[#213d32] px-5 py-3 text-sm font-semibold text-[#f6cd7c] sm:col-span-2 sm:px-6">
+              {access.kind === "sponsor_grant"
+                ? "Unlocked via sponsor access · One-time grant"
+                : "Unlocked via x402 payment · Base Sepolia · 0.01 testnet USDC"}
+            </div>
+          ) : null}
           <section className="min-w-0 bg-[#29483b] p-5 sm:p-6">
             <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e2a93b]">
               Summary

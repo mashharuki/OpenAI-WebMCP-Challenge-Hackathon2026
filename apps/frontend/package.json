@@ -42,6 +42,7 @@
   "dependencies": {
     "@cloudflare/kumo": "^2.6.0",
     "@phosphor-icons/react": "^2.1.10",
+    "@privy-io/react-auth": "^3.39.0",
     "@x402/core": "^2.23.0",
     "@x402/evm": "^2.23.0",
     "agents": "latest",

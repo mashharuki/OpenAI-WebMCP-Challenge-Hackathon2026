@@ -120,6 +120,64 @@ const createHarness = ({
 };
 
 describe("PaymentPanel", () => {
+  it("offers passkey wallet setup without starting a payment", async () => {
+    const { coordinator } = createHarness();
+    const continueWithPasskey = vi.fn(async () => undefined);
+    render(
+      <PaymentPanel
+        coordinator={coordinator}
+        request={request}
+        privyAvailable
+        privyReady
+        continueWithPasskey={continueWithPasskey}
+      />,
+    );
+
+    const passkey = await screen.findByRole("button", {
+      name: "Continue with passkey",
+    });
+    fireEvent.click(passkey);
+
+    await vi.waitFor(() => expect(continueWithPasskey).toHaveBeenCalledOnce());
+    expect(
+      screen.getByRole("button", { name: "Pay with Base Sepolia" }),
+    ).toBeDisabled();
+  });
+
+  it("shows a Privy wallet address and Circle Faucet link for testnet funding", async () => {
+    const { coordinator } = createHarness();
+    const walletAddress = "0x0000000000000000000000000000000000000042";
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    render(
+      <PaymentPanel
+        coordinator={coordinator}
+        request={request}
+        walletAddress={walletAddress}
+      />,
+    );
+
+    expect(await screen.findByText(walletAddress)).toBeVisible();
+    expect(
+      screen.getByRole("link", {
+        name: "Open Circle Faucet for testnet USDC",
+      }),
+    ).toHaveAttribute("href", "https://faucet.circle.com/");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Copy wallet address" }),
+    );
+    await vi.waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(walletAddress),
+    );
+    expect(
+      await screen.findByRole("button", { name: "Address copied" }),
+    ).toBeVisible();
+  });
+
   it("observes a gate-owned attempt without starting or cancelling it", () => {
     const requestPaidAccess = vi.fn(() => new Promise<never>(() => undefined));
     const cancel = vi.fn();

@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
 import { useGate } from "./GateProvider";
 import { ActivePaymentPanel } from "./payment/PaymentPanel";
+import type { PaymentWalletContextValue } from "./payment/PaymentWalletProvider";
 import type { PaymentCoordinatorPort } from "./payment/paymentCoordinator";
-import type { Eip1193ProviderPort } from "./payment/walletAdapter";
 
 export interface GateExperienceProps {
   readonly paymentCoordinator: PaymentCoordinatorPort;
-  readonly walletProvider?: Eip1193ProviderPort;
+  readonly paymentWallet?: PaymentWalletContextValue;
 }
 
 const phaseMessage = (
@@ -34,7 +34,7 @@ const phaseMessage = (
 
 export function GateExperience({
   paymentCoordinator,
-  walletProvider,
+  paymentWallet,
 }: GateExperienceProps) {
   const { snapshot } = useGate();
   const experienceRef = useRef<HTMLElement | null>(null);
@@ -83,7 +83,7 @@ export function GateExperience({
         <div className="mt-4">
           <ActivePaymentPanel
             coordinator={paymentCoordinator}
-            provider={walletProvider}
+            {...paymentWallet}
           />
         </div>
       ) : null}

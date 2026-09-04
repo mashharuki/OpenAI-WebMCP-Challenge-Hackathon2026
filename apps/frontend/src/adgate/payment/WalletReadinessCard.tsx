@@ -21,6 +21,7 @@ export interface WalletReadinessCardProps {
   readonly provider?: Eip1193ProviderPort;
   readonly requirement: PaymentRequirement;
   readonly onReadyChange: (ready: boolean) => void;
+  readonly walletLabel?: string;
 }
 
 const shortenAddress = (value: string): string =>
@@ -37,6 +38,7 @@ export function WalletReadinessCard({
   provider,
   requirement,
   onReadyChange,
+  walletLabel = "MetaMask",
 }: WalletReadinessCardProps) {
   const [readiness, setReadiness] = useState<WalletReadinessView>({
     type: "checking",
@@ -86,7 +88,7 @@ export function WalletReadinessCard({
       {readiness.type === "checking" && (
         <div className="flex items-center gap-2 text-sm text-kumo-subtle">
           <WalletIcon aria-hidden="true" />
-          <span>Checking MetaMask…</span>
+          <span>Checking {walletLabel}…</span>
         </div>
       )}
 
@@ -98,10 +100,10 @@ export function WalletReadinessCard({
                 aria-hidden="true"
                 className="text-orange-500"
               />
-              MetaMask is not available
+              {walletLabel} is not available
             </p>
             <p className="text-xs text-kumo-subtle">
-              Install MetaMask to continue with this payment.
+              Choose an available wallet to continue with this payment.
             </p>
           </div>
         </div>
@@ -111,7 +113,7 @@ export function WalletReadinessCard({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-kumo-default">
-              Connect MetaMask
+              Connect {walletLabel}
             </p>
             <p className="text-xs text-kumo-subtle">
               Connection does not create a payment.
@@ -124,7 +126,7 @@ export function WalletReadinessCard({
               void runAction(() => requestWalletConnection(provider))
             }
           >
-            Connect MetaMask
+            Connect {walletLabel}
           </Button>
         </div>
       )}

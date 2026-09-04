@@ -1,9 +1,16 @@
+import { PrivyProvider } from "@privy-io/react-auth";
 import { useMemo } from "react";
+import { AccessFlowCard } from "./adgate/AccessFlowCard";
 import { GateExperience } from "./adgate/GateExperience";
 import { GateProvider, useGate } from "./adgate/GateProvider";
 import { createGateCoordinator } from "./adgate/gateCoordinator";
 import { createGatedAnalysisClient } from "./adgate/gatedAnalysisAdapter";
 import { createChallengeClient } from "./adgate/payment/challenge";
+import {
+  BrowserWalletProvider,
+  PrivyPaymentWalletProvider,
+  usePaymentWallet,
+} from "./adgate/payment/PaymentWalletProvider";
 import { createPaymentClient } from "./adgate/payment/paymentClient";
 import { createPaymentCoordinator } from "./adgate/payment/paymentCoordinator";
 import { createWalletAdapter } from "./adgate/payment/walletAdapter";
@@ -23,6 +30,10 @@ const API_BASE_URL = resolveApiBaseUrl(
   import.meta.env.VITE_API_BASE_URL,
   globalThis.location.origin,
 );
+const PRIVY_APP_ID =
+  import.meta.env.MODE === "test"
+    ? undefined
+    : import.meta.env.VITE_PRIVY_APP_ID;
 
 const isGateActive = (
   type: ReturnType<typeof useGate>["snapshot"]["state"]["type"],
@@ -53,7 +64,7 @@ function WebMCPStatus({
 
 function GatedPublisherApp() {
   const sponsorGate = useSponsorGate();
-  const walletProvider = window.ethereum;
+  const paymentWallet = usePaymentWallet();
   const dependencies = useMemo(() => {
     const baseUrl = API_BASE_URL;
     const endpoint = new URL("/api/recipe-analysis", baseUrl).toString();
@@ -70,17 +81,22 @@ function GatedPublisherApp() {
       sponsorGate,
       paymentCoordinator,
       protectedClient: createProtectedAnalysisClient({ baseUrl }),
-      paymentAvailable: Boolean(walletProvider),
+      paymentAvailable:
+        paymentWallet.browserWalletAvailable || paymentWallet.privyAvailable,
     });
     return { coordinator, paymentCoordinator };
-  }, [sponsorGate]);
+  }, [
+    paymentWallet.browserWalletAvailable,
+    paymentWallet.privyAvailable,
+    sponsorGate,
+  ]);
 
   return (
     <GateProvider coordinator={dependencies.coordinator}>
       <PublisherPage
         coordinator={dependencies.coordinator}
         paymentCoordinator={dependencies.paymentCoordinator}
-        walletProvider={walletProvider}
+        paymentWallet={paymentWallet}
       />
     </GateProvider>
   );
@@ -89,11 +105,11 @@ function GatedPublisherApp() {
 function PublisherPage({
   coordinator,
   paymentCoordinator,
-  walletProvider,
+  paymentWallet,
 }: {
   readonly coordinator: ReturnType<typeof createGateCoordinator>;
   readonly paymentCoordinator: ReturnType<typeof createPaymentCoordinator>;
-  readonly walletProvider: typeof window.ethereum;
+  readonly paymentWallet: ReturnType<typeof usePaymentWallet>;
 }) {
   const { snapshot } = useGate();
   const webMCPState = useWebMCPTools(coordinator);
@@ -107,6 +123,8 @@ function PublisherPage({
     snapshot.source === "webmcp" && snapshot.state.type === "succeeded"
       ? ({ type: "success", result: snapshot.state.result } as const)
       : undefined;
+  const access =
+    snapshot.state.type === "succeeded" ? snapshot.state.access : undefined;
 
   return (
     <div className="publisher-page min-h-screen min-w-0 overflow-x-clip text-[#21352d]">
@@ -157,10 +175,13 @@ function PublisherPage({
             </div>
           </section>
 
+          <AccessFlowCard snapshot={snapshot} webMCP={webMCPState} />
+
           <fieldset disabled={webMCPAttemptActive} className="contents">
             <PublisherDemo
               analysisClient={analysisClient}
               analysisState={webMCPAnalysisState}
+              access={access}
             />
           </fieldset>
           {webMCPAttemptActive ? (
@@ -170,7 +191,7 @@ function PublisherPage({
           ) : null}
           <GateExperience
             paymentCoordinator={paymentCoordinator}
-            walletProvider={walletProvider}
+            paymentWallet={paymentWallet}
           />
           <WebMCPStatus state={webMCPState} />
         </div>
@@ -190,7 +211,35 @@ export default function App() {
   );
   return (
     <SponsorGateProvider client={sponsorClient}>
-      <GatedPublisherApp />
+      {PRIVY_APP_ID ? (
+        <PrivyProvider
+          appId={PRIVY_APP_ID}
+          config={{
+            loginMethods: ["passkey"],
+            defaultChain: {
+              id: 84532,
+              name: "Base Sepolia",
+              network: "base-sepolia",
+              nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+              rpcUrls: {
+                default: { http: ["https://sepolia.base.org"] },
+                public: { http: ["https://sepolia.base.org"] },
+              },
+            },
+            embeddedWallets: {
+              ethereum: { createOnLogin: "users-without-wallets" },
+            },
+          }}
+        >
+          <PrivyPaymentWalletProvider>
+            <GatedPublisherApp />
+          </PrivyPaymentWalletProvider>
+        </PrivyProvider>
+      ) : (
+        <BrowserWalletProvider>
+          <GatedPublisherApp />
+        </BrowserWalletProvider>
+      )}
     </SponsorGateProvider>
   );
 }

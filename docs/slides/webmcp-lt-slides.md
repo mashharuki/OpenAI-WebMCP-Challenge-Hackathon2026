@@ -1,12 +1,12 @@
 ---
 marp: true
-theme: excel
+theme: brave-dark
 paginate: true
 size: 16:9
 html: true
 style: |
-  /* @theme excel
-     Excel Theme for Marp — Clean, professional presentation design
+  /* @theme brave-dark
+     Dark theme inspired by Brave's red-to-purple brand gradient
      Supports Japanese and English content
   */
 
@@ -14,21 +14,22 @@ style: |
      Base
      ========================================= */
   section {
-    --accent:      #3b82f6;
-    --accent-warm: #f59e0b;
-    --dark:        #0f172a;
-    --dark-2:      #1e293b;
-    --muted:       #64748b;
-    --border:      #e2e8f0;
-    --bg-subtle:   #f8fafc;
+    --accent:      #FF3B5C;
+    --accent-warm: #9D4EDD;
+    --dark:        #05030A;
+    --dark-2:      #170F20;
+    --muted:       #A9A4B2;
+    --border:      #332941;
+    --bg-subtle:   #170F20;
 
+    color-scheme: dark;
     width: 1280px;
     height: 720px;
     box-sizing: border-box;
     font-family: 'Hiragino Sans', 'BIZ UDGothic', 'Yu Gothic Medium',
                  'Noto Sans JP', 'Segoe UI', -apple-system, sans-serif;
-    background: #ffffff;
-    color: #1e293b;
+    background: #0A0612;
+    color: #F1ECF6;
     padding: 48px 72px 58px;
     font-size: 24px;
     line-height: 1.65;
@@ -61,7 +62,7 @@ style: |
   h1 {
     font-size: 2.0em;
     font-weight: 800;
-    color: #0f172a;
+    color: #FFFFFF;
     margin: 0 0 14px;
     line-height: 1.2;
     letter-spacing: -0.02em;
@@ -70,7 +71,7 @@ style: |
   h2 {
     font-size: 1.45em;
     font-weight: 700;
-    color: #0f172a;
+    color: #FFFFFF;
     margin: 0 0 18px;
     padding-bottom: 10px;
     border-bottom: 3px solid var(--accent);
@@ -80,7 +81,7 @@ style: |
   h3 {
     font-size: 1.05em;
     font-weight: 600;
-    color: var(--accent);
+    color: var(--accent-warm);
     margin: 14px 0 8px;
   }
 
@@ -106,11 +107,12 @@ style: |
     border-radius: 4px;
     padding: 1px 6px;
     font-size: 0.82em;
-    color: #be123c;
+    color: #FF9BB0;
   }
 
   pre {
-    background: #0f172a;
+    background: var(--dark);
+    border: 1px solid var(--border);
     border-radius: 10px;
     padding: 18px 22px;
     margin: 10px 0;
@@ -120,7 +122,7 @@ style: |
   pre code {
     background: none;
     border: none;
-    color: #e2e8f0;
+    color: #E9E1F5;
     padding: 0;
     font-size: 0.75em;
     line-height: 1.6;
@@ -151,6 +153,12 @@ style: |
 
   tr:nth-child(even) td { background: var(--bg-subtle); }
 
+  /* Defensive override: marp-core's bundled GitHub-flavored base CSS
+     sets <tr> background via light-dark() vars, which can win the
+     cascade over the rules above. Force it back to this theme. */
+  section table tr { background-color: transparent; border-top-color: var(--border); }
+  section table tr:nth-child(2n) { background-color: var(--bg-subtle); }
+
   /* =========================================
      Blockquote
      ========================================= */
@@ -176,7 +184,7 @@ style: |
 
   /* --- title: Cover slide --- */
   section.title {
-    background: linear-gradient(145deg, #0f172a 0%, #1e3a5f 55%, #0f2944 100%);
+    background: linear-gradient(145deg, #05030A 0%, #5B1030 52%, #3B0764 100%);
     color: white;
     justify-content: flex-end;
     padding-bottom: 64px;
@@ -194,7 +202,7 @@ style: |
   }
 
   section.title h2 {
-    color: rgba(255,255,255,0.65);
+    color: rgba(255,255,255,0.7);
     font-size: 1.0em;
     font-weight: 400;
     border-bottom: none;
@@ -202,20 +210,20 @@ style: |
   }
 
   section.title p {
-    color: rgba(255,255,255,0.5);
+    color: rgba(255,255,255,0.55);
     font-size: 0.8em;
     margin-top: 28px;
   }
 
   /* --- section: Chapter break slide --- */
   section.section {
-    background: var(--accent);
+    background: linear-gradient(135deg, var(--accent), var(--accent-warm));
     color: white;
     justify-content: center;
   }
 
   section.section::before {
-    background: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.3);
   }
 
   section.section h2 {
@@ -226,7 +234,7 @@ style: |
   }
 
   section.section p {
-    color: rgba(255,255,255,0.8);
+    color: rgba(255,255,255,0.85);
     font-size: 0.9em;
   }
 
@@ -240,6 +248,10 @@ style: |
   section.lead h1 {
     font-size: 2.5em;
     border-bottom: none;
+    background: linear-gradient(90deg, var(--accent), var(--accent-warm));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
   section.lead h2 {
@@ -248,10 +260,10 @@ style: |
     font-weight: 400;
   }
 
-  /* --- dark: Dark background slide --- */
+  /* --- dark: Extra-dark background slide (code showcase) --- */
   section.dark {
-    background: #0f172a;
-    color: #e2e8f0;
+    background: #000000;
+    color: #E9E1F5;
   }
 
   section.dark h1 { color: white; }
@@ -262,18 +274,18 @@ style: |
   }
 
   section.dark code {
-    background: #1e293b;
-    border-color: #334155;
-    color: #94a3b8;
+    background: var(--dark-2);
+    border-color: var(--border);
+    color: var(--muted);
   }
 
-  section.dark td { border-color: #334155; }
-  section.dark tr:nth-child(even) td { background: #1e293b; }
-  section.dark blockquote { background: #1e293b; }
+  section.dark td { border-color: var(--border); }
+  section.dark tr:nth-child(even) td { background: var(--dark-2); }
+  section.dark blockquote { background: var(--dark-2); }
 
   /* --- ending: Thank you / closing slide --- */
   section.ending {
-    background: linear-gradient(145deg, #0f172a 0%, #1e3a5f 100%);
+    background: linear-gradient(145deg, #05030A 0%, #5B1030 50%, #3B0764 100%);
     color: white;
     justify-content: center;
     align-items: center;
@@ -290,14 +302,14 @@ style: |
   }
 
   section.ending h2 {
-    color: rgba(255,255,255,0.65);
+    color: rgba(255,255,255,0.7);
     border-bottom: none;
     font-weight: 400;
     font-size: 1.0em;
   }
 
   section.ending p {
-    color: rgba(255,255,255,0.5);
+    color: rgba(255,255,255,0.55);
     font-size: 0.82em;
     margin-top: 20px;
   }
@@ -329,21 +341,22 @@ style: |
     margin: 6px 0;
   }
 
-  .card.accent  { border-left: 4px solid var(--accent);      background: rgba(59,130,246,0.04); }
-  .card.warn    { border-left: 4px solid var(--accent-warm); background: rgba(245,158,11,0.04); }
-  .card.success { border-left: 4px solid #22c55e;            background: rgba(34,197,94,0.04); }
-  .card.danger  { border-left: 4px solid #ef4444;            background: rgba(239,68,68,0.04); }
+  .card.accent  { border-left: 4px solid var(--accent);      background: rgba(255,59,92,0.10); }
+  .card.warn    { border-left: 4px solid var(--accent-warm); background: rgba(157,78,221,0.10); }
+  .card.success { border-left: 4px solid #22c55e;            background: rgba(34,197,94,0.10); }
+  .card.danger  { border-left: 4px solid #ef4444;            background: rgba(239,68,68,0.10); }
 
   /* Highlight box — key messages */
   .highlight {
-    background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(245,158,11,0.08));
-    border: 1px solid rgba(59,130,246,0.2);
+    background: linear-gradient(135deg, rgba(255,59,92,0.16), rgba(157,78,221,0.16));
+    border: 1px solid rgba(157,78,221,0.4);
     border-radius: 10px;
     padding: 14px 22px;
     font-size: 1.05em;
     font-weight: 600;
     text-align: center;
     margin: 10px 0;
+    color: #FFFFFF;
   }
 
   /* Big number / metric */
@@ -436,12 +449,6 @@ style: |
 # AdGate for WebMCP
 
 ## エージェント時代の新しい広告・決済モデル
-
-<!--
-発表時間の目安: 約15秒。
-タイトルと、これがOpenAI WebMCP Challengeの提出作品であることだけ触れて次へ。
-日付・会場は実際のLT情報に合わせて書き換えてください。
--->
 
 ---
 
@@ -537,6 +544,8 @@ document.modelContext.registerTool({
 
 ## 02. OpenAI WebMCP Challengeとは
 
+今回このAdGateを作ったハッカソン
+
 <!-- 約10秒。 -->
 
 ---
@@ -631,10 +640,31 @@ Cloudflare **Durable Object** でスポンサーセッションと発行済み�
 ## デモの流れ
 
 <div class="steps">
-<div class="step">エージェントに「このレシピを解析して」と依頼する</div>
-<div class="step">`analyze_recipe` が呼ばれ、**ゲートで一時停止**する</div>
-<div class="step">その場で **広告視聴 or 決済承認** を選ぶ</div>
-<div class="step">同じツール呼び出しが **自動的に再開** し、結果が返る</div>
+
+<div class="step">
+
+エージェントに「このレシピを解析して」と依頼する
+
+</div>
+
+<div class="step">
+
+`analyze_recipe` が呼ばれ、**ゲートで一時停止**する
+
+</div>
+
+<div class="step">
+
+その場で **広告視聴 or 決済承認** を選ぶ
+
+</div>
+
+<div class="step">
+
+同じツール呼び出しが **自動的に再開** し、結果が返る
+
+</div>
+
 </div>
 
 <!-- 約30秒。ここで実演/動画に切り替えても良い。 -->
@@ -674,6 +704,17 @@ Cloudflare **Durable Object** でスポンサーセッションと発行済み�
 
 ---
 
+## 苦労した点
+
+- WebMCPとx402を **どう組み合わせるか**、ウォレットの置き場所に悩んだ
+- 初期版は注入型ウォレットのみ → **アプリ内ブラウザで決済デモがしづらい**
+- **Privyのパスキー embedded wallet** を追加し、ブラウザウォレットと併用可能に
+- パスキー認証そのものは決済を承認しない設計を維持(人が金額を見て署名)
+
+<!-- 約35秒。技術的な苦労を率直に。 -->
+
+---
+
 ## 学んだこと
 
 - WebMCPは **「見えるブラウザ」が前提** → 人とAIの役割分担を設計しやすい
@@ -700,9 +741,25 @@ Cloudflare **Durable Object** でスポンサーセッションと発行済み�
 ## まとめ
 
 <div class="steps">
-<div class="step">WebMCPは「ページの中にエージェント専用の入口を作る」標準</div>
-<div class="step">AdGateは **人の承認を挟んだまま** 広告 or 決済で収益化する一例</div>
-<div class="step">見えるWebだからこそ、**人とAIの役割分担**を設計できる</div>
+
+<div class="step">
+
+WebMCPは「ページの中にエージェント専用の入口を作る」標準
+
+</div>
+
+<div class="step">
+
+AdGateは **人の承認を挟んだまま** 広告 or 決済で収益化する一例
+
+</div>
+
+<div class="step">
+
+見えるWebだからこそ、**人とAIの役割分担**を設計できる
+
+</div>
+
 </div>
 
 <!-- 約30秒。3点で締める。 -->
@@ -719,6 +776,6 @@ Cloudflare **Durable Object** でスポンサーセッションと発行済み�
 
 <!-- _class: ending -->
 
-# Thank you！！
+# Thank you！
 
 <!-- 約15秒。QRコードがあれば貼り付けてください。 -->
